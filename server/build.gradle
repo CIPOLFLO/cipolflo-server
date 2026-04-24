@@ -1,5 +1,7 @@
 plugins {
 	id 'java'
+	id 'jacoco'
+	id 'org.sonarqube' version '7.2.3.7755'
 	id 'org.springframework.boot' version '3.5.14-SNAPSHOT'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -35,4 +37,24 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport  // Genera el reporte automáticamente al terminar los tests
+}
+
+jacoco {
+	toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true   // Necesario para SonarQube
+		html.required = true  // Útil para revisar cobertura localmente
+	}
+}
+
+sonar {
+	properties {
+		property 'sonar.projectKey', 'CIPOLFLO_cipolflo-server'
+		property 'sonar.organization', 'cipolflo'
+	}
 }
