@@ -1,1 +1,4 @@
-// Objeto de entrada de la API. Lo que llega desde el frontend.
+package com.cipolflo.server.clientes.dto;
+
+public class ClienteRequestDto {
+}

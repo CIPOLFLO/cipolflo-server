@@ -1,1 +1,4 @@
-// Objeto de salida de la API. Las entidades de dominio nunca se exponen directamente.
+package com.cipolflo.server.clientes.dto;
+
+public class ClienteResponseDto {
+}

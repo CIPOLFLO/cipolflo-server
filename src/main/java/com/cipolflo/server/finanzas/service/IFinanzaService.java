@@ -1,1 +1,4 @@
-// Interfaz pública del módulo. La única forma en que otros módulos pueden comunicarse con este.
+package com.cipolflo.server.finanzas.service;
+
+public interface IFinanzaService {
+}
