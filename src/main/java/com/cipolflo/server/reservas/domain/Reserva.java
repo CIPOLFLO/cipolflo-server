@@ -120,8 +120,7 @@ public class Reserva extends AuditableEntity {
 
     private boolean esTransicionValida(EstadoReserva nuevoEstado) {
         return switch (this.estado) {
-            case PENDIENTE   -> nuevoEstado == EstadoReserva.CONFIRMADA
-                    || nuevoEstado == EstadoReserva.EN_CURSO;
+            case PENDIENTE   -> nuevoEstado == EstadoReserva.CONFIRMADA;
             case CONFIRMADA  -> nuevoEstado == EstadoReserva.EN_CURSO;
             case EN_CURSO    -> nuevoEstado == EstadoReserva.FINALIZADA;
             case FINALIZADA  -> false;
