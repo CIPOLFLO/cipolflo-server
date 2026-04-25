@@ -2,6 +2,7 @@ plugins {
 	java
 	id ("org.springframework.boot") version "3.5.14-SNAPSHOT"
 	id ("io.spring.dependency-management") version "1.1.7"
+	id ("org.sonarqube") version "7.2.3.7755"
 }
 
 group = "com.cipolflo"
@@ -35,4 +36,11 @@ dependencies {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+sonar {
+	properties {
+		property("sonar.projectKey", "CIPOLFLO_cipolflo-server")
+		property("sonar.organization", "cipolflo")
+	}
 }
