@@ -17,7 +17,7 @@ import java.time.Instant;
 @Table(name = "reserva")
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Reserva extends AuditableEntity {
 
     @Id
@@ -54,20 +54,31 @@ public class Reserva extends AuditableEntity {
     private Integer cantidadMenores;
 
     @Column(nullable = false)
+    @Setter(AccessLevel.NONE)
     private Boolean pago = false;
 
     @Enumerated(EnumType.STRING)
+    @Setter(AccessLevel.NONE)
     private FormaPago formaPago;
 
     @Column(nullable = false)
+    @Setter(AccessLevel.NONE)
     private Boolean documentacion = false;
 
     @Setter
     private String notas;
 
-    public void recibirDocumentacion() {
-        this.documentacion = true;
-        this.estado = EstadoReserva.CONFIRMADA;
+    public static Reserva crear(Long clienteId, Long servicioId, Procedencia procedencia,
+                                Instant fechaEntrada, Instant fechaSalida,
+                                boolean requiereDocumentacionPrevia) {
+        Reserva r = new Reserva();
+        r.clienteId = clienteId;
+        r.servicioId = servicioId;
+        r.procedencia = procedencia;
+        r.fechaEntrada = fechaEntrada;
+        r.fechaSalida = fechaSalida;
+        r.estado = requiereDocumentacionPrevia ? EstadoReserva.PENDIENTE : EstadoReserva.CONFIRMADA;
+        return r;
     }
 
     public void confirmarPago(BigDecimal importe, FormaPago formaPago) {
@@ -77,6 +88,16 @@ public class Reserva extends AuditableEntity {
         this.importe = importe;
         this.formaPago = formaPago;
         this.pago = true;
+        if (this.estado == EstadoReserva.PENDIENTE && this.documentacion) {
+            cambiarEstado(EstadoReserva.CONFIRMADA);
+        }
+    }
+
+    public void recibirDocumentacion() {
+        this.documentacion = true;
+        if (this.estado == EstadoReserva.PENDIENTE && this.pago) {
+            cambiarEstado(EstadoReserva.CONFIRMADA);
+        }
     }
 
     public void cambiarEstado(EstadoReserva nuevoEstado) {
