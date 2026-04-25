@@ -65,7 +65,6 @@ public class Reserva extends AuditableEntity {
     @Setter(AccessLevel.NONE)
     private Boolean documentacion = false;
 
-    @Setter
     private String notas;
 
     public static Reserva crear(Long clienteId, Long servicioId, Procedencia procedencia,
