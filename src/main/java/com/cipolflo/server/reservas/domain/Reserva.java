@@ -85,6 +85,15 @@ public class Reserva extends AuditableEntity {
         if (this.pago) {
             throw new IllegalStateException("La reserva ya tiene el pago confirmado");
         }
+        if (importe == null) {
+            throw new IllegalArgumentException("El importe no puede ser nulo");
+        }
+        if (formaPago == null) {
+            throw new IllegalArgumentException("La forma de pago no puede ser nula");
+        }
+        if (importe.signum() <= 0) {
+            throw new IllegalArgumentException("El importe debe ser mayor que cero");
+        }
         this.importe = importe;
         this.formaPago = formaPago;
         this.pago = true;
