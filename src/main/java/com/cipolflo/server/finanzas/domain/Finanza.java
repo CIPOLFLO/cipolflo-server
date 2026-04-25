@@ -33,8 +33,8 @@ public abstract class Finanza extends AuditableEntity {
     private String conceptoDePago;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private FormaPago formaDePago;
+    @Column(name = "forma_de_pago", nullable = false)
+    private FormaPago formaPago;
 
     private String notas;
 }
