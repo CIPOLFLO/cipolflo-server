@@ -1,0 +1,117 @@
+---
+name: review-error-suggestions
+description: 'Analiza errores encontrados en un code review del backend Java/Spring Boot. Use for: investigar cada error, determinar la causa probable, y proponer la sugerencia más apropiada de forma simple y accionable.'
+argument-hint: 'archivo de resultados o lista de errores'
+user-invocable: false
+---
+
+# Review Error Suggestions
+
+## Cuándo usarla
+- Después de generar un archivo de code review con errores o advertencias.
+- Cuando el usuario quiere sugerencias para resolver cada error detectado.
+- Cuando se necesita una propuesta breve por hallazgo, sin extenderse demasiado.
+
+## Procedimiento
+
+1. Leer el archivo de resultados o la lista de errores provista.
+2. Identificar cada error y su contexto inmediato.
+3. Leer el archivo Java afectado y el código relacionado si hace falta para entender la causa.
+4. Determinar la causa más probable de cada error.
+5. Entrar en modo interactivo y procesar **un error por vez**.
+6. Mostrar una sola sugerencia concreta para el error actual, priorizando las convenciones de `AGENTS.md` y las buenas prácticas de Java/Spring Boot.
+7. Preguntar al usuario cómo continuar con opciones fijas: `aplicar`, `saltear`, `terminar`.
+8. Según respuesta:
+    - `aplicar`: ejecutar el cambio mínimo necesario, validar con el comando correspondiente (ver sección de validación) y pasar al siguiente error.
+    - `saltear`: no modificar código y pasar al siguiente error.
+    - `terminar`: cortar el flujo y entregar un resumen parcial con aplicadas, salteadas y pendientes.
+9. Si no hay suficiente información para proponer una sugerencia, decirlo de forma explícita y señalar el siguiente dato a revisar.
+
+## Validación al aplicar una sugerencia
+
+Elegir el comando más acotado posible:
+
+| Tipo de cambio | Comando de validación |
+|---|---|
+| Cambio en dominio o servicio de un módulo | `./gradlew test --tests "com.cipolflo.server.<modulo>.*"` |
+| Cambio que toca varios módulos | `./gradlew test` |
+| Cambio que no toca lógica de negocio (ej. solo anotaciones, Lombok, nombre de campo) | `./gradlew build -x test` |
+| Fallo de compilación reportado en el review | `./gradlew build -x test` |
+
+- Si el comando falla, reportar el fallo de forma simple y **no marcar la sugerencia como aplicada**.
+- No ejecutar `./gradlew test` completo si se puede acotar al módulo afectado.
+- La cobertura (SonarQube) no se ejecuta localmente; no es parte de la validación de esta skill.
+
+## Criterios de salida
+
+- Una sugerencia por error.
+- Lenguaje breve y claro; sin explicaciones innecesarias sobre el framework.
+- Priorizar el cambio mínimo que resuelva el problema respetando las convenciones de `AGENTS.md`.
+- No proponer soluciones hipotéticas si el contexto no alcanza.
+- No listar todas las sugerencias juntas: entregarlas **una por turno**.
+- Al finalizar, incluir un resumen corto con aplicadas, salteadas y pendientes.
+- Marcar como aplicada solo si la validación mínima pasa.
+
+## Errores frecuentes y cómo abordarlos
+
+**Entidad que no extiende `AuditableEntity`**
+- Causa probable: clase creada sin seguir la convención base.
+- Sugerencia: agregar `extends AuditableEntity` y eliminar los campos `createdAt`/`updatedAt` si los tiene definidos manualmente.
+
+**Enum persistido con `@Enumerated(EnumType.ORDINAL)`**
+- Causa probable: valor por defecto de JPA usado sin atención.
+- Sugerencia: reemplazar por `@Enumerated(EnumType.STRING)`.
+
+**Getter/setter escrito manualmente cuando Lombok está disponible**
+- Causa probable: generado por el IDE sin querer o copiado de otro lugar.
+- Sugerencia: eliminar el método manual y verificar que `@Getter`/`@Setter` estén en la clase.
+
+**Controller que inyecta el repositorio directamente**
+- Causa probable: acceso directo sin pasar por el servicio.
+- Sugerencia: inyectar el servicio correspondiente (`I{Nombre}Service`) y mover la lógica al `{Nombre}Service`.
+
+**Controller que devuelve una entidad JPA**
+- Causa probable: return type incorrecto o mapeo omitido.
+- Sugerencia: crear o reutilizar el `{Nombre}ResponseDto` correspondiente y devolver ese tipo.
+
+**`Reserva` instanciada con `new` directamente**
+- Causa probable: constructor público usado por error.
+- Sugerencia: reemplazar por `Reserva.crear(...)`. Verificar que el constructor protegido no fue cambiado.
+
+**`estado` o `mesesSinPagar` de `Socio` asignados directamente desde el servicio**
+- Causa probable: setter invocado sin usar los métodos de negocio.
+- Sugerencia: reemplazar por `socio.incrementarMesesSinPagar()` o `socio.darDeBaja()` según el caso.
+
+**Enum de módulo ubicado en `shared/enums/`**
+- Causa probable: carpeta equivocada al crear el archivo.
+- Sugerencia: mover a `{modulo}/domain/enums/` y actualizar los imports.
+
+**Campo funcional agregado a `AuditableEntity`**
+- Causa probable: confusión entre clase base de auditoría y clase base de dominio.
+- Sugerencia: mover el campo a la entidad concreta o a una nueva superclase de dominio si aplica a varias entidades.
+
+## Formato de salida por error
+
+```
+### <descripción corta del error>
+
+- **Archivo:** `<ruta/Archivo.java>`
+- **Causa probable:** <resumen corto>
+- **Sugerencia:** <acción concreta y mínima>
+- **Prioridad:** <alta | media | baja>
+
+¿Qué querés hacer con esta sugerencia? [aplicar | saltear | terminar]
+```
+
+## Formato del resumen final
+
+```
+## Resumen de sugerencias
+
+| # | Error | Estado |
+|---|---|---|
+| 1 | <descripción> | ✅ Aplicada / ⏭️ Salteada / ⏳ Pendiente |
+| 2 | <descripción> | ... |
+
+**Aplicadas:** X  **Salteadas:** X  **Pendientes:** X
+```

@@ -1,0 +1,157 @@
+---
+name: code-review
+description: 'Revisión de código del backend Java/Spring Boot (CIPOLFLO). Use for: revisar la rama actual antes de un PR, verificar convenciones del proyecto, ejecutar tests, y detectar si los cambios impactan el README.md o el AGENTS.md.'
+argument-hint: 'opcional'
+user-invocable: true
+---
+
+# Code Review
+
+## Cuándo usarla
+- Al terminar una feature y antes de abrir un PR.
+- Para verificar que los archivos nuevos o modificados siguen las convenciones del proyecto.
+- Para detectar si algún cambio requiere actualizar `README.md` o `AGENTS.md`.
+- Para ejecutar tests y resumir fallos de forma simple.
+
+## Cómo invocarla
+- Manual (recomendado): escribir `/code-review` en el chat.
+- Por intención: pedir en lenguaje natural una revisión de la rama antes de abrir PR.
+- Si el flujo encuentra errores, activa el modo interactivo de sugerencias en la skill relacionada.
+
+## Procedimiento
+
+1. **Obtener contexto de la rama.**
+    ```bash
+    git rev-parse --abbrev-ref HEAD
+    git diff --name-status develop...HEAD
+    git diff develop...HEAD
+    ```
+    Si `develop` no existe como rama base, intentar con `main`. Si tampoco existe, usar
+    `git diff HEAD~1` como fallback e indicarlo en el archivo final.
+
+2. **Leer solo lo relevante.**
+    - `README.md` para documentación de desarrolladores.
+    - `AGENTS.md` para convenciones vigentes del proyecto.
+    - Cada archivo listado en el diff del paso anterior.
+
+    No leer archivos que no hayan cambiado salvo que sea necesario para entender un cambio puntual.
+
+3. **Revisar cada archivo modificado o creado.**
+
+    **Arquitectura y estructura**
+    - Toda entidad JPA nueva extiende `AuditableEntity`. No definir `createdAt`/`updatedAt` manualmente.
+    - Los archivos nuevos están en la carpeta correcta según su tipo (`domain/`, `service/`, `dto/`, `controller/`, `repository/`).
+    - Enums de uso transversal van en `shared/enums/`. Enums de un solo módulo van en `{modulo}/domain/enums/`.
+    - No existe lógica de negocio en controllers: solo orquestan llamadas al servicio y devuelven DTOs.
+    - Los controllers no inyectan ni llaman directamente al repositorio.
+    - Los métodos de servicio están declarados primero en la interfaz `I{Nombre}Service`.
+
+    **Convenciones de código**
+    - Entidades usan `@Getter`, `@Setter`, `@NoArgsConstructor` de Lombok. No hay getters/setters escritos a mano.
+    - Si un campo no debe ser modificable externamente, usa `@Setter(AccessLevel.NONE)` en ese campo, no omite `@Setter` en la clase.
+    - Si la entidad requiere factory method, el constructor tiene `@NoArgsConstructor(access = AccessLevel.PROTECTED)`.
+    - Todos los enums persistidos usan `@Enumerated(EnumType.STRING)`. No hay `ORDINAL`.
+    - Los nombres de clases, campos y métodos están en español siguiendo el dominio del negocio.
+    - Los DTOs siguen el patrón `{Nombre}RequestDto` y `{Nombre}ResponseDto`.
+    - Las interfaces de servicio se llaman `I{Nombre}Service`.
+    - Solo se comenta el por qué, no el qué.
+
+    **Entidades con lógica especial**
+    - `Reserva`: si se toca esta clase, verificar que el constructor sigue siendo `PROTECTED` y que `Reserva.crear(...)` es el único punto de entrada. Verificar que las transiciones de estado pasan por `cambiarEstado()` o los métodos `confirmarPago()`/`recibirDocumentacion()`, no asignando `estado` directamente desde fuera.
+    - `Socio`: si se toca esta clase, verificar que `mesesSinPagar` y `estado` no se modifican desde el servicio directamente; deben usarse `incrementarMesesSinPagar()` y `darDeBaja()`.
+    - `AuditableEntity`: no debe recibir campos funcionales. Solo `createdAt` y `updatedAt`.
+
+    **Respuestas HTTP**
+    - Los controllers devuelven DTOs, nunca entidades JPA (`@Entity`).
+    - No hay serialización accidental de entidades (ej. un campo de tipo entidad dentro de un DTO).
+    - Los listados siempre deben recibir un PageRequestDto y devolver PageResponseDto
+
+4. **Ejecutar tests.**
+    - Si el cambio es acotado a un módulo, ejecutar solo los tests de ese módulo:
+      ```bash
+      ./gradlew test --tests "com.cipolflo.server.<modulo>.*"
+      ```
+    - Si no se puede acotar con seguridad, ejecutar todos los tests:
+      ```bash
+      ./gradlew test
+      ```
+    - Si los tests fallan, resumir el resultado en lenguaje simple y breve.
+    - La cobertura se genera en CI con SonarQube; no es necesario ejecutarla localmente.
+
+5. **Evaluar impacto en documentación.**
+    - `README.md`: actualizar si se agrega una dependencia, cambia un comando, cambia la estructura de módulos o el stack.
+    - `AGENTS.md`: actualizar si se establece una convención nueva, se agrega un patrón de arquitectura, se incorpora una librería relevante, o cambia alguna regla que los agentes deben conocer.
+
+6. **Generar el archivo de salida.**
+    - Crear el archivo en la raíz del repositorio: `code_review_<nombre-de-la-rama>.md`
+    - Reemplazar `/` por `-` en el nombre de la rama.
+
+7. **Activar el modo interactivo de sugerencias.**
+    Seguir el flujo definido en `.github/skills/review-error-suggestions.skill` tomando como entrada:
+    - Los problemas marcados con ❌ en el archivo de salida del paso 6.
+    - Los fallos de la sección `Tests > Fallos resumidos` del mismo archivo.
+
+## Formato de salida
+
+```markdown
+<!-- ARCHIVO DE REVISIÓN LOCAL — NO PUSHEAR -->
+<!-- Agregar a .gitignore: code_review_*.md -->
+
+# Code Review — <nombre-de-la-rama>
+
+**Fecha:** <fecha>
+**Rama:** <rama>
+**Base:** <rama base usada para el diff>
+
+## Archivos revisados
+
+- <ruta/Archivo.java> — [nuevo | modificado]
+
+## Hallazgos por archivo
+
+### <ruta/Archivo.java>
+
+**✅ Correcto**
+- <qué está bien>
+
+**⚠️ Observaciones**
+- <qué mejorar, con referencia a la regla de AGENTS.md>
+
+**❌ Problemas**
+- <qué debe corregirse antes del merge>
+
+## Tests
+
+**Estado general:** ✅ Pasaron / ⚠️ Pasaron con advertencias / ❌ Fallaron
+
+**Comando ejecutado:** `./gradlew test --tests "..."` o `./gradlew test`
+
+### Fallos resumidos
+- <clase o método de test>: <qué falló> porque <causa breve>
+
+## Impacto en documentación
+
+### README.md
+- [ ] Sin cambios necesarios
+- [ ] Requiere actualización → <qué sección y qué cambiar>
+
+### AGENTS.md
+- [ ] Sin cambios necesarios
+- [ ] Requiere actualización → <qué sección y qué cambiar>
+
+## Resumen
+
+**Estado general:** ✅ Listo para PR / ⚠️ Revisiones menores / ❌ Bloqueante
+
+<Párrafo corto con el estado general y próximos pasos>
+
+## Recursos
+
+- Convenciones vigentes: `AGENTS.md`
+- Skill relacionada: `.github/skills/review-error-suggestions.skill`
+```
+
+## Recursos
+- Convenciones del proyecto: `AGENTS.md`
+- Documentación de desarrolladores: `README.md`
+- Skill relacionada: `.github/skills/review-error-suggestions.skill`
