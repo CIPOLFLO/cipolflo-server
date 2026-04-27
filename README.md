@@ -267,6 +267,22 @@ Si la funcionalidad involucra un concepto transversal a varios módulos (ej. un 
 
 ---
 
+## Antes de abrir un PR
+
+Correr la skill de code review sobre la rama antes de crear el PR:
+
+```
+/code-review
+```
+
+La skill revisa convenciones, ejecuta los tests del módulo afectado y genera un archivo
+`code_review_<nombre-rama>.md` en la raíz con los hallazgos. Si detecta errores, activa
+automáticamente el flujo interactivo de sugerencias.
+
+Los archivos `code_review_*.md` son locales y no deben pushearse. Agregar al `.gitignore` si no está ya.
+
+---
+
 ## Endpoints disponibles
 
 | Método | Ruta | Módulo | Estado |
