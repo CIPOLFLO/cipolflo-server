@@ -7,9 +7,11 @@ import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class PaginationMapperTest {
+class PaginationMapperTest {
     @Test
     void deberiaConvertirPageEnPageResponse() {
         Page<String> page = new PageImpl<>(

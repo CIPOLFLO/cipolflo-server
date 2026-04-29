@@ -9,5 +9,7 @@ public record PageResponse<T>(List<T> content,
                            int totalPages,
                            boolean first,
                            boolean last) {
-
+    public PageResponse {
+        content = List.copyOf(content);
+    }
 }
