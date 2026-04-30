@@ -146,6 +146,7 @@ No modificar `mesesSinPagar` o `estado` directamente desde el servicio — usar 
 - Base de URLs: `/api/v1/{modulo}` (ej. `/api/v1/clientes`, `/api/v1/reservas`).
 - Devuelven DTOs, nunca entidades directamente.
 - Usar `@RestController` y `@RequestMapping` en la clase.
+- Todo parámetro DTO debe anotarse con `@Valid` para activar las validaciones de Jakarta (ej. `public ResponseEntity<?> crear(@Valid @RequestBody ClienteRequestDto dto)`).
 - El endpoint de health check (`GET /api/health`) está en `shared/HealthController.java` — no duplicarlo.
 
 ---
@@ -153,10 +154,11 @@ No modificar `mesesSinPagar` o `estado` directamente desde el servicio — usar 
 ## DTOs
 
 - Los DTOs están en `{modulo}/dto/`.
-- `RequestDto` recibe datos del cliente HTTP.
-- `ResponseDto` es lo que se serializa en la respuesta.
+- `RequestDto` recibe datos del cliente HTTP. Sus campos deben llevar anotaciones de Jakarta Validation (`@NotNull`, `@NotBlank`, `@Min`, `@Max`, `@Size`, `@Email`, etc.). No usar validación manual en constructores.
+- `ResponseDto` es lo que se serializa en la respuesta. Todo DTO de respuesta debe implementar la marker interface `com.cipolflo.server.shared.dto.ResponseDto`.
 - No exponer entidades JPA en respuestas HTTP.
 - El mapeo entidad ↔ DTO es responsabilidad del servicio (o de un mapper si se introduce uno).
+- `PaginationMapper.toPageResponse()` solo acepta `Page<T extends ResponseDto>`. Siempre convertir la entidad a DTO antes de paginar.
 
 ---
 

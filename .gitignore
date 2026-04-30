@@ -37,4 +37,4 @@ out/
 .vscode/
 
 ### Directorio server/ (estructura anterior, solo artefactos locales) ###
-###server/
+# server/
