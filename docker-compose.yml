@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15
+    container_name: cipolflo_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 55628920PostGre
+      POSTGRES_DB: CIPOLFLO_BD
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  postgres_data:
