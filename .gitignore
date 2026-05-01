@@ -41,3 +41,4 @@ server/
 
 ### Variables de entorno — nunca versionar credenciales reales ###
 .env
+# server/

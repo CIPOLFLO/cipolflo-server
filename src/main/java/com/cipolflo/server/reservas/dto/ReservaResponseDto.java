@@ -1,4 +1,6 @@
 package com.cipolflo.server.reservas.dto;
 
-public class ReservaResponseDto {
+import com.cipolflo.server.shared.dto.ResponseDto;
+
+public class ReservaResponseDto implements ResponseDto {
 }

@@ -1,4 +1,6 @@
 package com.cipolflo.server.servicios.dto;
 
-public class ServicioResponseDto {
+import com.cipolflo.server.shared.dto.ResponseDto;
+
+public class ServicioResponseDto implements ResponseDto {
 }
