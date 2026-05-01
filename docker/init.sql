@@ -37,7 +37,10 @@ CREATE TABLE public.pago_cuota (
     fecha timestamp with time zone NOT NULL,
     importe numeric(19,2) NOT NULL,
     forma_pago character varying(50) NOT NULL,
-    cantidad_meses integer NOT NULL
+    cantidad_meses integer NOT NULL,
+    -- AuditableEntity
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 CREATE TABLE public.servicio (
@@ -84,6 +87,9 @@ CREATE TABLE public.finanza (
     notas text,
     -- Ingreso
     procedencia character varying(50),
+    -- reserva_id es una referencia débil por ID, sin FK deliberadamente:
+    -- los agregados del dominio están desacoplados a nivel de objeto y la integridad
+    -- referencial de esta relación opcional la maneja la capa de aplicación.
     reserva_id bigint,
     -- AuditableEntity
     created_at timestamp with time zone,
@@ -98,14 +104,27 @@ ALTER TABLE ONLY public.servicio ADD CONSTRAINT servicio_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY public.reserva ADD CONSTRAINT reserva_pkey PRIMARY KEY (id);
 ALTER TABLE ONLY public.finanza ADD CONSTRAINT finanza_pkey PRIMARY KEY (id);
 
--- Foreign keys
-ALTER TABLE ONLY public.pago_cuota ADD CONSTRAINT pago_cuota_socio_id_fkey FOREIGN KEY (socio_id) REFERENCES public.cliente(id);
-ALTER TABLE ONLY public.reserva ADD CONSTRAINT reserva_cliente_id_fkey FOREIGN KEY (cliente_id) REFERENCES public.cliente(id);
-ALTER TABLE ONLY public.reserva ADD CONSTRAINT reserva_servicio_id_fkey FOREIGN KEY (servicio_id) REFERENCES public.servicio(id);
+-- Foreign keys (solo relaciones mandatorias NOT NULL entre agregados)
+-- ON DELETE RESTRICT: no se puede eliminar un registro referenciado mientras existan dependientes.
+-- Las entidades Java usan Long IDs en vez de @ManyToOne — el desacoplamiento es a nivel de
+-- objeto/JPA, pero la DB igual protege la integridad de los datos persistidos.
+ALTER TABLE ONLY public.pago_cuota
+    ADD CONSTRAINT pago_cuota_socio_id_fkey
+    FOREIGN KEY (socio_id) REFERENCES public.cliente(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.reserva
+    ADD CONSTRAINT reserva_cliente_id_fkey
+    FOREIGN KEY (cliente_id) REFERENCES public.cliente(id) ON DELETE RESTRICT;
+
+ALTER TABLE ONLY public.reserva
+    ADD CONSTRAINT reserva_servicio_id_fkey
+    FOREIGN KEY (servicio_id) REFERENCES public.servicio(id) ON DELETE RESTRICT;
 
 -- Indexes
 CREATE INDEX idx_reserva_cliente ON public.reserva USING btree (cliente_id);
 CREATE INDEX idx_reserva_servicio ON public.reserva USING btree (servicio_id);
 CREATE INDEX idx_pago_cuota_socio ON public.pago_cuota USING btree (socio_id);
 CREATE INDEX idx_finanza_tipo ON public.finanza USING btree (tipo);
+-- Índice en reserva_id para queries de finanzas por reserva (sin FK, ver comentario arriba)
+CREATE INDEX idx_finanza_reserva ON public.finanza USING btree (reserva_id);
 CREATE INDEX idx_cliente_tipo ON public.cliente USING btree (tipo);

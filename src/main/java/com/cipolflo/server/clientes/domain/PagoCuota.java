@@ -1,5 +1,6 @@
 package com.cipolflo.server.clientes.domain;
 
+import com.cipolflo.server.shared.AuditableEntity;
 import com.cipolflo.server.shared.enums.FormaPago;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PagoCuota {
+public class PagoCuota extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

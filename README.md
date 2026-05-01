@@ -16,44 +16,146 @@ Backend del sistema de gestión del Club CIPOLFLO. Administra clientes, socios, 
 
 ---
 
-## Levantar el proyecto
+## Configuración inicial (primer uso)
 
-### Requisitos previos
+Seguir estos pasos **una sola vez** al clonar el proyecto por primera vez.
 
-- JDK 21
-- PostgreSQL corriendo en `localhost:5432`
-- Base de datos `cipolflo` creada
+---
 
-```sql
-CREATE DATABASE cipolflo;
+### 1. Instalar Docker Desktop (Windows)
+
+1. Ir a [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/) y descargar el instalador para Windows.
+2. Ejecutar el instalador y seguir los pasos (dejá las opciones por defecto).
+3. Reiniciar la PC si lo pide.
+4. Abrir Docker Desktop y esperar a que el ícono de la ballena en la barra de tareas quede en verde — eso indica que Docker está corriendo.
+
+> Docker Desktop debe estar abierto y corriendo **cada vez** que trabajés con el proyecto.
+
+---
+
+### 2. Instalar JDK 21
+
+Si ya tenés JDK 21 instalado, saltear este paso.
+
+1. Ir a [https://www.oracle.com/java/technologies/downloads/#java21](https://www.oracle.com/java/technologies/downloads/#java21) y descargar el instalador para Windows.
+2. Ejecutar el instalador con las opciones por defecto.
+3. Verificar la instalación abriendo una terminal y ejecutando:
+```
+java -version
+```
+Debe mostrar `java version "21..."`.
+
+---
+
+### 3. Clonar el repositorio
+
+```bash
+git clone https://github.com/CIPOLFLO/cipolflo-server.git
+cd cipolflo-server
 ```
 
-### Variables de conexión
+---
 
-El archivo `src/main/resources/application.properties` usa por defecto:
+### 4. Crear el archivo `.env` con las credenciales
 
+En la raíz del proyecto hay un archivo `.env.example` con valores de ejemplo. Hay que crear una copia con el nombre `.env` y completar las credenciales reales.
+
+**En PowerShell:**
+```powershell
+Copy-Item .env.example .env
 ```
-spring.datasource.url=jdbc:postgresql://localhost:5432/cipolflo
-spring.datasource.username=postgres
-spring.datasource.password=postgres
+
+**O manualmente:** copiar el archivo `.env.example`, pegarlo en la misma carpeta y renombrarlo a `.env` (sin ninguna extensión adicional).
+
+Luego abrir `.env` con cualquier editor de texto y reemplazar los valores de ejemplo:
+
+```env
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=elegí_una_contraseña_segura
+POSTGRES_DB=CIPOLFLO_BD
+
+DB_USERNAME=admin
+DB_PASSWORD=elegí_una_contraseña_segura
 ```
 
-Modificar según el entorno local si es necesario.
+> `DB_PASSWORD` y `POSTGRES_PASSWORD` deben tener el mismo valor.
 
-### Comandos
+| Archivo | Se versiona | Contiene |
+|---|---|---|
+| `.env.example` | Sí | Plantilla con valores de ejemplo — sin credenciales reales |
+| `.env` | **No** (está en `.gitignore`) | Tus credenciales reales — nunca commitear |
+
+---
+
+### 5. Instalar el plugin EnvFile en IntelliJ IDEA
+
+El plugin EnvFile permite que IntelliJ inyecte automáticamente las variables del `.env` al correr la app.
+
+1. Abrir IntelliJ IDEA.
+2. Ir a `File` → `Settings` → `Plugins`.
+3. En la pestaña `Marketplace`, buscar **"EnvFile"**.
+4. Hacer clic en **Install** y luego en **Restart IDE** cuando lo pida.
+
+---
+
+### 6. Configurar el Run Configuration para leer el `.env`
+
+1. En la barra superior de IntelliJ, hacer clic en el menú desplegable al lado del botón ▶ (Play) → **"Edit Configurations..."**.
+2. En el panel izquierdo, seleccionar **Spring Boot → ServerApplication**.
+3. En el panel derecho, tildar la casilla **"Enable EnvFile"**.
+4. Tildar también **"Substitute Environment Variables"**.
+5. Hacer clic en el **`+`** que aparece debajo de las casillas → seleccionar **".env file"**.
+6. Navegar hasta la raíz del proyecto y seleccionar el archivo **`.env`**.
+7. Hacer clic en **Apply** y luego **OK**.
+
+---
+
+## Levantar el proyecto (uso diario)
+
+### 1. Levantar la base de datos
+
+Asegurarse de que Docker Desktop esté abierto y corriendo, luego ejecutar en la terminal:
+
+```bash
+docker compose up -d
+```
+
+Postgres queda corriendo en `localhost:5433`. El schema se crea automáticamente la primera vez desde `docker/init.sql`.
+
+Para detenerla sin borrar los datos:
+
+```bash
+docker compose stop
+```
+
+Para detenerla y borrar el volumen (reset completo de la DB):
+
+```bash
+docker compose down -v
+```
+
+### 2. Correr la app
+
+Presionar el botón **▶** en IntelliJ o ejecutar:
+
+```bash
+./gradlew bootRun
+```
+
+La API queda disponible en `http://localhost:8080`.
+
+> **¿Por qué aparece una pantalla de login en el navegador?**
+> El proyecto incluye Spring Security, que por defecto protege todos los endpoints. Eso es comportamiento esperado — la configuración de seguridad se completará cuando se implementen los endpoints de autenticación. Por ahora, el usuario por defecto es `user` y la contraseña generada aparece en la consola al iniciar la app, en una línea como: `Using generated security password: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`.
+
+### Comandos útiles
 
 ```bash
 # Compilar
 ./gradlew build
 
-# Levantar el servidor (puerto 8080)
-./gradlew bootRun
-
 # Compilar sin tests
 ./gradlew build -x test
 ```
-
-La API queda disponible en `http://localhost:8080`.
 
 ---
 
