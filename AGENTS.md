@@ -195,6 +195,18 @@ Regla: el test de `Foo.java` vive en el mismo paquete que `Foo.java`, pero bajo 
 
 ---
 
+## Credenciales y variables de entorno
+
+Las credenciales de base de datos **nunca** van hardcodeadas en archivos versionados.
+
+- `docker-compose.yml` lee las variables desde `.env` (Docker Compose lo carga automáticamente).
+- `application.properties` usa `${DB_USERNAME}` y `${DB_PASSWORD}` — Spring Boot las toma del entorno del proceso.
+- `.env` está en `.gitignore`. El archivo versionado es `.env.example`, que contiene la plantilla con valores de ejemplo.
+
+Si necesitás agregar una nueva variable de entorno, agregala en `.env.example` con un valor de ejemplo y documentá su propósito ahí mismo.
+
+---
+
 ## Lo que no hacer
 
 - No agregar lógica de negocio en los controllers.
@@ -205,6 +217,7 @@ Regla: el test de `Foo.java` vive en el mismo paquete que `Foo.java`, pero bajo 
 - No cambiar la estrategia de herencia (`SINGLE_TABLE`) sin evaluar el impacto en la base de datos.
 - No crear paquetes nuevos fuera de la estructura `domain/repository/service/dto/controller` dentro de un módulo sin razón justificada.
 - No usar `@Enumerated(EnumType.ORDINAL)`.
+- No hardcodear credenciales en ningún archivo versionado — siempre usar variables de entorno.
 
 ---
 

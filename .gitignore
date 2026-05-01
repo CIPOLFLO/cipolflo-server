@@ -37,4 +37,8 @@ out/
 .vscode/
 
 ### Directorio server/ (estructura anterior, solo artefactos locales) ###
+server/
+
+### Variables de entorno — nunca versionar credenciales reales ###
+.env
 # server/

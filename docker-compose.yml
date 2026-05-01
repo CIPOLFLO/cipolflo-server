@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:15
+    container_name: cipolflo_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # 5433 en el host para no chocar con instancias locales de Postgres que usan 5432
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # init.sql se ejecuta solo la primera vez, cuando el volumen está vacío
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      # pg_isready verifica que Postgres esté aceptando conexiones antes de declarar el servicio listo
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
