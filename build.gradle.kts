@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.creating
+
 plugins {
 	java
 	id ("org.springframework.boot") version "3.5.14-SNAPSHOT"
@@ -32,6 +34,7 @@ dependencies {
 	testCompileOnly ("org.projectlombok:lombok")
 	testRuntimeOnly ("org.junit.platform:junit-platform-launcher")
 	testAnnotationProcessor ("org.projectlombok:lombok")
+
 }
 
 tasks.withType<Test> {
