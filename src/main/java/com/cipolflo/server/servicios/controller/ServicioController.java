@@ -4,6 +4,7 @@ import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.service.IServicioService;
 import com.cipolflo.server.servicios.service.ServicioService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ public class ServicioController {
         this.servicioService = servicioService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public ResponseEntity<ServicioResponseDto> getDetalleServicio(@PathVariable Long id){
         ServicioResponseDto response = servicioService.getDetalleServicio(id);
