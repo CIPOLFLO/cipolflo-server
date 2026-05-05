@@ -2,7 +2,7 @@ package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.service.IServicioService;
-import com.cipolflo.server.servicios.service.ServicioService;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +22,7 @@ public class ServicioController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
-    public ResponseEntity<ServicioResponseDto> getDetalleServicio(@PathVariable Long id){
+    public ResponseEntity<ServicioResponseDto> getDetalleServicio(@PathVariable @Positive Long id){
         ServicioResponseDto response = servicioService.getDetalleServicio(id);
         return ResponseEntity.ok(response);
 }

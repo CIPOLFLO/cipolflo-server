@@ -12,6 +12,8 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.math.BigDecimal;
 import java.util.Optional;
 
@@ -65,31 +67,11 @@ public class ServicioServiceTest {
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> {
+        assertThrows(ResponseStatusException.class, () -> {
             servicioService.getDetalleServicio(servicioId);
         });
 
         verify(servicioRepository).findById(servicioId);
-    }
-
-    @Test
-    void deberiaLanzarErrorCuandoElIdEsInvalido() {
-        Long servicioId = 0L;
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            servicioService.getDetalleServicio(servicioId);
-        });
-
-        verify(servicioRepository, never()).findById(anyLong());
-    }
-    @Test
-    void deberiaLanzarErrorCuandoElIdEsNull() {
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            servicioService.getDetalleServicio(null);
-        });
-
-        verify(servicioRepository, never()).findById(anyLong());
     }
 }
 
