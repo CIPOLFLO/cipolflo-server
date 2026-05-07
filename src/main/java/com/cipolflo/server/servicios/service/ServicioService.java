@@ -3,9 +3,8 @@ package com.cipolflo.server.servicios.service;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 
 @Service
 public class ServicioService implements IServicioService {
@@ -18,8 +17,7 @@ public class ServicioService implements IServicioService {
     public ServicioResponseDto getDetalleServicio(Long id) {
 
         Servicio servicio = servicioRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Servicio no encontrado"));
-
+                .orElseThrow(() -> new ServicioNotFoundException(id));
         return new ServicioResponseDto(
                 servicio.getId(),
                 servicio.getNombre(),

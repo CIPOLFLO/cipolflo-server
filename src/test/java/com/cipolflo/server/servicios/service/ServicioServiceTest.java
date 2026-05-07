@@ -13,13 +13,13 @@ import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
-
+import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import java.math.BigDecimal;
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 
-public class ServicioServiceTest {
+class ServicioServiceTest {
 
 
    @Mock
@@ -63,16 +63,21 @@ public class ServicioServiceTest {
     @Test
     void deberiaLanzarErrorCuandoElServicioNoExiste() {
         Long servicioId = 99L;
-
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.empty());
 
-        assertThrows(ResponseStatusException.class, () -> {
-            servicioService.getDetalleServicio(servicioId);
-        });
+        ServicioNotFoundException exception =
+                assertThrows(ServicioNotFoundException.class, () -> {
+                    servicioService.getDetalleServicio(servicioId);
+                });
+
+        assertEquals(
+                "Servicio no encontrado con id: " + servicioId,
+                exception.getMessage()
+        );
 
         verify(servicioRepository).findById(servicioId);
-    }
+         }
 }
 
 
