@@ -12,7 +12,6 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.server.ResponseStatusException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -38,8 +37,8 @@ class ServicioServiceTest {
        servicio.setProcedencia(Procedencia.CAMPING);
        servicio.setCapacidad(4);
        servicio.setCantidad(2);
-       servicio.setPrecioSocio(BigDecimal.valueOf(1500.00));
-       servicio.setPrecioParticular(BigDecimal.valueOf(2500.00));
+       servicio.setPrecioSocio(BigDecimal.valueOf(1500));
+       servicio.setPrecioParticular(BigDecimal.valueOf(2500));
        servicio.setHabilitado(true);
        servicio.setModalidadPrecio(ModalidadPrecio.POR_DIA);
 
@@ -54,8 +53,8 @@ class ServicioServiceTest {
        assertEquals(Procedencia.CAMPING,resultado.getProcedencia());
        assertEquals(4,resultado.getCapacidad());
        assertEquals(2,resultado.getCantidad());
-       assertEquals(BigDecimal.valueOf(1500.00),resultado.getPrecioSocio());
-       assertEquals(BigDecimal.valueOf(2500.00),resultado.getPrecioParticular());
+       assertEquals(BigDecimal.valueOf(1500),resultado.getPrecioSocio());
+       assertEquals(BigDecimal.valueOf(2500),resultado.getPrecioParticular());
        assertEquals(true,resultado.getHabilitado());
        assertEquals(ModalidadPrecio.POR_DIA,resultado.getModalidadPrecio());
        verify(servicioRepository).findById(servicioId);

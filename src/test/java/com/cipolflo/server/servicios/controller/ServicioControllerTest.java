@@ -2,6 +2,7 @@ package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
+import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.service.IServicioService;
 import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
@@ -10,10 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
 import java.math.BigDecimal;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,7 +31,7 @@ public class ServicioControllerTest {
     @Test
     @WithMockUser
     void deberiaLanzarErrorCuandoElIdEsInvalido() throws Exception {
-        mockMvc.perform(get("/servicios/0"))
+        mockMvc.perform(get("/api/v1/servicios/0"))
                 .andExpect(status().isBadRequest());
 
         verify(servicioService, never()).getDetalleServicio(anyLong());
@@ -41,7 +39,7 @@ public class ServicioControllerTest {
 
     @Test
     void deberiaRetornarUnauthorizedCuandoUsuarioNoEstaLogueado() throws Exception {
-        mockMvc.perform(get("/servicios/1"))
+        mockMvc.perform(get("/api/v1/servicios/1"))
                 .andExpect(status().isUnauthorized());
     }
     @Test
@@ -65,8 +63,21 @@ public class ServicioControllerTest {
         when(servicioService.getDetalleServicio(servicioId))
                 .thenReturn(response);
 
-        mockMvc.perform(get("/servicios/1"))
+        mockMvc.perform(get("/api/v1/servicios/1"))
                 .andExpect(status().isOk());
+
+        verify(servicioService).getDetalleServicio(servicioId);
+    }
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoElServicioNoExiste() throws Exception {
+        Long servicioId = 99L;
+
+        when(servicioService.getDetalleServicio(servicioId))
+                .thenThrow(new ServicioNotFoundException(servicioId));
+
+        mockMvc.perform(get("/api/v1/servicios/99"))
+                .andExpect(status().isNotFound());
 
         verify(servicioService).getDetalleServicio(servicioId);
     }
