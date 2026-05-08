@@ -24,7 +24,7 @@ public class ServicioController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
-    public ResponseEntity<ServicioResponseDto> getDetalleServicio(@PathVariable @Positive Long id){
+    public ResponseEntity<ServicioResponseDto> getDetalleServicio(@PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id){
         ServicioResponseDto response = servicioService.getDetalleServicio(id);
         return ResponseEntity.ok(response);
     }
