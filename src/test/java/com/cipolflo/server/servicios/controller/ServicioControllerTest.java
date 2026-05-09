@@ -1,6 +1,8 @@
 package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.servicios.dto.ServicioHabilitacionResponseDto;
+import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.service.IServicioService;
@@ -8,15 +10,19 @@ import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ServicioController.class)
@@ -36,7 +42,6 @@ public class ServicioControllerTest {
 
         verify(servicioService, never()).getDetalleServicio(anyLong());
     }
-
     @Test
     void deberiaRetornarUnauthorizedCuandoUsuarioNoEstaLogueado() throws Exception {
         mockMvc.perform(get("/api/v1/servicios/1"))
@@ -82,4 +87,64 @@ public class ServicioControllerTest {
         verify(servicioService).getDetalleServicio(servicioId);
     }
 
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarOkCuandoCambiaHabilitacionServicio() throws Exception {
+        Long servicioId = 1L;
+
+        ServicioResponseDto servicioResponse = new ServicioResponseDto(
+                servicioId,
+                "Cabaña",
+                Procedencia.CAMPING,
+                2,
+                BigDecimal.valueOf(1500),
+                BigDecimal.valueOf(2500),
+                4,
+                false,
+                ModalidadPrecio.POR_DIA
+        );
+
+        ServicioHabilitacionResponseDto habilitacionResponse =
+                new ServicioHabilitacionResponseDto(
+                        servicioResponse,
+                        List.of(),
+                        "Servicio deshabilitado correctamente"
+                );
+
+        when(servicioService.cambiarHabilitacionServicio(
+                eq(servicioId),
+                any(ServicioRequestDto.class)
+        )).thenReturn(habilitacionResponse);
+
+        mockMvc.perform(
+                        patch("/api/v1/servicios/1/habilitacion")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                        "habilitado": false,
+                                        "cancelarReservas": false
+                                    }
+                                    """)
+                )
+                .andExpect(status().isOk());
+
+        verify(servicioService).cambiarHabilitacionServicio(
+                eq(servicioId),
+                any(ServicioRequestDto.class)
+        );
+    }
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoElIdEsInvalidoAlCambiarHabilitacion() throws Exception {
+        mockMvc.perform(patch("/api/v1/servicios/0/habilitacion"))
+                .andExpect(status().isBadRequest());
+
+        verify(servicioService, never()).cambiarHabilitacionServicio(anyLong(), any(ServicioRequestDto.class));
+    }
+    @Test
+    void deberiaRetornarUnauthorizedCuandoUsuarioNoEstaLogueadoAlCambiarHabilitacion() throws Exception {
+        mockMvc.perform(patch("/api/v1/servicios/1/habilitacion"))
+                .andExpect(status().isUnauthorized());
+    }
 }

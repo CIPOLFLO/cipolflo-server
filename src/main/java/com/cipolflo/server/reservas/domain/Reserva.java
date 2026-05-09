@@ -118,11 +118,19 @@ public class Reserva extends AuditableEntity {
     }
 
     private boolean esTransicionValida(EstadoReserva nuevoEstado) {
+        if (nuevoEstado == EstadoReserva.CANCELADA) {
+            return this.estado == EstadoReserva.PENDIENTE
+                    || this.estado == EstadoReserva.CONFIRMADA;
+        }
         return switch (this.estado) {
             case PENDIENTE   -> nuevoEstado == EstadoReserva.CONFIRMADA;
             case CONFIRMADA  -> nuevoEstado == EstadoReserva.EN_CURSO;
             case EN_CURSO    -> nuevoEstado == EstadoReserva.FINALIZADA;
-            case FINALIZADA  -> false;
+            case FINALIZADA,CANCELADA  -> false;
         };
+    }
+
+    public void cancelar() {
+        cambiarEstado(EstadoReserva.CANCELADA);
     }
 }
