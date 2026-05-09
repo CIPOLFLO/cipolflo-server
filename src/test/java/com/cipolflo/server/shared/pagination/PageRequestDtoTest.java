@@ -16,4 +16,28 @@ class PageRequestDtoTest {
         assertEquals(2, pageable.getPageNumber());
         assertEquals(15, pageable.getPageSize());
     }
+
+    @Test
+    void deberiaUsarValoresPorDefectoCuandoAmbosParametrosSonNull() {
+        PageRequestDto dto = new PageRequestDto(null, null);
+
+        assertEquals(0, dto.page());
+        assertEquals(1, dto.size());
+    }
+
+    @Test
+    void deberiaUsarPagePorDefectoCuandoEsNull() {
+        PageRequestDto dto = new PageRequestDto(null, 20);
+
+        assertEquals(0, dto.page());
+        assertEquals(20, dto.size());
+    }
+
+    @Test
+    void deberiaUsarSizePorDefectoCuandoEsNull() {
+        PageRequestDto dto = new PageRequestDto(3, null);
+
+        assertEquals(3, dto.page());
+        assertEquals(1, dto.size());
+    }
 }
