@@ -275,7 +275,7 @@ La reserva pasa a `CONFIRMADA` automáticamente cuando se registran tanto el pag
 | Clase | Rol |
 |---|---|
 | `Reserva` | Entidad central: cliente, servicio, fechas, importe, estado, pago, documentación |
-| `EstadoReserva` | Enum: `PENDIENTE`, `CONFIRMADA`, `EN_CURSO`, `FINALIZADA` |
+| `EstadoReserva` | Enum: `PENDIENTE`, `CONFIRMADA`, `EN_CURSO`, `FINALIZADA`, `CANCELADA` |
 | `ReservaRepository` | `JpaRepository<Reserva, Long>` |
 | `IReservaService` / `ReservaService` | Interfaz + implementación del servicio |
 | `ReservaRequestDto` / `ReservaResponseDto` | DTOs de entrada y salida |
