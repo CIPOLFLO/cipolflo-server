@@ -29,7 +29,7 @@ public class ServicioController {
     }
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/habilitacion")
-    public ResponseEntity<ServicioResponseDto> cambiarHabilitacionServicio(
+    public ResponseEntity<ServicioHabilitacionResponseDto> cambiarHabilitacionServicio(
             @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id,  @RequestBody ServicioRequestDto request) {
 
         ServicioHabilitacionResponseDto response = servicioService.cambiarHabilitacionServicio(id, request);

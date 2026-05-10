@@ -11,6 +11,7 @@ import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import org.springframework.stereotype.Service;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,9 +34,14 @@ public class ServicioService implements IServicioService {
     }
 
     @Override
+    @Transactional
     public ServicioHabilitacionResponseDto cambiarHabilitacionServicio(Long id, ServicioRequestDto request) {
        Servicio servicio = servicioRepository.findById(id)
                .orElseThrow(() -> new ServicioNotFoundException(id));
+        if (request.getHabilitado() == null) {
+            throw new IllegalArgumentException("El campo habilitado es obligatorio");
+        }
+
         if (Boolean.TRUE.equals(request.getHabilitado())) {
             servicio.setHabilitado(true);
 
@@ -74,10 +80,26 @@ public class ServicioService implements IServicioService {
             );
         }
 
+        if (request.getReservasACancelar() == null || request.getReservasACancelar().isEmpty()) {
+            throw new IllegalArgumentException("Debe seleccionar al menos una reserva para cancelar");
+        }
+
         List<Reserva> reservasSeleccionadas = reservaRepository.findByIdInAndServicioId(
                 request.getReservasACancelar(),
-                servicio.getId()
-        );
+                servicio.getId());
+
+        List<Long> idsReservasProximas = reservasProximas.stream()
+                .map(Reserva::getId)
+                .toList();
+
+        boolean todasSonReservasProximas = reservasSeleccionadas.stream()
+                .allMatch(reserva -> idsReservasProximas.contains(reserva.getId()));
+
+        if (!todasSonReservasProximas) {
+            throw new IllegalArgumentException(
+                    "Solo se pueden cancelar reservas próximas del servicio"
+            );
+        }
 
         boolean existeReservaPaga = reservasSeleccionadas.stream()
                 .anyMatch(reserva -> Boolean.TRUE.equals(reserva.getPago()));

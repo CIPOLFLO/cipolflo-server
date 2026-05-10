@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -119,6 +120,7 @@ public class ServicioControllerTest {
 
         mockMvc.perform(
                         patch("/api/v1/servicios/1/habilitacion")
+                                .with(csrf())
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                     {
@@ -137,14 +139,22 @@ public class ServicioControllerTest {
     @Test
     @WithMockUser
     void deberiaRetornarBadRequestCuandoElIdEsInvalidoAlCambiarHabilitacion() throws Exception {
-        mockMvc.perform(patch("/api/v1/servicios/0/habilitacion"))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(patch("/api/v1/servicios/0/habilitacion").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                            {
+                                "habilitado": false,
+                                "cancelarReservas": false
+                            }
+                            """)
+        ).andExpect(status().isBadRequest());
+
 
         verify(servicioService, never()).cambiarHabilitacionServicio(anyLong(), any(ServicioRequestDto.class));
     }
     @Test
     void deberiaRetornarUnauthorizedCuandoUsuarioNoEstaLogueadoAlCambiarHabilitacion() throws Exception {
-        mockMvc.perform(patch("/api/v1/servicios/1/habilitacion"))
+        mockMvc.perform(patch("/api/v1/servicios/1/habilitacion").with(csrf()))
                 .andExpect(status().isUnauthorized());
     }
 }
