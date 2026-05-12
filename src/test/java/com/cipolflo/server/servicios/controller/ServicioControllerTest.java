@@ -1,7 +1,6 @@
 package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
-import com.cipolflo.server.servicios.dto.ServicioHabilitacionResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -9,15 +8,19 @@ import com.cipolflo.server.servicios.service.IServicioService;
 import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
-import java.util.List;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,12 +29,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ServicioController.class)
+@WebMvcTest(
+        controllers = ServicioController.class,
+        excludeAutoConfiguration = {
+                HibernateJpaAutoConfiguration.class
+        }
+)
+@AutoConfigureMockMvc(addFilters = true)
 public class ServicioControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
+    @MockitoBean
+    private JpaMetamodelMappingContext jpaMetamodelMappingContext;
     @MockitoBean
     private IServicioService servicioService;
 
@@ -106,17 +116,10 @@ public class ServicioControllerTest {
                 ModalidadPrecio.POR_DIA
         );
 
-        ServicioHabilitacionResponseDto habilitacionResponse =
-                new ServicioHabilitacionResponseDto(
-                        servicioResponse,
-                        List.of(),
-                        "Servicio deshabilitado correctamente"
-                );
-
         when(servicioService.cambiarHabilitacionServicio(
                 eq(servicioId),
                 any(ServicioRequestDto.class)
-        )).thenReturn(habilitacionResponse);
+        )).thenReturn(servicioResponse);
 
         mockMvc.perform(
                         patch("/api/v1/servicios/1/habilitacion")
@@ -124,8 +127,7 @@ public class ServicioControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                     {
-                                        "habilitado": false,
-                                        "cancelarReservas": false
+                                        "habilitado": false
                                     }
                                     """)
                 )
@@ -143,8 +145,7 @@ public class ServicioControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                             {
-                                "habilitado": false,
-                                "cancelarReservas": false
+                                "habilitado": false
                             }
                             """)
         ).andExpect(status().isBadRequest());
@@ -156,5 +157,25 @@ public class ServicioControllerTest {
     void deberiaRetornarUnauthorizedCuandoUsuarioNoEstaLogueadoAlCambiarHabilitacion() throws Exception {
         mockMvc.perform(patch("/api/v1/servicios/1/habilitacion").with(csrf()))
                 .andExpect(status().isUnauthorized());
+    }
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltaCampoHabilitado() throws Exception {
+        mockMvc.perform(
+                        patch("/api/v1/servicios/1/habilitacion")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                            {
+                              
+                            }
+                            """)
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(servicioService, never()).cambiarHabilitacionServicio(
+                anyLong(),
+                any(ServicioRequestDto.class)
+        );
     }
 }

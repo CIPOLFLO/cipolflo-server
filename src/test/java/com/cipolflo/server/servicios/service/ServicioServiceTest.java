@@ -1,11 +1,11 @@
 package com.cipolflo.server.servicios.service;
 
-import com.cipolflo.server.reservas.repository.ReservaRepository;
+import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
-import com.cipolflo.server.servicios.dto.ServicioHabilitacionResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
+import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -19,7 +19,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -39,7 +38,7 @@ class ServicioServiceTest {
    @Mock
     private ServicioRepository servicioRepository;
    @Mock
-    private ReservaRepository reservaRepository;
+    private IReservaService reservaService;
 
    @InjectMocks
     private ServicioService servicioService;
@@ -113,26 +112,18 @@ class ServicioServiceTest {
 
         ServicioRequestDto request = new ServicioRequestDto();
         request.setHabilitado(false);
-        request.setCancelarReservas(false);
 
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.of(servicio));
 
-        when(reservaRepository.findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
-                anyLong(),
-                any(),
-                any(),
-                anyList()
-        )).thenReturn(List.of());
-
         when(servicioRepository.save(servicio))
                 .thenReturn(servicio);
 
-        ServicioHabilitacionResponseDto resultado =
+        ServicioResponseDto  resultado =
                 servicioService.cambiarHabilitacionServicio(servicioId, request);
 
         assertNotNull(resultado);
-        assertEquals(false, resultado.getServicio().getHabilitado());
+        assertEquals(false, resultado.getHabilitado());
 
         verify(servicioRepository).findById(servicioId);
         verify(servicioRepository).save(servicio);
@@ -161,11 +152,11 @@ class ServicioServiceTest {
         when(servicioRepository.save(servicio))
                 .thenReturn(servicio);
 
-        ServicioHabilitacionResponseDto resultado =
+        ServicioResponseDto  resultado =
                 servicioService.cambiarHabilitacionServicio(servicioId, request);
 
         assertNotNull(resultado);
-        assertEquals(true, resultado.getServicio().getHabilitado());
+        assertEquals(true, resultado.getHabilitado());
 
         verify(servicioRepository).findById(servicioId);
         verify(servicioRepository).save(servicio);
@@ -194,57 +185,6 @@ class ServicioServiceTest {
         verify(servicioRepository, never()).save(any());
     }
     @Test
-    void deberiaDeshabilitarServicioConReservasProximasSinCancelarlas() {
-
-        Long servicioId = 1L;
-
-        Servicio servicio = new Servicio();
-        servicio.setId(servicioId);
-        servicio.setNombre("Cabaña");
-        servicio.setHabilitado(true);
-
-        Reserva reserva = Reserva.crear(
-                1L,
-                servicioId,
-                Procedencia.CAMPING,
-                Instant.now().plusSeconds(86400),
-                Instant.now().plusSeconds(172800),
-                false
-        );
-
-        ServicioRequestDto request = new ServicioRequestDto();
-        request.setHabilitado(false);
-        request.setCancelarReservas(false);
-
-        when(servicioRepository.findById(servicioId))
-                .thenReturn(Optional.of(servicio));
-
-        when(reservaRepository.findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
-                anyLong(),
-                any(),
-                any(),
-                anyList()
-        )).thenReturn(List.of(reserva));
-
-        when(servicioRepository.save(any(Servicio.class)))
-                .thenReturn(servicio);
-
-        ServicioHabilitacionResponseDto response =
-                servicioService.cambiarHabilitacionServicio(servicioId, request);
-
-        assertNotNull(response);
-
-        assertEquals(false,
-                response.getServicio().getHabilitado());
-
-        assertEquals(1,
-                response.getReservasProximas().size());
-
-        verify(servicioRepository).save(servicio);
-
-        verify(reservaRepository, never()).saveAll(anyList());
-    }
-    @Test
     void deberiaCancelarReservasSeleccionadasNoPagas() {
 
         Long servicioId = 1L;
@@ -264,32 +204,23 @@ class ServicioServiceTest {
 
         ServicioRequestDto request = new ServicioRequestDto();
         request.setHabilitado(false);
-        request.setCancelarReservas(true);
         request.setReservasACancelar(List.of(1L));
 
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.of(servicio));
 
-        when(reservaRepository.findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
-                anyLong(),
-                any(),
-                any(),
-                anyList()
-        )).thenReturn(List.of(reserva));
+        when(reservaService.obtenerProximasPorServicio(servicioId))
+                .thenReturn(List.of(reserva));
 
-        when(reservaRepository.findByIdInAndServicioId(
-                anyList(),
-                anyLong()
-        )).thenReturn(List.of(reserva));
+        when(reservaService.obtenerPorIdsYServicio(List.of(1L), servicioId))
+                .thenReturn(List.of(reserva));
 
         when(servicioRepository.save(any(Servicio.class)))
                 .thenReturn(servicio);
 
         servicioService.cambiarHabilitacionServicio(servicioId, request);
 
-        assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
-
-        verify(reservaRepository).saveAll(anyList());
+        verify(reservaService).cancelarTodas(List.of(reserva));
 
         verify(servicioRepository).save(servicio);
     }
@@ -300,6 +231,7 @@ class ServicioServiceTest {
 
         Servicio servicio = new Servicio();
         servicio.setId(servicioId);
+        servicio.setHabilitado(true);
 
         Reserva reserva = Reserva.crear(
                 1L,
@@ -317,36 +249,29 @@ class ServicioServiceTest {
 
         ServicioRequestDto request = new ServicioRequestDto();
         request.setHabilitado(false);
-        request.setCancelarReservas(true);
         request.setReservasACancelar(List.of(1L));
         request.setConfirmarDevolucion(false);
 
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.of(servicio));
 
-        when(reservaRepository.findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
-                anyLong(),
-                any(),
-                any(),
-                anyList()
-        )).thenReturn(List.of(reserva));
+        when(reservaService.obtenerProximasPorServicio(servicioId))
+                .thenReturn(List.of(reserva));
 
-        when(reservaRepository.findByIdInAndServicioId(
-                anyList(),
-                anyLong()
-        )).thenReturn(List.of(reserva));
+        when(reservaService.obtenerPorIdsYServicio(List.of(1L), servicioId))
+                .thenReturn(List.of(reserva));
 
-        IllegalStateException exception =
-                assertThrows(IllegalStateException.class, () -> {
+        ConfirmacionDevolucionRequeridaException exception =
+                assertThrows(ConfirmacionDevolucionRequeridaException.class, () -> {
                     servicioService.cambiarHabilitacionServicio(servicioId, request);
                 });
 
         assertEquals(
-                "Existen reservas pagas. Debe confirmar la devolución para cancelarlas",
+                "Existe reservas pagas. Debe confirmar la devolución para cancelarlas",
                 exception.getMessage()
         );
 
-        verify(reservaRepository, never()).saveAll(anyList());
+        verify(reservaService, never()).cancelarTodas(anyList());
     }
     @Test
     void deberiaCancelarReservaPagaCuandoConfirmaDevolucion() {
@@ -372,33 +297,18 @@ class ServicioServiceTest {
 
         ServicioRequestDto request = new ServicioRequestDto();
         request.setHabilitado(false);
-        request.setCancelarReservas(true);
         request.setReservasACancelar(List.of(1L));
         request.setConfirmarDevolucion(true);
-
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.of(servicio));
-
-        when(reservaRepository.findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
-                anyLong(),
-                any(),
-                any(),
-                anyList()
-        )).thenReturn(List.of(reserva));
-
-        when(reservaRepository.findByIdInAndServicioId(
-                anyList(),
-                anyLong()
-        )).thenReturn(List.of(reserva));
-
+        when(reservaService.obtenerProximasPorServicio(servicioId))
+                .thenReturn(List.of(reserva));
+        when(reservaService.obtenerPorIdsYServicio(List.of(1L), servicioId))
+                .thenReturn(List.of(reserva));
         when(servicioRepository.save(any(Servicio.class)))
                 .thenReturn(servicio);
-
         servicioService.cambiarHabilitacionServicio(servicioId, request);
-
-        assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
-
-        verify(reservaRepository).saveAll(anyList());
+        verify(reservaService).cancelarTodas(List.of(reserva));
     }
 
 }
