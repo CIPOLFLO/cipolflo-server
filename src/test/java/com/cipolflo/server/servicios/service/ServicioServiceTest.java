@@ -209,7 +209,7 @@ class ServicioServiceTest {
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.of(servicio));
 
-        when(reservaService.obtenerProximasPorServicio(servicioId))
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId))
                 .thenReturn(List.of(reserva));
 
         when(reservaService.obtenerPorIdsYServicio(List.of(1L), servicioId))
@@ -255,7 +255,7 @@ class ServicioServiceTest {
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.of(servicio));
 
-        when(reservaService.obtenerProximasPorServicio(servicioId))
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId))
                 .thenReturn(List.of(reserva));
 
         when(reservaService.obtenerPorIdsYServicio(List.of(1L), servicioId))
@@ -301,7 +301,7 @@ class ServicioServiceTest {
         request.setConfirmarDevolucion(true);
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.of(servicio));
-        when(reservaService.obtenerProximasPorServicio(servicioId))
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId))
                 .thenReturn(List.of(reserva));
         when(reservaService.obtenerPorIdsYServicio(List.of(1L), servicioId))
                 .thenReturn(List.of(reserva));

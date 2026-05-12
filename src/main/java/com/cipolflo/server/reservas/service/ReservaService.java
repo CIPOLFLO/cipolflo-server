@@ -19,7 +19,7 @@ public class ReservaService implements IReservaService {
         this.reservaRepository = reservaRepository;
     }
     @Override
-    public List<Reserva> obtenerProximasPorServicio(Long servicioId) {
+    public List<Reserva> obtenerProximasPorServicioEnRango(Long servicioId) {
         Instant desde = Instant.now();
         Instant hasta = desde.plus(
                 DIAS_VENTANA_RESERVAS_PROXIMAS,
