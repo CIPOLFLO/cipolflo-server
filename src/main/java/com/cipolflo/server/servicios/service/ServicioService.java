@@ -18,7 +18,6 @@ import java.util.List;
 
 @Service
 public class ServicioService implements IServicioService {
-    private static final int DIAS_VENTANA_RESERVAS_PROXIMAS = 60;
     private final ServicioRepository servicioRepository;
     private final IReservaService reservaService;
 
@@ -60,7 +59,7 @@ public class ServicioService implements IServicioService {
                 .orElseThrow(() -> new ServicioNotFoundException(id));
 
         return mapReservasProximas(
-                reservaService.obtenerProximasPorServicio(servicio.getId())
+                reservaService.obtenerProximasPorServicioEnRango(servicio.getId())
         );
     }
 
@@ -69,8 +68,8 @@ public class ServicioService implements IServicioService {
             return;
         }
 
-        List<Reserva> reservasProximas =
-                reservaService.obtenerProximasPorServicio(servicio.getId());
+        List<Reserva> reservasProximasEnRango =
+                reservaService.obtenerProximasPorServicioEnRango(servicio.getId());
 
         List<Reserva> reservasSeleccionadas =
                 reservaService.obtenerPorIdsYServicio(
@@ -78,16 +77,10 @@ public class ServicioService implements IServicioService {
                         servicio.getId()
                 );
 
-        validarQueSeanReservasProximas(reservasSeleccionadas, reservasProximas);
+        validarQueSeanReservasProximas(reservasSeleccionadas, reservasProximasEnRango);
         validarConfirmacionDevolucion(reservasSeleccionadas, request);
 
         reservaService.cancelarTodas(reservasSeleccionadas);
-    }
-
-    private void validarReservasACancelar(ServicioRequestDto request) {
-        if (request.getReservasACancelar() == null || request.getReservasACancelar().isEmpty()) {
-            throw new CampoObligatorioException("reservasACancelar");
-        }
     }
 
     private void validarQueSeanReservasProximas(List<Reserva> reservasSeleccionadas, List<Reserva> reservasProximas) {

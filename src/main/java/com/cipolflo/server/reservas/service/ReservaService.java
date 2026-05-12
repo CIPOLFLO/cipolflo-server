@@ -39,11 +39,12 @@ public class ReservaService implements IReservaService {
 
     @Override
     public List<Reserva> obtenerPorIdsYServicio(List<Long> ids, Long servicioId) {
-        return List.of();
+        return reservaRepository.findByIdInAndServicioId(ids, servicioId);
     }
 
     @Override
     public void cancelarTodas(List<Reserva> reservas) {
-
+        reservas.forEach(Reserva::cancelar);
+        reservaRepository.saveAll(reservas);
     }
 }
