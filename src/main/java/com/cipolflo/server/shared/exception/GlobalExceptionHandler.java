@@ -1,11 +1,14 @@
 package com.cipolflo.server.shared.exception;
 
+import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
+import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -41,5 +44,33 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(message);
+    }
+
+    @ExceptionHandler(ConfirmacionDevolucionRequeridaException.class)
+    public ResponseEntity<String> handleConfirmacionDevolucionRequeridaException(ConfirmacionDevolucionRequeridaException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(ReservaNoCancelableException.class)
+    public ResponseEntity<String> handleReservaNoCancelableException(ReservaNoCancelableException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        String mensaje = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(error -> error.getDefaultMessage())
+                .orElse("Solicitud inválida");
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(mensaje);
     }
 }
