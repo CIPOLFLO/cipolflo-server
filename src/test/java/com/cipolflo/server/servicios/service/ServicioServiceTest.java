@@ -3,15 +3,20 @@ package com.cipolflo.server.servicios.service;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
+import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
+import com.cipolflo.server.servicios.validator.ModificacionServicioValidator;
+import com.cipolflo.server.servicios.validator.ModificacionValidationContext;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
+import com.cipolflo.server.shared.exception.ServicioCodigoError;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +28,7 @@ import static org.mockito.Mockito.*;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import static org.mockito.Mockito.doThrow;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -37,6 +43,8 @@ class ServicioServiceTest {
     private ServicioRepository servicioRepository;
     @Mock
     private IReservaService reservaService;
+    @Mock
+    private ModificacionServicioValidator modificacionServicioValidator;
 
     @InjectMocks
     private ServicioService servicioService;
@@ -288,6 +296,83 @@ class ServicioServiceTest {
         servicioService.cambiarHabilitacionServicio(servicioId, request);
 
         verify(reservaService).cancelarTodas(List.of(reserva));
+    }
+
+    private ModificacionServicioDto crearDto(String nombre, BigDecimal precioParticular, BigDecimal precioSocio) {
+        ModificacionServicioDto dto = new ModificacionServicioDto();
+        dto.setNombre(nombre);
+        dto.setPrecioParticular(precioParticular);
+        dto.setPrecioSocio(precioSocio);
+        dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+        dto.setCapacidad(4);
+        dto.setCantidad(2);
+        return dto;
+    }
+
+    @Test
+    void deberiaModificarServicioExitosamente() {
+        Long servicioId = 1L;
+        Servicio servicio = crearServicio(servicioId, true);
+        ModificacionServicioDto dto = crearDto("Cabaña Premium", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(servicioRepository.save(servicio)).thenReturn(servicio);
+
+        ServicioResponseDto resultado = servicioService.modificarServicio(servicioId, dto);
+
+        assertNotNull(resultado);
+        assertEquals("Cabaña Premium", resultado.getNombre());
+        assertEquals(BigDecimal.valueOf(3000), resultado.getPrecioParticular());
+        assertEquals(BigDecimal.valueOf(2000), resultado.getPrecioSocio());
+        verify(modificacionServicioValidator).validar(any(ModificacionValidationContext.class));
+        verify(servicioRepository).save(servicio);
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoServicioNoExisteAlModificar() {
+        Long servicioId = 99L;
+        ModificacionServicioDto dto = crearDto("Cabaña", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.empty());
+
+        assertThrows(ServicioNotFoundException.class,
+                () -> servicioService.modificarServicio(servicioId, dto));
+
+        verify(servicioRepository, never()).save(any());
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoNombreEsDuplicadoAlModificar() {
+        Long servicioId = 1L;
+        Servicio servicio = crearServicio(servicioId, true);
+        ModificacionServicioDto dto = crearDto("Cabaña Existente", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        doThrow(new ServicioValidacionException(
+                ServicioCodigoError.NOMBRE_DUPLICADO.name(),
+                "Ya existe un servicio con ese nombre"))
+                .when(modificacionServicioValidator).validar(any(ModificacionValidationContext.class));
+
+        ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
+                () -> servicioService.modificarServicio(servicioId, dto));
+
+        assertEquals(ServicioCodigoError.NOMBRE_DUPLICADO.name(), exception.getCodigo());
+        verify(servicioRepository, never()).save(any());
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoPrecioSocioEsMayorOIgualAlParticular() {
+        Long servicioId = 1L;
+        Servicio servicio = crearServicio(servicioId, true);
+        ModificacionServicioDto dto = crearDto("Cabaña", BigDecimal.valueOf(2000), BigDecimal.valueOf(2000));
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+
+        ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
+                () -> servicioService.modificarServicio(servicioId, dto));
+
+        assertEquals(ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(), exception.getCodigo());
+        verify(servicioRepository, never()).save(any());
     }
 
     @Test

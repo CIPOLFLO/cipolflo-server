@@ -36,9 +36,8 @@ out/
 ### VS Code ###
 .vscode/
 
-### Directorio server/ (estructura anterior, solo artefactos locales) ###
-server/
+### Directorio server/ en raíz (estructura anterior, solo artefactos locales) ###
+/server/
 
 ### Variables de entorno — nunca versionar credenciales reales ###
 .env
-# server/

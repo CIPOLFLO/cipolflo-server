@@ -1,5 +1,6 @@
 package com.cipolflo.server.servicios.controller;
 
+import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
@@ -11,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -43,6 +45,15 @@ public class ServicioController {
             @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id,
             @Valid @RequestBody ServicioRequestDto request) {
         ServicioResponseDto response = servicioService.cambiarHabilitacionServicio(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{id}")
+    public ResponseEntity<ServicioResponseDto> modificarServicio(
+            @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id,
+            @Valid @RequestBody ModificacionServicioDto dto) {
+        ServicioResponseDto response = servicioService.modificarServicio(id, dto);
         return ResponseEntity.ok(response);
     }
 
