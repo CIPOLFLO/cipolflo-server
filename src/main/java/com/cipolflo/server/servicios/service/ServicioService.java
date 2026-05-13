@@ -6,7 +6,6 @@ import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
-import com.cipolflo.server.servicios.exception.CampoObligatorioException;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
@@ -14,18 +13,22 @@ import org.springframework.stereotype.Service;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class ServicioService implements IServicioService {
     private final ServicioRepository servicioRepository;
     private final IReservaService reservaService;
 
-    public ServicioService(ServicioRepository servicioRepository,IReservaService reservaService ) {
+    public ServicioService(ServicioRepository servicioRepository, IReservaService reservaService) {
         this.servicioRepository = servicioRepository;
         this.reservaService = reservaService;
     }
 
+    @Override
     public ServicioResponseDto getDetalleServicio(Long id) {
         Servicio servicio = servicioRepository.findById(id)
                 .orElseThrow(() -> new ServicioNotFoundException(id));
@@ -34,11 +37,11 @@ public class ServicioService implements IServicioService {
 
     @Override
     @Transactional
-    public ServicioResponseDto  cambiarHabilitacionServicio(Long id, ServicioRequestDto request) {
+    public ServicioResponseDto cambiarHabilitacionServicio(Long id, ServicioRequestDto request) {
         Servicio servicio = servicioRepository.findById(id)
                 .orElseThrow(() -> new ServicioNotFoundException(id));
 
-        if (Boolean.TRUE.equals(servicio.getHabilitado()) == Boolean.TRUE.equals(request.getHabilitado()))  {
+        if (Objects.equals(servicio.getHabilitado(), request.getHabilitado())) {
             return mapToResponse(servicio);
         }
 
@@ -71,33 +74,25 @@ public class ServicioService implements IServicioService {
         List<Reserva> reservasProximasEnRango =
                 reservaService.obtenerProximasPorServicioEnRango(servicio.getId());
 
-        List<Reserva> reservasSeleccionadas =
-                reservaService.obtenerPorIdsYServicio(
-                        request.getReservasACancelar(),
-                        servicio.getId()
-                );
-
-        validarQueSeanReservasProximas(reservasSeleccionadas, reservasProximasEnRango);
-        validarConfirmacionDevolucion(reservasSeleccionadas, request);
-
-        reservaService.cancelarTodas(reservasSeleccionadas);
-    }
-
-    private void validarQueSeanReservasProximas(List<Reserva> reservasSeleccionadas, List<Reserva> reservasProximas) {
-        List<Long> idsReservasProximas = reservasProximas.stream()
-                .map(Reserva::getId)
+        Set<Long> idsAcancelar = new HashSet<>(request.getReservasACancelar());
+        List<Reserva> reservasSeleccionadasValidas = reservasProximasEnRango.stream()
+                .filter(r -> idsAcancelar.contains(r.getId()))
                 .toList();
 
-        boolean todasSonReservasProximas = reservasSeleccionadas.stream()
-                .allMatch(reserva -> idsReservasProximas.contains(reserva.getId()));
+        validarQueSeanReservasProximas(reservasSeleccionadasValidas, idsAcancelar);
+        validarConfirmacionDevolucion(reservasSeleccionadasValidas, request);
 
-        if (!todasSonReservasProximas) {
+        reservaService.cancelarTodas(reservasSeleccionadasValidas);
+    }
+
+    private void validarQueSeanReservasProximas(List<Reserva> reservasSeleccionadasValidas, Set<Long> idsAcancelar) {
+        if (reservasSeleccionadasValidas.size() != idsAcancelar.size()) {
             throw new ReservaNoCancelableException();
         }
     }
 
-    private void validarConfirmacionDevolucion(List<Reserva> reservasSeleccionadas, ServicioRequestDto request) {
-        boolean existeReservaPaga = reservasSeleccionadas.stream()
+    private void validarConfirmacionDevolucion(List<Reserva> reservasSeleccionadasValidas, ServicioRequestDto request) {
+        boolean existeReservaPaga = reservasSeleccionadasValidas.stream()
                 .anyMatch(reserva -> Boolean.TRUE.equals(reserva.getPago()));
 
         if (existeReservaPaga && !Boolean.TRUE.equals(request.getConfirmarDevolucion())) {
@@ -135,5 +130,4 @@ public class ServicioService implements IServicioService {
                 servicio.getModalidadPrecio()
         );
     }
-
 }

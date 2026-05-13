@@ -15,9 +15,4 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
             Instant hasta,
             Collection<EstadoReserva> estados
     );
-
-    List<Reserva> findByIdInAndServicioId(
-            List<Long> ids,
-            Long servicioId
-    );
 }

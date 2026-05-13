@@ -18,6 +18,7 @@ public class ReservaService implements IReservaService {
     public ReservaService(ReservaRepository reservaRepository) {
         this.reservaRepository = reservaRepository;
     }
+
     @Override
     public List<Reserva> obtenerProximasPorServicioEnRango(Long servicioId) {
         Instant desde = Instant.now();
@@ -35,11 +36,6 @@ public class ReservaService implements IReservaService {
                         EstadoReserva.CONFIRMADA
                 )
         );
-    }
-
-    @Override
-    public List<Reserva> obtenerPorIdsYServicio(List<Long> ids, Long servicioId) {
-        return reservaRepository.findByIdInAndServicioId(ids, servicioId);
     }
 
     @Override

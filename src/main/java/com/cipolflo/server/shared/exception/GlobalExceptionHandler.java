@@ -1,5 +1,6 @@
 package com.cipolflo.server.shared.exception;
 
+import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import jakarta.validation.ConstraintViolation;
@@ -43,6 +44,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(message);
+    }
+
+    @ExceptionHandler(ConfirmacionDevolucionRequeridaException.class)
+    public ResponseEntity<String> handleConfirmacionDevolucionRequeridaException(ConfirmacionDevolucionRequeridaException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
     }
 
     @ExceptionHandler(ReservaNoCancelableException.class)

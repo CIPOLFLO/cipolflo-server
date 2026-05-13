@@ -6,9 +6,7 @@ import java.util.List;
 
 public interface IReservaService {
 
-    List<Reserva> obtenerProximasPorServicioEnRango (Long servicioId);
-
-    List<Reserva> obtenerPorIdsYServicio(List<Long> ids, Long servicioId);
+    List<Reserva> obtenerProximasPorServicioEnRango(Long servicioId);
 
     void cancelarTodas(List<Reserva> reservas);
 }

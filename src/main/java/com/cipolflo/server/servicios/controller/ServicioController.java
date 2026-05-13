@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
-
 @RestController
 @Validated
 @RequestMapping("/api/v1/servicios")
@@ -32,31 +31,29 @@ public class ServicioController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
-    public ResponseEntity<ServicioResponseDto> getDetalleServicio(@PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id){
+    public ResponseEntity<ServicioResponseDto> getDetalleServicio(
+            @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id) {
         ServicioResponseDto response = servicioService.getDetalleServicio(id);
         return ResponseEntity.ok(response);
     }
 
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/habilitacion")
-    public ResponseEntity<ServicioResponseDto > cambiarHabilitacionServicio(
-            @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id, @Valid @RequestBody ServicioRequestDto request) {
-
-        ServicioResponseDto  response = servicioService.cambiarHabilitacionServicio(id, request);
+    public ResponseEntity<ServicioResponseDto> cambiarHabilitacionServicio(
+            @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id,
+            @Valid @RequestBody ServicioRequestDto request) {
+        ServicioResponseDto response = servicioService.cambiarHabilitacionServicio(id, request);
         return ResponseEntity.ok(response);
     }
-
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/reservas-proximas")
     public ResponseEntity<List<ReservaProximaResponseDto>> getReservasProximas(
             @PathVariable
             @Positive(message = "El id del servicio debe ser un número positivo")
-            Long id
-    ) {
+            Long id) {
         List<ReservaProximaResponseDto> response =
                 servicioService.getReservasProximas(id);
-
         return ResponseEntity.ok(response);
     }
 }
