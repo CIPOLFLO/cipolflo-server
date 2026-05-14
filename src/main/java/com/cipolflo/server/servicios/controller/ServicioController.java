@@ -1,5 +1,7 @@
 package com.cipolflo.server.servicios.controller;
 
+import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
+import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ListadoServiciosRequestDto;
 import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
@@ -16,6 +18,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import java.util.List;
 
 @RestController
 @Validated
@@ -41,6 +47,26 @@ public class ServicioController {
     public ResponseEntity<ServicioResponseDto> getDetalleServicio(
             @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id) {
         ServicioResponseDto response = servicioService.getDetalleServicio(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/habilitacion")
+    public ResponseEntity<ServicioResponseDto> cambiarHabilitacionServicio(
+            @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long id,
+            @Valid @RequestBody ServicioRequestDto request) {
+        ServicioResponseDto response = servicioService.cambiarHabilitacionServicio(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/reservas-proximas")
+    public ResponseEntity<List<ReservaProximaResponseDto>> getReservasProximas(
+            @PathVariable
+            @Positive(message = "El id del servicio debe ser un número positivo")
+            Long id) {
+        List<ReservaProximaResponseDto> response =
+                servicioService.getReservasProximas(id);
         return ResponseEntity.ok(response);
     }
 }
