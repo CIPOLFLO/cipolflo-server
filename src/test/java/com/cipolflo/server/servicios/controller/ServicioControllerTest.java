@@ -17,7 +17,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
-import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -46,9 +45,6 @@ public class ServicioControllerTest {
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
     @MockitoBean
     private IServicioService servicioService;
-
-    @MockitoBean
-    private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     @Test
     @WithMockUser
