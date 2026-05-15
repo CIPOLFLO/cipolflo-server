@@ -28,7 +28,6 @@ import static org.mockito.Mockito.*;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import static org.mockito.Mockito.doThrow;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
