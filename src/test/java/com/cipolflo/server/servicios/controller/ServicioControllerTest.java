@@ -1,6 +1,7 @@
 package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
@@ -179,5 +181,110 @@ public class ServicioControllerTest {
                 anyLong(),
                 any(ServicioRequestDto.class)
         );
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedCuandoUsuarioNoEstaLogueadoAlModificarServicio() throws Exception {
+        mockMvc.perform(put("/api/v1/servicios/1").with(csrf()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoElIdEsInvalidoAlModificarServicio() throws Exception {
+        mockMvc.perform(put("/api/v1/servicios/0")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "nombre": "Cabaña",
+                            "precioParticular": 2500,
+                            "precioSocio": 1500,
+                            "modalidadPrecio": "POR_DIA",
+                            "capacidad": 4,
+                            "cantidad": 2
+                        }
+                        """)
+        ).andExpect(status().isBadRequest());
+
+        verify(servicioService, never()).modificarServicio(anyLong(), any(ModificacionServicioDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltanCamposObligatoriosAlModificarServicio() throws Exception {
+        mockMvc.perform(put("/api/v1/servicios/1")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {}
+                        """)
+        ).andExpect(status().isBadRequest());
+
+        verify(servicioService, never()).modificarServicio(anyLong(), any(ModificacionServicioDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarOkCuandoModificaServicioExitosamente() throws Exception {
+        Long servicioId = 1L;
+
+        ServicioResponseDto response = new ServicioResponseDto(
+                servicioId,
+                "Cabaña Premium",
+                Procedencia.CAMPING,
+                2,
+                BigDecimal.valueOf(2000),
+                BigDecimal.valueOf(3000),
+                4,
+                true,
+                ModalidadPrecio.POR_DIA
+        );
+
+        when(servicioService.modificarServicio(eq(servicioId), any(ModificacionServicioDto.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/servicios/1")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "nombre": "Cabaña Premium",
+                            "precioParticular": 3000,
+                            "precioSocio": 2000,
+                            "modalidadPrecio": "POR_DIA",
+                            "capacidad": 4,
+                            "cantidad": 2
+                        }
+                        """)
+        ).andExpect(status().isOk());
+
+        verify(servicioService).modificarServicio(eq(servicioId), any(ModificacionServicioDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoElServicioNoExisteAlModificar() throws Exception {
+        Long servicioId = 99L;
+
+        when(servicioService.modificarServicio(eq(servicioId), any(ModificacionServicioDto.class)))
+                .thenThrow(new ServicioNotFoundException(servicioId));
+
+        mockMvc.perform(put("/api/v1/servicios/99")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "nombre": "Cabaña",
+                            "precioParticular": 2500,
+                            "precioSocio": 1500,
+                            "modalidadPrecio": "POR_DIA",
+                            "capacidad": 4,
+                            "cantidad": 2
+                        }
+                        """)
+        ).andExpect(status().isNotFound());
+
+        verify(servicioService).modificarServicio(eq(servicioId), any(ModificacionServicioDto.class));
     }
 }

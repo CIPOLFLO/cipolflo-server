@@ -17,6 +17,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
@@ -56,14 +57,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException ex) {
+        boolean esPathVariable = ex.getValueResults().stream()
+                .anyMatch(r -> r.getMethodParameter().hasParameterAnnotation(PathVariable.class));
         String descripcion = ex.getValueResults().stream()
                 .flatMap(r -> r.getResolvableErrors().stream())
                 .map(MessageSourceResolvable::getDefaultMessage)
                 .findFirst()
                 .orElse("Parámetro de solicitud inválido");
+        String codigo = esPathVariable
+                ? ServicioCodigoError.ID_INVALIDO.name()
+                : ServicioCodigoError.SOLICITUD_INVALIDA.name();
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), descripcion));
+                .body(new ErrorResponse(codigo, descripcion));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
