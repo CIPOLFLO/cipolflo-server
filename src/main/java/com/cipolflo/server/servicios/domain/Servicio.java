@@ -1,6 +1,8 @@
 package com.cipolflo.server.servicios.domain;
 
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.shared.exception.ServicioCodigoError;
+import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.AuditableEntity;
 import com.cipolflo.server.shared.enums.Procedencia;
 import jakarta.persistence.*;
@@ -47,5 +49,21 @@ public class Servicio extends AuditableEntity {
 
     public void cambiarHabilitacion() {
         this.habilitado = !this.habilitado;
+    }
+
+    public void modificar(String nombre, BigDecimal precioParticular, BigDecimal precioSocio,
+                          ModalidadPrecio modalidadPrecio, Integer capacidad, Integer cantidad) {
+        if (precioSocio.compareTo(precioParticular) >= 0) {
+            throw new ServicioValidacionException(
+                    ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
+                    "El precio socio debe ser menor al precio particular"
+            );
+        }
+        this.nombre = nombre;
+        this.precioParticular = precioParticular;
+        this.precioSocio = precioSocio;
+        this.modalidadPrecio = modalidadPrecio;
+        this.capacidad = capacidad;
+        this.cantidad = cantidad;
     }
 }

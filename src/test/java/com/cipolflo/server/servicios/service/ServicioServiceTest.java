@@ -3,15 +3,20 @@ package com.cipolflo.server.servicios.service;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
+import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
+import com.cipolflo.server.servicios.validator.ModificacionServicioValidator;
+import com.cipolflo.server.servicios.validator.ModificacionValidationContext;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
+import com.cipolflo.server.shared.exception.ServicioCodigoError;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +30,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
+import com.cipolflo.server.servicios.dto.ListadoServiciosRequestDto;
+import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.time.Instant;
@@ -37,6 +51,8 @@ class ServicioServiceTest {
     private ServicioRepository servicioRepository;
     @Mock
     private IReservaService reservaService;
+    @Mock
+    private ModificacionServicioValidator modificacionServicioValidator;
 
     @InjectMocks
     private ServicioService servicioService;
@@ -288,6 +304,237 @@ class ServicioServiceTest {
         servicioService.cambiarHabilitacionServicio(servicioId, request);
 
         verify(reservaService).cancelarTodas(List.of(reserva));
+    }
+
+    private Servicio crearServicio(Long id, String nombre, Procedencia procedencia, Boolean habilitado) {
+        Servicio s = new Servicio();
+        s.setId(id);
+        s.setNombre(nombre);
+        s.setProcedencia(procedencia);
+        s.setHabilitado(habilitado);
+        s.setPrecioParticular(BigDecimal.valueOf(2500));
+        s.setPrecioSocio(BigDecimal.valueOf(1500));
+        s.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+        return s;
+    }
+
+    private PageRequestDto pageRequest() {
+        return new PageRequestDto(0, 10);
+    }
+
+    @Test
+    void deberiaRetornarTodosLosServiciosSinFiltros() {
+        List<Servicio> servicios = List.of(
+                crearServicio(1L, "Cabaña", Procedencia.CAMPING, true),
+                crearServicio(2L, "Cancha", Procedencia.SEDE, false)
+        );
+        Page<Servicio> page = new PageImpl<>(servicios, pageRequest().toPageable(), servicios.size());
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, null, null);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertNotNull(resultado);
+        assertEquals(2, resultado.totalElements());
+        assertEquals(2, resultado.content().size());
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaFiltrarServiciosPorNombre() {
+        Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, true);
+        Page<Servicio> page = new PageImpl<>(List.of(servicio));
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("Cabaña", null, null);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertEquals(1, resultado.content().size());
+        assertEquals("Cabaña", resultado.content().get(0).getNombre());
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaFiltrarServiciosPorNombreParcial() {
+        Servicio servicio = crearServicio(1L, "Cabaña Grande", Procedencia.CAMPING, true);
+        Page<Servicio> page = new PageImpl<>(List.of(servicio));
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("caba", null, null);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertEquals(1, resultado.content().size());
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaFiltrarServiciosPorProcedencia() {
+        Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, true);
+        Page<Servicio> page = new PageImpl<>(List.of(servicio));
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, Procedencia.CAMPING, null);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertEquals(1, resultado.content().size());
+        assertEquals(Procedencia.CAMPING, resultado.content().get(0).getProcedencia());
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaFiltrarServiciosPorEstadoHabilitado() {
+        Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, true);
+        Page<Servicio> page = new PageImpl<>(List.of(servicio));
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, null, EstadoServicio.HABILITADO);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertEquals(1, resultado.content().size());
+        assertEquals(EstadoServicio.HABILITADO, resultado.content().get(0).getEstado());
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaFiltrarServiciosPorEstadoDeshabilitado() {
+        Servicio servicio = crearServicio(1L, "Cancha", Procedencia.SEDE, false);
+        Page<Servicio> page = new PageImpl<>(List.of(servicio));
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, null, EstadoServicio.DESHABILITADO);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertEquals(1, resultado.content().size());
+        assertEquals(EstadoServicio.DESHABILITADO, resultado.content().get(0).getEstado());
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaFiltrarConTodosLosParametrosCombinados() {
+        Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, true);
+        Page<Servicio> page = new PageImpl<>(List.of(servicio));
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("Cabaña", Procedencia.CAMPING, EstadoServicio.HABILITADO);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertEquals(1, resultado.content().size());
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaRetornarPaginaVaciaCuandoNoHayCoincidencias() {
+        Page<Servicio> page = Page.empty(pageRequest().toPageable());
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("nombreQueNoExiste", null, null);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertNotNull(resultado);
+        assertEquals(0, resultado.totalElements());
+        assertTrue(resultado.content().isEmpty());
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaNormalizarNombreConEspacios() {
+        Page<Servicio> page = new PageImpl<>(List.of());
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("   ", null, null);
+        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+
+        assertNotNull(resultado);
+        verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoServicioTieneHabilitadoNull() {
+        Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, null);
+        Page<Servicio> page = new PageImpl<>(List.of(servicio));
+        when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, null, null);
+
+        assertThrows(IllegalStateException.class,
+                () -> servicioService.getListadoServicios(filtros, pageRequest()));
+    }
+
+    private ModificacionServicioDto crearDto(String nombre, BigDecimal precioParticular, BigDecimal precioSocio) {
+        ModificacionServicioDto dto = new ModificacionServicioDto();
+        dto.setNombre(nombre);
+        dto.setPrecioParticular(precioParticular);
+        dto.setPrecioSocio(precioSocio);
+        dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+        dto.setCapacidad(4);
+        dto.setCantidad(2);
+        return dto;
+    }
+
+    @Test
+    void deberiaModificarServicioExitosamente() {
+        Long servicioId = 1L;
+        Servicio servicio = crearServicio(servicioId, true);
+        ModificacionServicioDto dto = crearDto("Cabaña Premium", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(servicioRepository.save(servicio)).thenReturn(servicio);
+
+        ServicioResponseDto resultado = servicioService.modificarServicio(servicioId, dto);
+
+        assertNotNull(resultado);
+        assertEquals("Cabaña Premium", resultado.getNombre());
+        assertEquals(BigDecimal.valueOf(3000), resultado.getPrecioParticular());
+        assertEquals(BigDecimal.valueOf(2000), resultado.getPrecioSocio());
+        verify(modificacionServicioValidator).validar(any(ModificacionValidationContext.class));
+        verify(servicioRepository).save(servicio);
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoServicioNoExisteAlModificar() {
+        Long servicioId = 99L;
+        ModificacionServicioDto dto = crearDto("Cabaña", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.empty());
+
+        assertThrows(ServicioNotFoundException.class,
+                () -> servicioService.modificarServicio(servicioId, dto));
+
+        verify(servicioRepository, never()).save(any());
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoNombreEsDuplicadoAlModificar() {
+        Long servicioId = 1L;
+        Servicio servicio = crearServicio(servicioId, true);
+        ModificacionServicioDto dto = crearDto("Cabaña Existente", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        doThrow(new ServicioValidacionException(
+                ServicioCodigoError.NOMBRE_DUPLICADO.name(),
+                "Ya existe un servicio con ese nombre"))
+                .when(modificacionServicioValidator).validar(any(ModificacionValidationContext.class));
+
+        ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
+                () -> servicioService.modificarServicio(servicioId, dto));
+
+        assertEquals(ServicioCodigoError.NOMBRE_DUPLICADO.name(), exception.getCodigo());
+        verify(servicioRepository, never()).save(any());
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoPrecioSocioEsMayorOIgualAlParticular() {
+        Long servicioId = 1L;
+        Servicio servicio = crearServicio(servicioId, true);
+        ModificacionServicioDto dto = crearDto("Cabaña", BigDecimal.valueOf(2000), BigDecimal.valueOf(2000));
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+
+        ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
+                () -> servicioService.modificarServicio(servicioId, dto));
+
+        assertEquals(ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(), exception.getCodigo());
+        verify(servicioRepository, never()).save(any());
     }
 
     @Test

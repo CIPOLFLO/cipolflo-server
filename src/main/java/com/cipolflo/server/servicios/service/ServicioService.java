@@ -3,6 +3,7 @@ package com.cipolflo.server.servicios.service;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
+import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ListadoServiciosRequestDto;
@@ -13,6 +14,8 @@ import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.mapper.ServicioMapper;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
+import com.cipolflo.server.servicios.validator.ModificacionServicioValidator;
+import com.cipolflo.server.servicios.validator.ModificacionValidationContext;
 import com.cipolflo.server.servicios.repository.ServicioSpecification;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -31,10 +34,14 @@ import java.util.Set;
 public class ServicioService implements IServicioService {
     private final ServicioRepository servicioRepository;
     private final IReservaService reservaService;
+    private final ModificacionServicioValidator modificacionServicioValidator;
 
-    public ServicioService(ServicioRepository servicioRepository, IReservaService reservaService) {
+    public ServicioService(ServicioRepository servicioRepository,
+                           IReservaService reservaService,
+                           ModificacionServicioValidator modificacionServicioValidator) {
         this.servicioRepository = servicioRepository;
         this.reservaService = reservaService;
+        this.modificacionServicioValidator = modificacionServicioValidator;
     }
 
     @Override
@@ -62,6 +69,26 @@ public class ServicioService implements IServicioService {
         cancelarReservasSiCorresponde(servicio, request);
 
         servicio.setHabilitado(false);
+        return mapToResponse(servicioRepository.save(servicio));
+    }
+
+    @Override
+    @Transactional
+    public ServicioResponseDto modificarServicio(Long id, ModificacionServicioDto dto) {
+        Servicio servicio = servicioRepository.findById(id)
+                .orElseThrow(() -> new ServicioNotFoundException(id));
+
+        modificacionServicioValidator.validar(ModificacionValidationContext.from(id, dto));
+
+        servicio.modificar(
+                dto.getNombre(),
+                dto.getPrecioParticular(),
+                dto.getPrecioSocio(),
+                dto.getModalidadPrecio(),
+                dto.getCapacidad(),
+                dto.getCantidad()
+        );
+
         return mapToResponse(servicioRepository.save(servicio));
     }
 
