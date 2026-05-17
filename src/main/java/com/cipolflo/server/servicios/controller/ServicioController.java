@@ -2,6 +2,7 @@ package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
+import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ListadoServiciosRequestDto;
 import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
@@ -11,12 +12,15 @@ import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -80,4 +84,14 @@ public class ServicioController {
                 servicioService.getReservasProximas(id);
         return ResponseEntity.ok(response);
     }
+
+    @PreAuthorize("isAuthenticated()")
+@PostMapping
+public ResponseEntity<ServicioResponseDto> registrarServicio(
+        @Valid @RequestBody ServicioRegistroRequestDto request
+) {
+    ServicioResponseDto response = servicioService.registrarServicio(request);
+
+    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+}
 }

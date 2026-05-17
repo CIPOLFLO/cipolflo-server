@@ -4,6 +4,7 @@ import com.cipolflo.server.servicios.dto.ListadoServiciosRequestDto;
 import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
+import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -21,4 +22,6 @@ public interface IServicioService {
     PageResponse<ListadoServiciosResponseDto> getListadoServicios(ListadoServiciosRequestDto filtros, PageRequestDto pageRequest);
 
     ServicioResponseDto modificarServicio(Long id, ModificacionServicioDto request);
+
+    ServicioResponseDto registrarServicio(ServicioRegistroRequestDto request);
 }

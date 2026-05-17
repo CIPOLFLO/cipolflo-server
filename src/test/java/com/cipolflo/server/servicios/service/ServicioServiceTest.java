@@ -4,6 +4,7 @@ import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
+import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
@@ -12,10 +13,12 @@ import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import com.cipolflo.server.servicios.validator.ModificacionServicioValidator;
 import com.cipolflo.server.servicios.validator.ModificacionValidationContext;
+import com.cipolflo.server.servicios.validator.ServicioRegistroValidator;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
+import com.cipolflo.server.servicios.exception.ServicioPreciosException;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
 
 import org.junit.jupiter.api.Test;
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.junit.jupiter.api.Assertions.*;
 
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import org.mockito.InjectMocks;
@@ -53,6 +57,8 @@ class ServicioServiceTest {
     private IReservaService reservaService;
     @Mock
     private ModificacionServicioValidator modificacionServicioValidator;
+    @Mock
+    private ServicioRegistroValidator servicioRegistroValidator;
 
     @InjectMocks
     private ServicioService servicioService;
@@ -570,4 +576,140 @@ class ServicioServiceTest {
 
         verify(reservaService, never()).cancelarTodas(anyList());
     }
+
+
+   private ServicioRegistroRequestDto crearDtoRegistro(String nombre, BigDecimal precioParticular, BigDecimal precioSocio) {
+    return new ServicioRegistroRequestDto(
+        nombre,
+        Procedencia.CAMPING,
+        precioSocio,
+        precioParticular,
+        ModalidadPrecio.POR_DIA,
+        4,
+        2
+    );
+}
+
+
+@Test
+void deberiaRegistrarServicioExitosamente() {
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Nueva", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500));
+    
+    Servicio servicioGuardado = new Servicio();
+    servicioGuardado.setId(1L);
+    servicioGuardado.setNombre("Cabaña Nueva");
+    servicioGuardado.setProcedencia(Procedencia.CAMPING);
+    servicioGuardado.setPrecioParticular(BigDecimal.valueOf(2500));
+    servicioGuardado.setPrecioSocio(BigDecimal.valueOf(1500));
+    servicioGuardado.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+    servicioGuardado.setCapacidad(4);
+    servicioGuardado.setCantidad(2);
+    servicioGuardado.setHabilitado(true);
+
+    when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
+
+    ServicioResponseDto resultado = servicioService.registrarServicio(dto);
+
+    assertNotNull(resultado);
+    assertEquals(1L, resultado.getId());
+    assertEquals("Cabaña Nueva", resultado.getNombre());
+    assertEquals(Procedencia.CAMPING, resultado.getProcedencia());
+    assertEquals(BigDecimal.valueOf(2500), resultado.getPrecioParticular());
+    assertEquals(BigDecimal.valueOf(1500), resultado.getPrecioSocio());
+    assertTrue(resultado.getHabilitado());
+    
+    verify(servicioRegistroValidator).validar(dto);
+    verify(servicioRepository).save(any(Servicio.class));
+}
+
+@Test
+void deberiaCrearServicioConEstadoHabilitadoPorDefecto() {
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500));
+    
+    Servicio servicioGuardado = new Servicio();
+    servicioGuardado.setId(1L);
+    servicioGuardado.setHabilitado(true);
+
+    when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
+
+    ServicioResponseDto resultado = servicioService.registrarServicio(dto);
+
+    assertTrue(resultado.getHabilitado());
+    verify(servicioRepository).save(argThat(servicio -> servicio.getHabilitado() == true));
+}
+
+@Test
+void deberiaLanzarErrorCuandoNombreDuplicadoAlRegistrar() {
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Existente", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500));
+
+    doThrow(new ServicioValidacionException(
+            ServicioCodigoError.NOMBRE_DUPLICADO.name(),
+            "Ya existe un servicio con ese nombre"))
+            .when(servicioRegistroValidator).validar(dto);
+
+    ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
+            () -> servicioService.registrarServicio(dto));
+
+    assertEquals(ServicioCodigoError.NOMBRE_DUPLICADO.name(), exception.getCodigo());
+    verify(servicioRepository, never()).save(any());
+}
+
+@Test
+void deberiaLanzarErrorCuandoPrecioParticularMenorQuePrecioSocioAlRegistrar() {
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(1000), BigDecimal.valueOf(2000));
+
+    doThrow(new ServicioPreciosException(
+            "El precio para particulares debe ser mayor o igual al precio para socios"))
+            .when(servicioRegistroValidator).validar(dto);
+
+    ServicioPreciosException exception = assertThrows(ServicioPreciosException.class,
+            () -> servicioService.registrarServicio(dto));
+
+    assertTrue(exception.getMessage().contains("mayor o igual"));
+    verify(servicioRepository, never()).save(any());
+}
+
+@Test
+void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Premium", BigDecimal.valueOf(3500), BigDecimal.valueOf(2000));
+    dto.setCapacidad(6);
+    dto.setCantidad(3);
+    
+    Servicio servicioGuardado = new Servicio();
+    servicioGuardado.setId(1L);
+
+    when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
+
+    servicioService.registrarServicio(dto);
+
+    verify(servicioRepository).save(argThat(servicio ->
+            servicio.getNombre().equals("Cabaña Premium") &&
+            servicio.getProcedencia().equals(Procedencia.CAMPING) &&
+            servicio.getPrecioParticular().equals(BigDecimal.valueOf(3500)) &&
+            servicio.getPrecioSocio().equals(BigDecimal.valueOf(2000)) &&
+            servicio.getModalidadPrecio().equals(ModalidadPrecio.POR_DIA) &&
+            servicio.getCapacidad().equals(6) &&
+            servicio.getCantidad().equals(3) &&
+            servicio.getHabilitado().equals(true)
+    ));
+}
+
+@Test
+void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500));
+    dto.setCapacidad(null);
+    dto.setCantidad(null);
+    
+    Servicio servicioGuardado = new Servicio();
+    servicioGuardado.setId(1L);
+
+    when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
+
+    servicioService.registrarServicio(dto);
+
+    verify(servicioRepository).save(argThat(servicio ->
+            servicio.getCapacidad() == null &&
+            servicio.getCantidad() == null
+    ));
+}
 }

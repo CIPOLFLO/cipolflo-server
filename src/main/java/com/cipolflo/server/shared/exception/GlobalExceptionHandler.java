@@ -3,6 +3,7 @@ package com.cipolflo.server.shared.exception;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
+import com.cipolflo.server.servicios.exception.ServicioPreciosException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
@@ -130,4 +131,15 @@ public class GlobalExceptionHandler {
         }
         return error.getDefaultMessage();
     }
+    @ExceptionHandler(ServicioPreciosException.class)
+public ResponseEntity<ErrorResponse> handleServicioPreciosException(
+        ServicioPreciosException ex
+) {
+    ErrorResponse error = new ErrorResponse(
+            "SERVICIO_PRECIOS_INVALIDOS",
+            ex.getMessage()
+    );
+
+    return ResponseEntity.badRequest().body(error);
+}
 }
