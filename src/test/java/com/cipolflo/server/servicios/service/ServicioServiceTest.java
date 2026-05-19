@@ -578,23 +578,23 @@ class ServicioServiceTest {
     }
 
 
-   private ServicioRegistroRequestDto crearDtoRegistro(String nombre, BigDecimal precioParticular, BigDecimal precioSocio) {
+   private ServicioRegistroRequestDto crearDtoRegistro(String nombre, BigDecimal precioParticular, BigDecimal precioSocio,Integer capacidad, Integer cantidad) {
     return new ServicioRegistroRequestDto(
         nombre,
         Procedencia.CAMPING,
-        precioSocio,
         precioParticular,
+        precioSocio,
         ModalidadPrecio.POR_DIA,
-        4,
-        2
+        capacidad,
+        cantidad
     );
 }
 
 
 @Test
 void deberiaRegistrarServicioExitosamente() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Nueva", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500));
-    
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Nueva", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), 4, 2);
+
     Servicio servicioGuardado = new Servicio();
     servicioGuardado.setId(1L);
     servicioGuardado.setNombre("Cabaña Nueva");
@@ -624,7 +624,7 @@ void deberiaRegistrarServicioExitosamente() {
 
 @Test
 void deberiaCrearServicioConEstadoHabilitadoPorDefecto() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500));
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
     
     Servicio servicioGuardado = new Servicio();
     servicioGuardado.setId(1L);
@@ -640,7 +640,7 @@ void deberiaCrearServicioConEstadoHabilitadoPorDefecto() {
 
 @Test
 void deberiaLanzarErrorCuandoNombreDuplicadoAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Existente", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500));
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Existente", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
 
     doThrow(new ServicioValidacionException(
             ServicioCodigoError.NOMBRE_DUPLICADO.name(),
@@ -656,7 +656,7 @@ void deberiaLanzarErrorCuandoNombreDuplicadoAlRegistrar() {
 
 @Test
 void deberiaLanzarErrorCuandoPrecioParticularMenorQuePrecioSocioAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(1000), BigDecimal.valueOf(2000));
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(1000), BigDecimal.valueOf(2000), null, null);
 
     doThrow(new ServicioPreciosException(
             "El precio para particulares debe ser mayor o igual al precio para socios"))
@@ -671,7 +671,7 @@ void deberiaLanzarErrorCuandoPrecioParticularMenorQuePrecioSocioAlRegistrar() {
 
 @Test
 void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Premium", BigDecimal.valueOf(3500), BigDecimal.valueOf(2000));
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Premium", BigDecimal.valueOf(3500), BigDecimal.valueOf(2000), null, null);
     dto.setCapacidad(6);
     dto.setCantidad(3);
     
@@ -696,7 +696,7 @@ void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
 
 @Test
 void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500));
+    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
     dto.setCapacidad(null);
     dto.setCantidad(null);
     

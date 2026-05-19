@@ -136,7 +136,7 @@ public ResponseEntity<ErrorResponse> handleServicioPreciosException(
         ServicioPreciosException ex
 ) {
     ErrorResponse error = new ErrorResponse(
-            "SERVICIO_PRECIOS_INVALIDOS",
+            ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
             ex.getMessage()
     );
 

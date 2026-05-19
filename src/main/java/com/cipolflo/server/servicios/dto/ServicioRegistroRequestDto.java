@@ -32,14 +32,14 @@ public class ServicioRegistroRequestDto {
 @DecimalMin(value = "0.0", inclusive = false, message = "El precio debe ser mayor que cero")
     private BigDecimal precioParticular;
 
-@NotNull(message = "La modalidad de precio es obligatorio")
+@NotNull(message = "La modalidad de precio es obligatoria")
 private ModalidadPrecio modalidadPrecio;
 
-@Positive(message = "El orden debe ser un número positivo")
+@Positive(message = "La capacidad debe ser un número positivo")
     private Integer capacidad;
 
 
-@Positive(message = "El orden debe ser un número positivo")
+@Positive(message = "La cantidad debe ser un número positivo")
     private Integer cantidad;    
 
 

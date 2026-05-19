@@ -56,7 +56,6 @@ class ServicioMapperTest {
         assertEquals(Procedencia.CAMPING, dto.getProcedencia());
         assertEquals(BigDecimal.valueOf(2500), dto.getPrecioParticular());
         assertEquals(BigDecimal.valueOf(1500), dto.getPrecioSocio());
-        assertEquals(ModalidadPrecio.POR_DIA, dto.getModalidadPrecio());
-        
+        assertEquals(ModalidadPrecio.POR_DIA, dto.getModalidadPrecio()); 
     }
 }

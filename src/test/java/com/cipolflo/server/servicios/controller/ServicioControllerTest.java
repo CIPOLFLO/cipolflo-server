@@ -537,7 +537,7 @@ void deberiaRetornarBadRequestCuandoCantidadEsNegativaAlRegistrar() throws Excep
 
 @Test
 @WithMockUser
-void deberiaRetornarConflictCuandoNombreYaExisteAlRegistrar() throws Exception {
+void deberiaRetornarBadRequestCuandoNombreYaExisteAlRegistrar() throws Exception {
     when(servicioService.registrarServicio(any(ServicioRegistroRequestDto.class)))
             .thenThrow(new ServicioValidacionException(
                     ServicioCodigoError.NOMBRE_DUPLICADO.name(),
