@@ -15,7 +15,11 @@ public class NombreUnicoValidator {
     }
 
     public void validar(String nombre, Long idExcluir) {
-        if (servicioRepository.existsByNombreIgnoreCaseAndIdNot(nombre, idExcluir)) {
+        boolean duplicado = idExcluir == null
+                ? servicioRepository.existsByNombreIgnoreCase(nombre)
+                : servicioRepository.existsByNombreIgnoreCaseAndIdNot(nombre, idExcluir);
+
+        if (duplicado) {
             throw new ServicioValidacionException(
                     ServicioCodigoError.NOMBRE_DUPLICADO.name(),
                     "Ya existe un servicio con ese nombre"

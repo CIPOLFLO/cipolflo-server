@@ -6,6 +6,8 @@ import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -105,14 +107,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), descripcion));
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        log.warn("JSON no legible: {}", ex.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), "JSON malformado o campo con valor inválido"));
-    }
-
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         log.warn("Tipo de argumento inválido para '{}': {}", ex.getName(), ex.getMessage());
@@ -140,5 +134,39 @@ public class GlobalExceptionHandler {
                     "' no es válido para el parámetro '" + error.getField() + "'";
         }
         return error.getDefaultMessage();
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleJsonErrors(HttpMessageNotReadableException ex) {
+
+        Throwable cause = ex.getCause();
+
+        if (cause instanceof InvalidFormatException invalidFormatException) {
+
+            if (invalidFormatException.getTargetType().isEnum()) {
+
+                String campo = invalidFormatException.getPath().get(0).getFieldName();
+
+                Object[] valores = invalidFormatException.getTargetType().getEnumConstants();
+
+                String valoresAceptados = Arrays.stream(valores)
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", "));
+
+                return ResponseEntity.badRequest().body(
+                        new ErrorResponse(
+                                "SOLICITUD_INVALIDA",
+                                campo + " inválido. Valores aceptados: " + valoresAceptados
+                        )
+                );
+            }
+        }
+
+        return ResponseEntity.badRequest().body(
+                new ErrorResponse(
+                        "SOLICITUD_INVALIDA",
+                        "JSON malformado o campo con valor inválido"
+                )
+        );
     }
 }
