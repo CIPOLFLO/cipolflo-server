@@ -1,12 +1,14 @@
 package com.cipolflo.server.shared.exception;
 
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
+import com.cipolflo.server.servicios.exception.NombreDuplicadoException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
-import com.cipolflo.server.servicios.exception.ServicioPreciosException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.context.MessageSourceResolvable;
@@ -97,12 +99,9 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), descripcion));
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), "JSON malformado o campo con valor inválido"));
-    }
+
+
+
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
@@ -131,15 +130,44 @@ public class GlobalExceptionHandler {
         }
         return error.getDefaultMessage();
     }
-    @ExceptionHandler(ServicioPreciosException.class)
-public ResponseEntity<ErrorResponse> handleServicioPreciosException(
-        ServicioPreciosException ex
-) {
-    ErrorResponse error = new ErrorResponse(
-            ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
-            ex.getMessage()
-    );
-
-    return ResponseEntity.badRequest().body(error);
+@ExceptionHandler(NombreDuplicadoException.class)
+public ResponseEntity<ErrorResponse> handleNombreDuplicadoException(NombreDuplicadoException ex) {
+    return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(new ErrorResponse("NOMBRE_DUPLICADO", ex.getMessage()));
 }
+
+ @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleJsonErrors(HttpMessageNotReadableException ex) {
+
+        Throwable cause = ex.getCause();
+
+        if (cause instanceof InvalidFormatException invalidFormatException) {
+
+            if (invalidFormatException.getTargetType().isEnum()) {
+
+                String campo = invalidFormatException.getPath().get(0).getFieldName();
+
+                Object[] valores = invalidFormatException.getTargetType().getEnumConstants();
+
+                String valoresAceptados = Arrays.stream(valores)
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", "));
+
+                return ResponseEntity.badRequest().body(
+                        new ErrorResponse(
+                                "SOLICITUD_INVALIDA",
+                                campo + " inválido. Valores aceptados: " + valoresAceptados
+                        )
+                );
+            }
+        }
+
+        return ResponseEntity.badRequest().body(
+                new ErrorResponse(
+                        "SOLICITUD_INVALIDA",
+                        "JSON malformado o campo con valor inválido"
+                )
+        );
+    }
 }

@@ -149,19 +149,21 @@ public class ServicioService implements IServicioService {
     @Override
     @Transactional
     public ServicioResponseDto registrarServicio(ServicioRegistroRequestDto request) {
-        servicioRegistroValidator.validar(request);
-        Servicio servicio = new Servicio();
-        servicio.setNombre(request.getNombre());
-        servicio.setProcedencia(request.getProcedencia());
-        servicio.setCantidad(request.getCantidad());
-        servicio.setPrecioSocio(request.getPrecioSocio());
-        servicio.setPrecioParticular(request.getPrecioParticular());
-        servicio.setCapacidad(request.getCapacidad());
-        servicio.setModalidadPrecio(request.getModalidadPrecio());
-        servicio.setHabilitado(true);
-        Servicio servicioGuardado = servicioRepository.save(servicio);
-        return mapToResponse(servicioGuardado);
-    }
+
+    servicioRegistroValidator.validar(request);
+
+    Servicio servicio = Servicio.registrar(
+            request.getNombre(),
+            request.getProcedencia(),
+            request.getPrecioParticular(),
+            request.getPrecioSocio(),
+            request.getModalidadPrecio(),
+            request.getCapacidad(),
+            request.getCantidad()
+    );
+
+    return mapToResponse(servicioRepository.save(servicio));
+}
     private ReservaProximaResponseDto mapReservaProxima(Reserva reserva) {
         return new ReservaProximaResponseDto(
                 reserva.getId(),

@@ -18,9 +18,8 @@ import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
-import com.cipolflo.server.servicios.exception.ServicioPreciosException;
-import com.cipolflo.server.shared.exception.ServicioCodigoError;
 
+import com.cipolflo.server.shared.exception.ServicioCodigoError;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.junit.jupiter.api.Assertions.*;
@@ -578,16 +577,24 @@ class ServicioServiceTest {
     }
 
 
-   private ServicioRegistroRequestDto crearDtoRegistro(String nombre, BigDecimal precioParticular, BigDecimal precioSocio,Integer capacidad, Integer cantidad) {
-    return new ServicioRegistroRequestDto(
-        nombre,
-        Procedencia.CAMPING,
-        precioParticular,
-        precioSocio,
-        ModalidadPrecio.POR_DIA,
-        capacidad,
-        cantidad
-    );
+   private ServicioRegistroRequestDto crearDtoRegistro(
+        String nombre,
+        BigDecimal precioParticular,
+        BigDecimal precioSocio,
+        Integer capacidad,
+        Integer cantidad
+) {
+    ServicioRegistroRequestDto dto = new ServicioRegistroRequestDto();
+
+    dto.setNombre(nombre);
+    dto.setProcedencia(Procedencia.CAMPING);
+    dto.setPrecioParticular(precioParticular);
+    dto.setPrecioSocio(precioSocio);
+    dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+    dto.setCapacidad(capacidad);
+    dto.setCantidad(cantidad);
+
+    return dto;
 }
 
 
@@ -656,19 +663,25 @@ void deberiaLanzarErrorCuandoNombreDuplicadoAlRegistrar() {
 
 @Test
 void deberiaLanzarErrorCuandoPrecioParticularMenorQuePrecioSocioAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(1000), BigDecimal.valueOf(2000), null, null);
+    ServicioRegistroRequestDto dto = crearDtoRegistro(
+            "Cabaña",
+            BigDecimal.valueOf(1000),
+            BigDecimal.valueOf(2000),
+            null,
+            null
+    );
 
-    doThrow(new ServicioPreciosException(
-            "El precio para particulares debe ser mayor o igual al precio para socios"))
-            .when(servicioRegistroValidator).validar(dto);
+    ServicioValidacionException exception =
+            assertThrows(ServicioValidacionException.class,
+                    () -> servicioService.registrarServicio(dto));
 
-    ServicioPreciosException exception = assertThrows(ServicioPreciosException.class,
-            () -> servicioService.registrarServicio(dto));
+    assertEquals(
+            ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
+            exception.getCodigo()
+    );
 
-    assertTrue(exception.getMessage().contains("mayor o igual"));
     verify(servicioRepository, never()).save(any());
 }
-
 @Test
 void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
     ServicioRegistroRequestDto dto = crearDtoRegistro(
@@ -690,18 +703,16 @@ void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
 
     servicioService.registrarServicio(dto);
 
-    verify(servicioRepository).save(argThat(servicio -> {
-        System.out.println("Nombre: " + servicio.getNombre());
-        System.out.println("Procedencia: " + servicio.getProcedencia());
-        System.out.println("Precio Particular: " + servicio.getPrecioParticular());
-        System.out.println("Precio Socio: " + servicio.getPrecioSocio());
-        System.out.println("Modalidad: " + servicio.getModalidadPrecio());
-        System.out.println("Capacidad: " + servicio.getCapacidad());
-        System.out.println("Cantidad: " + servicio.getCantidad());
-        System.out.println("Habilitado: " + servicio.getHabilitado());
-
-        return true;
-    }));
+    verify(servicioRepository).save(argThat(servicio ->
+        servicio.getNombre().equals("Cabaña Premium") &&
+        servicio.getProcedencia().equals(Procedencia.CAMPING) &&
+        servicio.getPrecioParticular().equals(BigDecimal.valueOf(3500)) &&
+        servicio.getPrecioSocio().equals(BigDecimal.valueOf(2000)) &&
+        servicio.getModalidadPrecio().equals(ModalidadPrecio.POR_DIA) &&
+        servicio.getCapacidad().equals(6) &&
+        servicio.getCantidad().equals(3) &&
+        servicio.getHabilitado().equals(true)
+));
 }
 @Test
 void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
