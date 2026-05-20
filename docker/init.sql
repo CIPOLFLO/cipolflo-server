@@ -28,7 +28,9 @@ CREATE TABLE public.cliente (
     meses_sin_pagar integer,
     -- AuditableEntity
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 CREATE TABLE public.pago_cuota (
@@ -40,7 +42,9 @@ CREATE TABLE public.pago_cuota (
     cantidad_meses integer NOT NULL,
     -- AuditableEntity
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 CREATE TABLE public.servicio (
@@ -54,7 +58,9 @@ CREATE TABLE public.servicio (
     cantidad integer,
     habilitado boolean NOT NULL DEFAULT true,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 CREATE TABLE public.reserva (
@@ -73,7 +79,9 @@ CREATE TABLE public.reserva (
     documentacion boolean NOT NULL DEFAULT false,
     notas text,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 -- SINGLE_TABLE: finanza + Ingreso + Egreso en una sola tabla
@@ -93,7 +101,9 @@ CREATE TABLE public.finanza (
     reserva_id bigint,
     -- AuditableEntity
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    created_by character varying(255),
+    updated_by character varying(255)
 );
 
 -- Primary keys

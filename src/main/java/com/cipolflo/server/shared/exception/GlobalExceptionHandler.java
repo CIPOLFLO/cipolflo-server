@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +28,13 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ServicioNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleServicioNotFoundException(ServicioNotFoundException ex) {
+        log.warn("Recurso no encontrado: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ServicioCodigoError.SERVICIO_NO_ENCONTRADO.name(), ex.getMessage()));
@@ -39,6 +42,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ServicioValidacionException.class)
     public ResponseEntity<ErrorResponse> handleServicioValidacionException(ServicioValidacionException ex) {
+        log.warn("Validación de negocio fallida [{}]: {}", ex.getCodigo(), ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
@@ -46,6 +50,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConfirmacionDevolucionRequeridaException.class)
     public ResponseEntity<ErrorResponse> handleConfirmacionDevolucionRequeridaException(ConfirmacionDevolucionRequeridaException ex) {
+        log.warn("Confirmación de devolución requerida: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ServicioCodigoError.CONFIRMACION_DEVOLUCION_REQUERIDA.name(), ex.getMessage()));
@@ -53,6 +58,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ReservaNoCancelableException.class)
     public ResponseEntity<ErrorResponse> handleReservaNoCancelableException(ReservaNoCancelableException ex) {
+        log.warn("Reserva no cancelable: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ServicioCodigoError.RESERVA_NO_CANCELABLE.name(), ex.getMessage()));
@@ -70,6 +76,7 @@ public class GlobalExceptionHandler {
         String codigo = esPathVariable
                 ? ServicioCodigoError.ID_INVALIDO.name()
                 : ServicioCodigoError.SOLICITUD_INVALIDA.name();
+        log.warn("Parámetro inválido [{}]: {}", codigo, descripcion);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(codigo, descripcion));
@@ -81,6 +88,7 @@ public class GlobalExceptionHandler {
                 .map(ConstraintViolation::getMessage)
                 .findFirst()
                 .orElse("Parámetro de solicitud inválido");
+        log.warn("Constraint violation: {}", descripcion);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), descripcion));
@@ -92,8 +100,9 @@ public class GlobalExceptionHandler {
                 .getFieldErrors()
                 .stream()
                 .findFirst()
-                .map(error -> error.getDefaultMessage())
+                .map(FieldError::getDefaultMessage)
                 .orElse("Solicitud inválida");
+        log.warn("Validación de request fallida: {}", descripcion);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), descripcion));
@@ -105,17 +114,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        log.warn("Tipo de argumento inválido para '{}': {}", ex.getName(), ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ServicioCodigoError.ID_INVALIDO.name(), "El id debe ser un número positivo"));
     }
-
 
     @ExceptionHandler(BindException.class)
     public ResponseEntity<String> handleBindException(BindException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .map(this::buildBindErrorMessage)
                 .collect(Collectors.joining(", "));
+        log.warn("Bind exception: {}", message);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(message);
