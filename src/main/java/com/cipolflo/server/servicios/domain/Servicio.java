@@ -68,32 +68,31 @@ public class Servicio extends AuditableEntity {
     }
 
     public static Servicio registrar(
-        String nombre,
-        Procedencia procedencia,
-        BigDecimal precioParticular,
-        BigDecimal precioSocio,
-        ModalidadPrecio modalidadPrecio,
-        Integer capacidad,
-        Integer cantidad
-) {
+            String nombre,
+            Procedencia procedencia,
+            BigDecimal precioParticular,
+            BigDecimal precioSocio,
+            ModalidadPrecio modalidadPrecio,
+            Integer capacidad,
+            Integer cantidad) {
 
-    if (precioSocio.compareTo(precioParticular) >= 0) {
-        throw new ServicioValidacionException(
-                ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
-                "El precio socio debe ser menor al precio particular"
-        );
+        if (precioSocio.compareTo(precioParticular) >= 0) {
+            throw new ServicioValidacionException(
+                    ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
+                    "El precio socio debe ser menor al precio particular"
+            );
+        }
+
+        Servicio servicio = new Servicio();
+        servicio.nombre = nombre;
+        servicio.procedencia = procedencia;
+        servicio.precioParticular = precioParticular;
+        servicio.precioSocio = precioSocio;
+        servicio.modalidadPrecio = modalidadPrecio;
+        servicio.capacidad = capacidad;
+        servicio.cantidad = cantidad;
+        servicio.habilitado = true;
+
+        return servicio;
     }
-
-    Servicio servicio = new Servicio();
-    servicio.nombre = nombre;
-    servicio.procedencia = procedencia;
-    servicio.precioParticular = precioParticular;
-    servicio.precioSocio = precioSocio;
-    servicio.modalidadPrecio = modalidadPrecio;
-    servicio.capacidad = capacidad;
-    servicio.cantidad = cantidad;
-    servicio.habilitado = true;
-
-    return servicio;
-}
 }

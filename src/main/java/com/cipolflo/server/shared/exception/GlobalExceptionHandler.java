@@ -1,7 +1,6 @@
 package com.cipolflo.server.shared.exception;
 
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
-import com.cipolflo.server.servicios.exception.NombreDuplicadoException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
@@ -108,10 +107,6 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), descripcion));
     }
 
-
-
-
-
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         log.warn("Tipo de argumento inválido para '{}': {}", ex.getName(), ex.getMessage());
@@ -140,14 +135,8 @@ public class GlobalExceptionHandler {
         }
         return error.getDefaultMessage();
     }
-@ExceptionHandler(NombreDuplicadoException.class)
-public ResponseEntity<ErrorResponse> handleNombreDuplicadoException(NombreDuplicadoException ex) {
-    return ResponseEntity
-            .status(HttpStatus.CONFLICT)
-            .body(new ErrorResponse("NOMBRE_DUPLICADO", ex.getMessage()));
-}
 
- @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleJsonErrors(HttpMessageNotReadableException ex) {
 
         Throwable cause = ex.getCause();

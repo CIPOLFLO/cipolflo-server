@@ -86,12 +86,10 @@ public class ServicioController {
     }
 
     @PreAuthorize("isAuthenticated()")
-@PostMapping
-public ResponseEntity<ServicioResponseDto> registrarServicio(
-        @Valid @RequestBody ServicioRegistroRequestDto request
-) {
-    ServicioResponseDto response = servicioService.registrarServicio(request);
-
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
-}
+    @PostMapping
+    public ResponseEntity<ServicioResponseDto> registrarServicio(
+            @Valid @RequestBody ServicioRegistroRequestDto request) {
+        ServicioResponseDto response = servicioService.registrarServicio(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
 }
