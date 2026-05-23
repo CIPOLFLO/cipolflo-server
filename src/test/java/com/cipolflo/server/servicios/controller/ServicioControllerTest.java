@@ -1,5 +1,6 @@
 package com.cipolflo.server.servicios.controller;
 
+import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
@@ -80,8 +81,9 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(1500),
                 BigDecimal.valueOf(2500),
                 4,
-                true,
-                ModalidadPrecio.POR_DIA
+                EstadoServicio.HABILITADO,
+                ModalidadPrecio.POR_DIA,
+                null, null, null, null
         );
 
         when(servicioService.getDetalleServicio(servicioId))
@@ -120,8 +122,9 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(1500),
                 BigDecimal.valueOf(2500),
                 4,
-                false,
-                ModalidadPrecio.POR_DIA
+                EstadoServicio.DESHABILITADO,
+                ModalidadPrecio.POR_DIA,
+                null, null, null, null
         );
 
         when(servicioService.cambiarHabilitacionServicio(
@@ -241,8 +244,9 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(2000),
                 BigDecimal.valueOf(3000),
                 4,
-                true,
-                ModalidadPrecio.POR_DIA
+                EstadoServicio.HABILITADO,
+                ModalidadPrecio.POR_DIA,
+                null, null, null, null
         );
 
         when(servicioService.modificarServicio(eq(servicioId), any(ModificacionServicioDto.class)))
@@ -309,8 +313,9 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(1500),
                 BigDecimal.valueOf(2500),
                 4,
-                true,
-                ModalidadPrecio.POR_DIA
+                EstadoServicio.HABILITADO,
+                ModalidadPrecio.POR_DIA,
+                null, null, null, null
         );
 
         when(servicioService.registrarServicio(any(ServicioRegistroRequestDto.class)))
@@ -569,8 +574,9 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(1500),
                 BigDecimal.valueOf(2500),
                 null,
-                true,
-                ModalidadPrecio.POR_DIA
+                EstadoServicio.HABILITADO,
+                ModalidadPrecio.POR_DIA,
+                null, null, null, null
         );
 
         when(servicioService.registrarServicio(any(ServicioRegistroRequestDto.class)))

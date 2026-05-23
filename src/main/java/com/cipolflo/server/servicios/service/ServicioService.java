@@ -3,6 +3,7 @@ package com.cipolflo.server.servicios.service;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
+import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
@@ -176,6 +177,9 @@ public class ServicioService implements IServicioService {
     }
 
     private ServicioResponseDto mapToResponse(Servicio servicio) {
+        EstadoServicio estado = Boolean.TRUE.equals(servicio.getHabilitado())
+                ? EstadoServicio.HABILITADO
+                : EstadoServicio.DESHABILITADO;
         return new ServicioResponseDto(
                 servicio.getId(),
                 servicio.getNombre(),
@@ -184,8 +188,12 @@ public class ServicioService implements IServicioService {
                 servicio.getPrecioSocio(),
                 servicio.getPrecioParticular(),
                 servicio.getCapacidad(),
-                servicio.getHabilitado(),
-                servicio.getModalidadPrecio()
+                estado,
+                servicio.getModalidadPrecio(),
+                servicio.getCreatedAt(),
+                servicio.getUpdatedAt(),
+                servicio.getCreatedBy(),
+                servicio.getUpdatedBy()
         );
     }
 
