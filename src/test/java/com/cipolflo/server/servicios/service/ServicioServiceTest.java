@@ -95,7 +95,7 @@ class ServicioServiceTest {
         assertEquals(2, resultado.getCantidad());
         assertEquals(BigDecimal.valueOf(1500), resultado.getPrecioSocio());
         assertEquals(BigDecimal.valueOf(2500), resultado.getPrecioParticular());
-        assertTrue(resultado.getHabilitado());
+        assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
         assertEquals(ModalidadPrecio.POR_DIA, resultado.getModalidadPrecio());
         verify(servicioRepository).findById(servicioId);
     }
@@ -137,7 +137,7 @@ class ServicioServiceTest {
                 servicioService.cambiarHabilitacionServicio(servicioId, request);
 
         assertNotNull(resultado);
-        assertFalse(resultado.getHabilitado());
+        assertEquals(EstadoServicio.DESHABILITADO, resultado.getEstado());
 
         verify(servicioRepository).findById(servicioId);
         verify(servicioRepository).save(servicio);
@@ -161,7 +161,7 @@ class ServicioServiceTest {
                 servicioService.cambiarHabilitacionServicio(servicioId, request);
 
         assertNotNull(resultado);
-        assertTrue(resultado.getHabilitado());
+        assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
 
         verify(servicioRepository).findById(servicioId);
         verify(servicioRepository).save(servicio);
@@ -623,8 +623,8 @@ void deberiaRegistrarServicioExitosamente() {
     assertEquals(Procedencia.CAMPING, resultado.getProcedencia());
     assertEquals(BigDecimal.valueOf(2500), resultado.getPrecioParticular());
     assertEquals(BigDecimal.valueOf(1500), resultado.getPrecioSocio());
-    assertTrue(resultado.getHabilitado());
-    
+    assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
+
     verify(servicioRegistroValidator).validar(dto);
     verify(servicioRepository).save(any(Servicio.class));
 }
@@ -641,7 +641,7 @@ void deberiaCrearServicioConEstadoHabilitadoPorDefecto() {
 
     ServicioResponseDto resultado = servicioService.registrarServicio(dto);
 
-    assertTrue(resultado.getHabilitado());
+    assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
     verify(servicioRepository).save(argThat(servicio -> servicio.getHabilitado() == true));
 }
 
@@ -714,6 +714,42 @@ void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
         servicio.getHabilitado().equals(true)
 ));
 }
+@Test
+void deberiaMapearHabilitadoFalseAEstadoDeshabilitadoEnDetalle() {
+    Long servicioId = 1L;
+    Servicio servicio = crearServicio(servicioId, false);
+
+    when(servicioRepository.findById(servicioId))
+            .thenReturn(Optional.of(servicio));
+
+    ServicioResponseDto resultado = servicioService.getDetalleServicio(servicioId);
+
+    assertEquals(EstadoServicio.DESHABILITADO, resultado.getEstado());
+}
+
+@Test
+void deberiaIncluirCamposAuditoriaEnLaRespuestaDeDetalle() {
+    Long servicioId = 1L;
+    Instant createdAt = Instant.parse("2024-01-01T00:00:00Z");
+    Instant updatedAt = Instant.parse("2024-06-01T00:00:00Z");
+
+    Servicio servicio = crearServicio(servicioId, true);
+    ReflectionTestUtils.setField(servicio, "createdAt", createdAt);
+    ReflectionTestUtils.setField(servicio, "updatedAt", updatedAt);
+    ReflectionTestUtils.setField(servicio, "createdBy", "admin");
+    ReflectionTestUtils.setField(servicio, "updatedBy", "editor");
+
+    when(servicioRepository.findById(servicioId))
+            .thenReturn(Optional.of(servicio));
+
+    ServicioResponseDto resultado = servicioService.getDetalleServicio(servicioId);
+
+    assertEquals(createdAt, resultado.getCreatedAt());
+    assertEquals(updatedAt, resultado.getUpdatedAt());
+    assertEquals("admin", resultado.getCreatedBy());
+    assertEquals("editor", resultado.getUpdatedBy());
+}
+
 @Test
 void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
     ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
