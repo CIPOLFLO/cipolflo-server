@@ -5,7 +5,7 @@ import lombok.Getter;
 import java.time.Instant;
 
 @Getter
-public class AuditInfoDto {
+public abstract class AuditInfoDto {
 
     private final Instant createdAt;
     private final Instant updatedAt;
