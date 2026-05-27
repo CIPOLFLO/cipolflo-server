@@ -1,5 +1,6 @@
 package com.cipolflo.server.clientes.service;
 
+import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
@@ -75,12 +76,12 @@ class ClienteServiceTest {
 
     @Test
     void deberiaRetornarTodosLosClientesSinFiltros() {
-        List<Socio> clientes = List.of(
+        List<Cliente> clientes = List.of(
                 crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.AL_DIA),
                 crearSocio(2L, "María García", "23456789", 2, EstadoSocio.INACTIVO)
         );
-        Page<Socio> page = new PageImpl<>(clientes, pageRequest().toPageable(), clientes.size());
-        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn((Page) page);
+        Page<Cliente> page = new PageImpl<>(clientes, pageRequest().toPageable(), clientes.size());
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         PageResponse<ListadoClientesResponseDto> resultado = clienteService.getListadoClientes(sinFiltros(), pageRequest());
 
@@ -92,8 +93,8 @@ class ClienteServiceTest {
 
     @Test
     void deberiaRetornarPaginaVaciaCuandoNoHayCoincidencias() {
-        Page<Socio> page = Page.empty(pageRequest().toPageable());
-        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn((Page) page);
+        Page<Cliente> page = Page.empty(pageRequest().toPageable());
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         ListadoClientesRequestDto filtros = new ListadoClientesRequestDto(null, "nombreQueNoExiste", null, null);
         PageResponse<ListadoClientesResponseDto> resultado = clienteService.getListadoClientes(filtros, pageRequest());
@@ -106,8 +107,8 @@ class ClienteServiceTest {
     @Test
     void deberiaMapearSocioCorrectamente() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 3, EstadoSocio.AL_DIA);
-        Page<Socio> page = new PageImpl<>(List.of(socio));
-        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn((Page) page);
+        Page<Cliente> page = new PageImpl<>(List.of(socio));
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         PageResponse<ListadoClientesResponseDto> resultado = clienteService.getListadoClientes(sinFiltros(), pageRequest());
 
@@ -123,8 +124,8 @@ class ClienteServiceTest {
     @Test
     void deberiaMapearParticularConCamposNulos() {
         Particular particular = crearParticular(2L, "Laura Fernández", "67890123");
-        Page<Particular> page = new PageImpl<>(List.of(particular));
-        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn((Page) page);
+        Page<Cliente> page = new PageImpl<>(List.of(particular));
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         PageResponse<ListadoClientesResponseDto> resultado = clienteService.getListadoClientes(sinFiltros(), pageRequest());
 
