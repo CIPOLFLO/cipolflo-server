@@ -28,7 +28,7 @@ public class SecurityConfig {
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
     
-     @Value("${auth0.issuer}")
+    @Value("${auth0.issuer}")
     private String issuerUri;
 
     @Value("${auth0.audience}")
