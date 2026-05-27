@@ -1,0 +1,219 @@
+package com.cipolflo.server.clientes.controller;
+
+import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
+import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
+import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
+import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.service.IClienteService;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest(ClienteController.class)
+class ClienteControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockitoBean
+    private IClienteService clienteService;
+
+    @MockitoBean
+    private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
+
+    private PageResponse<ListadoClientesResponseDto> paginaVacia() {
+        return new PageResponse<>(List.of(), 0, 10, 0, 0, true, true);
+    }
+
+    private PageResponse<ListadoClientesResponseDto> paginaConResultados() {
+        ListadoClientesResponseDto dto = new ListadoClientesResponseDto(
+                1L, "Juan Pérez", "12345678", TipoCliente.SOCIO, 1, EstadoSocio.AL_DIA
+        );
+        return new PageResponse<>(List.of(dto), 0, 10, 1, 1, true, true);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarListadoSinFiltros() throws Exception {
+        when(clienteService.getListadoClientes(any(ListadoClientesRequestDto.class), any(PageRequestDto.class)))
+                .thenReturn(paginaConResultados());
+
+        mockMvc.perform(get("/api/v1/clientes").param("page", "0").param("size", "10"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).getListadoClientes(any(ListadoClientesRequestDto.class), any(PageRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaFiltrarPorTipoClienteSocio() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaConResultados());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("tipoCliente", "SOCIO")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).getListadoClientes(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaFiltrarPorTipoClienteParticular() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaVacia());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("tipoCliente", "PARTICULAR")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaFiltrarPorNombre() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaConResultados());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("nombre", "juan")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).getListadoClientes(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaFiltrarPorIdentificador() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaConResultados());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("identificador", "1.234.567-8")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).getListadoClientes(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaFiltrarPorEstado() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaConResultados());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("estado", "AL_DIA")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).getListadoClientes(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaFiltrarCombinandoVariosParametros() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaConResultados());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("tipoCliente", "SOCIO")
+                        .param("nombre", "juan")
+                        .param("identificador", "12345678")
+                        .param("estado", "AL_DIA")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).getListadoClientes(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarListadoVacioCuandoNoHayCoincidencias() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaVacia());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("nombre", "nombreQueNoExiste")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedCuandoNoEstaAutenticado() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes").param("page", "0").param("size", "10"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoTipoClienteEsInvalido() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("tipoCliente", "INVALIDO")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEstadoEsInvalido() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("estado", "INVALIDO")
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoNombreSuperaLimite() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("nombre", "a".repeat(101))
+                        .param("page", "0").param("size", "10"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoSizeEsCero() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes").param("page", "0").param("size", "0"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoPageEsNegativo() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes").param("page", "-1").param("size", "10"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoSizeSuperaElMaximo() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes").param("page", "0").param("size", "101"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaUsarPaginacionPorDefectoCuandoNoSeEnvianParametros() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaVacia());
+
+        mockMvc.perform(get("/api/v1/clientes"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).getListadoClientes(any(), any());
+    }
+}
