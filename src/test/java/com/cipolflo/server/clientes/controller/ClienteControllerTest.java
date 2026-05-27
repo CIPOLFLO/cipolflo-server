@@ -45,7 +45,7 @@ class ClienteControllerTest {
 
     private PageResponse<ListadoClientesResponseDto> paginaConResultados() {
         ListadoClientesResponseDto dto = new ListadoClientesResponseDto(
-                1L, "Juan Pérez", "12345678", TipoCliente.SOCIO, 1, EstadoSocio.AL_DIA
+                1L, "Juan Pérez", "12345678", "juan@mail.com", TipoCliente.SOCIO, 1, EstadoSocio.ACTIVO
         );
         return new PageResponse<>(List.of(dto), 0, 10, 1, 1, true, true);
     }
@@ -118,7 +118,7 @@ class ClienteControllerTest {
         when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaConResultados());
 
         mockMvc.perform(get("/api/v1/clientes")
-                        .param("estado", "AL_DIA")
+                        .param("estado", "ACTIVO")
                         .param("page", "0").param("size", "10"))
                 .andExpect(status().isOk());
 
@@ -134,7 +134,7 @@ class ClienteControllerTest {
                         .param("tipoCliente", "SOCIO")
                         .param("nombre", "juan")
                         .param("identificador", "12345678")
-                        .param("estado", "AL_DIA")
+                        .param("estado", "ACTIVO")
                         .param("page", "0").param("size", "10"))
                 .andExpect(status().isOk());
 

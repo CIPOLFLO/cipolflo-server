@@ -11,14 +11,16 @@ public class ListadoClientesResponseDto implements ResponseDto {
     private final Long id;
     private final String nombreCompleto;
     private final String cedula;
+    private final String email;
     private final TipoCliente tipoCliente;
     private final Integer numeroSocio;
     private final EstadoSocio estado;
 
-    public ListadoClientesResponseDto(Long id, String nombreCompleto, String cedula, TipoCliente tipoCliente, Integer numeroSocio, EstadoSocio estado) {
+    public ListadoClientesResponseDto(Long id, String nombreCompleto, String cedula, String email, TipoCliente tipoCliente, Integer numeroSocio, EstadoSocio estado) {
         this.id = id;
         this.nombreCompleto = nombreCompleto;
         this.cedula = cedula;
+        this.email = email;
         this.tipoCliente = tipoCliente;
         this.numeroSocio = numeroSocio;
         this.estado = estado;

@@ -21,8 +21,9 @@ class ClienteMapperTest {
         socio.setNombreCompleto("Juan Pérez");
         socio.setCedula("12345678");
         socio.setTelefono("099111111");
+        socio.setMail("juan@mail.com");
         socio.setNumeroSocio(5);
-        socio.setEstado(EstadoSocio.AL_DIA);
+        socio.setEstado(EstadoSocio.ACTIVO);
         socio.setFechaNacimiento(LocalDate.of(1990, 1, 1));
         socio.setDepartamento("Montevideo");
         socio.setDireccion("Av. 18 de Julio 100");
@@ -37,6 +38,7 @@ class ClienteMapperTest {
         particular.setNombreCompleto("Laura Fernández");
         particular.setCedula("67890123");
         particular.setTelefono("099666666");
+        particular.setMail("laura@mail.com");
         return particular;
     }
 
@@ -47,9 +49,10 @@ class ClienteMapperTest {
         assertEquals(1L, dto.getId());
         assertEquals("Juan Pérez", dto.getNombreCompleto());
         assertEquals("12345678", dto.getCedula());
+        assertEquals("juan@mail.com", dto.getEmail());
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
         assertEquals(5, dto.getNumeroSocio());
-        assertEquals(EstadoSocio.AL_DIA, dto.getEstado());
+        assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
     }
 
     @Test
@@ -75,6 +78,16 @@ class ClienteMapperTest {
     }
 
     @Test
+    void deberiaMapearEmailNuloCuandoClienteNoTieneMail() {
+        Socio socio = crearSocio();
+        socio.setMail(null);
+
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(socio);
+
+        assertNull(dto.getEmail());
+    }
+
+    @Test
     void deberiaMapearSocioConNumeroSocioNulo() {
         Socio socio = crearSocio();
         socio.setNumeroSocio(null);
@@ -83,7 +96,7 @@ class ClienteMapperTest {
 
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
         assertNull(dto.getNumeroSocio());
-        assertEquals(EstadoSocio.AL_DIA, dto.getEstado());
+        assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
     }
 
     @Test
@@ -93,5 +106,6 @@ class ClienteMapperTest {
         assertEquals(2L, dto.getId());
         assertEquals("Laura Fernández", dto.getNombreCompleto());
         assertEquals("67890123", dto.getCedula());
+        assertEquals("laura@mail.com", dto.getEmail());
     }
 }

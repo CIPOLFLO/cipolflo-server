@@ -15,6 +15,7 @@ public class ClienteMapper {
                 cliente.getId(),
                 cliente.getNombreCompleto(),
                 cliente.getCedula(),
+                cliente.getMail(),
                 socio != null ? TipoCliente.SOCIO : TipoCliente.PARTICULAR,
                 socio != null ? socio.getNumeroSocio() : null,
                 socio != null ? socio.getEstado() : null

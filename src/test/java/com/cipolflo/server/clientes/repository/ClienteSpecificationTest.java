@@ -280,11 +280,11 @@ class ClienteSpecificationTest {
 
         doReturn(socioRoot).when(cb).treat(root, Socio.class);
         when(socioRoot.get("estado")).thenReturn(estadoPath);
-        when(cb.equal(estadoPath, EstadoSocio.AL_DIA)).thenReturn(mock(Predicate.class));
+        when(cb.equal(estadoPath, EstadoSocio.ACTIVO)).thenReturn(mock(Predicate.class));
 
-        Specification<Cliente> spec = ClienteSpecification.conEstado(EstadoSocio.AL_DIA);
+        Specification<Cliente> spec = ClienteSpecification.conEstado(EstadoSocio.ACTIVO);
         spec.toPredicate(root, query, cb);
 
-        verify(cb).equal(estadoPath, EstadoSocio.AL_DIA);
+        verify(cb).equal(estadoPath, EstadoSocio.ACTIVO);
     }
 }

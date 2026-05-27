@@ -55,6 +55,7 @@ class ClienteServiceTest {
         socio.setNombreCompleto(nombre);
         socio.setCedula(cedula);
         socio.setTelefono("099000000");
+        socio.setMail("socio@mail.com");
         socio.setNumeroSocio(nroSocio);
         socio.setEstado(estado);
         socio.setFechaNacimiento(LocalDate.of(1990, 1, 1));
@@ -77,7 +78,7 @@ class ClienteServiceTest {
     @Test
     void deberiaRetornarTodosLosClientesSinFiltros() {
         List<Cliente> clientes = List.of(
-                crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.AL_DIA),
+                crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO),
                 crearSocio(2L, "María García", "23456789", 2, EstadoSocio.INACTIVO)
         );
         Page<Cliente> page = new PageImpl<>(clientes, pageRequest().toPageable(), clientes.size());
@@ -106,7 +107,7 @@ class ClienteServiceTest {
 
     @Test
     void deberiaMapearSocioCorrectamente() {
-        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 3, EstadoSocio.AL_DIA);
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 3, EstadoSocio.ACTIVO);
         Page<Cliente> page = new PageImpl<>(List.of(socio));
         when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
@@ -116,9 +117,10 @@ class ClienteServiceTest {
         assertEquals(1L, dto.getId());
         assertEquals("Juan Pérez", dto.getNombreCompleto());
         assertEquals("12345678", dto.getCedula());
+        assertEquals("socio@mail.com", dto.getEmail());
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
         assertEquals(3, dto.getNumeroSocio());
-        assertEquals(EstadoSocio.AL_DIA, dto.getEstado());
+        assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
     }
 
     @Test
