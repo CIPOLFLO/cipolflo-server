@@ -130,8 +130,12 @@ Retorna el detalle completo de un servicio.
   "precioSocio": 2500.00,
   "precioParticular": 5000.00,
   "capacidad": 4,
-  "habilitado": true,
-  "modalidadPrecio": "POR_HORA"
+  "estado": "HABILITADO",
+  "modalidadPrecio": "POR_HORA",
+  "createdAt": "2025-01-10T09:00:00Z",
+  "updatedAt": "2025-03-15T14:30:00Z",
+  "createdBy": "admin@cipolflo.com",
+  "updatedBy": "admin@cipolflo.com"
 }
 ```
 
@@ -194,6 +198,8 @@ Reemplaza los datos de un servicio existente.
 | `modalidadPrecio` | `ModalidadPrecio`| Sí          | —                           |
 | `capacidad`       | integer          | No          | >= 0 si se envía            |
 | `cantidad`        | integer          | No          | >= 0 si se envía            |
+
+> `procedencia` no es modificable. `capacidad` y `cantidad` son mutuamente excluyentes; enviar `null` o no incluir el que no aplica.
 
 **Respuesta 200:** misma estructura que `GET /api/v1/servicios/{id}`
 
@@ -312,8 +318,12 @@ Retorna las reservas futuras/activas asociadas al servicio (útil antes de desha
   precioSocio: number
   precioParticular: number
   capacidad: number | null
-  habilitado: boolean
+  estado: EstadoServicio
   modalidadPrecio: ModalidadPrecio
+  createdAt: string    // Instant ISO-8601 UTC
+  updatedAt: string    // Instant ISO-8601 UTC
+  createdBy: string
+  updatedBy: string
 }
 ```
 
