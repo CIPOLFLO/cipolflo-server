@@ -86,6 +86,9 @@
          env:
            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+           PR_NUMBER: ${{ github.event.pull_request.number }}
+           PR_BRANCH: ${{ github.head_ref }}
+           PR_BASE: ${{ github.base_ref }}
          run: >
            ./gradlew build sonar --info
            -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
