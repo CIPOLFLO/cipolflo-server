@@ -157,6 +157,16 @@ La API queda disponible en `http://localhost:8080`.
 ./gradlew build -x test
 ```
 
+### Verificación de dependencias
+
+El archivo `gradle/verification-metadata.xml` contiene los checksums SHA-256 de todas las dependencias. Gradle los verifica en cada build para detectar artefactos modificados o comprometidos.
+
+**Cada vez que agregues, elimines o actualices una dependencia en `build.gradle.kts`, regenerá el archivo y commitealo junto con el cambio:**
+
+```bash
+./gradlew --write-verification-metadata sha256 help
+```
+
 ---
 
 ## Correr los tests
