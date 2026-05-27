@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -52,6 +53,8 @@ public class ServicioControllerTest {
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
     @MockitoBean
     private IServicioService servicioService;
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
 
     @Test
     @WithMockUser

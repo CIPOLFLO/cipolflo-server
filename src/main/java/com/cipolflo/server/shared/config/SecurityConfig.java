@@ -5,7 +5,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoders;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -13,22 +22,58 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
-// @EnableMethodSecurity — deshabilitado hasta implementar Auth0
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
+    
+    @Value("${auth0.issuer}")
+    private String issuerUri;
+
+    @Value("${auth0.audience}")
+    private String audience;
+
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
-            // TODO: reemplazar con validación JWT de Auth0
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/api/public/**", "/api/health").permitAll()
+                .anyRequest().authenticated()
+            )
+            .oauth2ResourceServer(oauth2 ->
+                oauth2.jwt(jwt -> jwt.decoder(jwtDecoder()))
+            );
+
         return http.build();
     }
 
+    @Bean
+    public JwtDecoder jwtDecoder() {
+
+        NimbusJwtDecoder jwtDecoder =
+            (NimbusJwtDecoder) JwtDecoders.fromIssuerLocation(issuerUri);
+
+        OAuth2TokenValidator<Jwt> withIssuer =
+            JwtValidators.createDefaultWithIssuer(issuerUri);
+
+        OAuth2TokenValidator<Jwt> audienceValidator =
+            new AudienceValidator(audience);
+
+        OAuth2TokenValidator<Jwt> validator =
+            new DelegatingOAuth2TokenValidator<>(
+                withIssuer,
+                audienceValidator
+            );
+
+        jwtDecoder.setJwtValidator(validator);
+
+        return jwtDecoder;
+    }
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
