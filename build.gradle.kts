@@ -3,7 +3,7 @@ import org.gradle.kotlin.dsl.creating
 plugins {
 	java
 	jacoco
-	id ("org.springframework.boot") version "3.5.14-SNAPSHOT"
+	id ("org.springframework.boot") version "3.5.14"
 	id ("io.spring.dependency-management") version "1.1.7"
 	id ("org.sonarqube") version "7.2.3.7755"
 }
@@ -19,7 +19,6 @@ java {
 
 repositories {
 	mavenCentral()
-	maven { url = uri("https://repo.spring.io/snapshot") }
 }
 
 dependencies {
