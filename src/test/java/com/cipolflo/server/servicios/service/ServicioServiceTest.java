@@ -43,7 +43,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 import java.time.Instant;
 import java.util.List;
@@ -771,4 +773,89 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
             servicio.getCantidad() == null
     ));
 }
+
+    @Test
+    void deberiaRetornarReservasProximasConNombreCliente() {
+        Long servicioId = 1L;
+        Long clienteId = 10L;
+
+        Servicio servicio = crearServicio(servicioId, true);
+
+        Reserva reserva = Reserva.crear(
+                clienteId,
+                servicioId,
+                Procedencia.CAMPING,
+                Instant.now().plusSeconds(86400),
+                Instant.now().plusSeconds(172800),
+                false
+        );
+        ReflectionTestUtils.setField(reserva, "id", 1L);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reserva));
+        when(clienteService.getNombresByIds(any())).thenReturn(Map.of(clienteId, "Juan Pérez"));
+
+        List<ReservaProximaResponseDto> resultado = servicioService.getReservasProximas(servicioId);
+
+        assertEquals(1, resultado.size());
+        assertEquals(1L, resultado.get(0).getId());
+        assertEquals(clienteId, resultado.get(0).getClienteId());
+        assertEquals("Juan Pérez", resultado.get(0).getNombreCliente());
+        verify(clienteService).getNombresByIds(any());
+    }
+
+    @Test
+    void deberiaRetornarListaVaciaSiNoHayReservasProximas() {
+        Long servicioId = 1L;
+
+        Servicio servicio = crearServicio(servicioId, true);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of());
+        when(clienteService.getNombresByIds(any())).thenReturn(Map.of());
+
+        List<ReservaProximaResponseDto> resultado = servicioService.getReservasProximas(servicioId);
+
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+        verify(clienteService).getNombresByIds(any());
+    }
+
+    @Test
+    void deberiaLanzarServicioNotFoundEnGetReservasProximas() {
+        Long servicioId = 99L;
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.empty());
+
+        assertThrows(ServicioNotFoundException.class,
+                () -> servicioService.getReservasProximas(servicioId));
+
+        verify(reservaService, never()).obtenerProximasPorServicioEnRango(any());
+        verify(clienteService, never()).getNombresByIds(any());
+    }
+
+    @Test
+    void deberiaLanzarIllegalStateExceptionCuandoClienteNoExisteParaReserva() {
+        Long servicioId = 1L;
+        Long clienteId = 10L;
+
+        Servicio servicio = crearServicio(servicioId, true);
+
+        Reserva reserva = Reserva.crear(
+                clienteId,
+                servicioId,
+                Procedencia.CAMPING,
+                Instant.now().plusSeconds(86400),
+                Instant.now().plusSeconds(172800),
+                false
+        );
+        ReflectionTestUtils.setField(reserva, "id", 1L);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reserva));
+        when(clienteService.getNombresByIds(any())).thenReturn(Map.of());
+
+        assertThrows(IllegalStateException.class,
+                () -> servicioService.getReservasProximas(servicioId));
+    }
 }
