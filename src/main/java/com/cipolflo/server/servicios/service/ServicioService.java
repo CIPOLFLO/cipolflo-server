@@ -1,5 +1,6 @@
 package com.cipolflo.server.servicios.service;
 
+import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
@@ -23,28 +24,37 @@ import com.cipolflo.server.servicios.repository.ServicioSpecification;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ServicioService implements IServicioService {
     private final ServicioRepository servicioRepository;
     private final IReservaService reservaService;
+    private final IClienteService clienteService;
     private final ModificacionServicioValidator modificacionServicioValidator;
     private final ServicioRegistroValidator servicioRegistroValidator;
+
     public ServicioService(ServicioRepository servicioRepository,
                            IReservaService reservaService,
+                           IClienteService clienteService,
                            ModificacionServicioValidator modificacionServicioValidator,
                            ServicioRegistroValidator servicioRegistroValidator) {
         this.servicioRepository = servicioRepository;
         this.reservaService = reservaService;
+        this.clienteService = clienteService;
         this.modificacionServicioValidator = modificacionServicioValidator;
         this.servicioRegistroValidator = servicioRegistroValidator;
     }
@@ -102,9 +112,14 @@ public class ServicioService implements IServicioService {
         Servicio servicio = servicioRepository.findById(id)
                 .orElseThrow(() -> new ServicioNotFoundException(id));
 
-        return mapReservasProximas(
-                reservaService.obtenerProximasPorServicioEnRango(servicio.getId())
-        );
+        List<Reserva> reservas = reservaService.obtenerProximasPorServicioEnRango(servicio.getId());
+
+        Collection<Long> clienteIds = reservas.stream()
+                .map(Reserva::getClienteId)
+                .collect(Collectors.toSet());
+        Map<Long, String> nombres = clienteService.getNombresByIds(clienteIds);
+
+        return mapReservasProximas(reservas, nombres);
     }
 
     private void cancelarReservasSiCorresponde(Servicio servicio, ServicioRequestDto request) {
@@ -141,9 +156,9 @@ public class ServicioService implements IServicioService {
         }
     }
 
-    private List<ReservaProximaResponseDto> mapReservasProximas(List<Reserva> reservas) {
+    private List<ReservaProximaResponseDto> mapReservasProximas(List<Reserva> reservas, Map<Long, String> nombres) {
         return reservas.stream()
-                .map(this::mapReservaProxima)
+                .map(r -> mapReservaProxima(r, nombres))
                 .toList();
     }
 
@@ -165,10 +180,16 @@ public class ServicioService implements IServicioService {
         return mapToResponse(servicioRepository.save(servicio));
     }
 
-    private ReservaProximaResponseDto mapReservaProxima(Reserva reserva) {
+    private ReservaProximaResponseDto mapReservaProxima(Reserva reserva, Map<Long, String> nombres) {
+        String nombreCliente = nombres.get(reserva.getClienteId());
+        if (nombreCliente == null) {
+            log.error("Inconsistencia de datos: cliente {} no encontrado para la reserva {}", reserva.getClienteId(), reserva.getId());
+            throw new IllegalStateException("Error interno al obtener los datos de la reserva");
+        }
         return new ReservaProximaResponseDto(
                 reserva.getId(),
                 reserva.getClienteId(),
+                nombreCliente,
                 reserva.getFechaEntrada(),
                 reserva.getFechaSalida(),
                 reserva.getPago(),

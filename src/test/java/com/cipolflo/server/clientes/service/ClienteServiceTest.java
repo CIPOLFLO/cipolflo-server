@@ -25,12 +25,10 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -141,6 +139,46 @@ class ClienteServiceTest {
         assertEquals(TipoCliente.PARTICULAR, dto.getTipoCliente());
         assertNull(dto.getNumeroSocio());
         assertNull(dto.getEstado());
+    }
+
+    @Test
+    void deberiaRetornarMapaNombresParaIdsExistentes() {
+        Socio socio1 = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        Socio socio2 = crearSocio(2L, "María García", "23456789", 2, EstadoSocio.ACTIVO);
+
+        when(clienteRepository.findAllById(List.of(1L, 2L)))
+                .thenReturn(List.of(socio1, socio2));
+
+        Map<Long, String> resultado = clienteService.getNombresByIds(List.of(1L, 2L));
+
+        assertEquals(2, resultado.size());
+        assertEquals("Juan Pérez", resultado.get(1L));
+        assertEquals("María García", resultado.get(2L));
+    }
+
+    @Test
+    void deberiaRetornarMapaVacioCuandoColeccionEsVacia() {
+        when(clienteRepository.findAllById(List.of()))
+                .thenReturn(List.of());
+
+        Map<Long, String> resultado = clienteService.getNombresByIds(List.of());
+
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+    }
+
+    @Test
+    void deberiaRetornarSoloClientesEncontradosCuandoAlgunosIdsNoExisten() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+
+        when(clienteRepository.findAllById(List.of(1L, 99L)))
+                .thenReturn(List.of(socio));
+
+        Map<Long, String> resultado = clienteService.getNombresByIds(List.of(1L, 99L));
+
+        assertEquals(1, resultado.size());
+        assertEquals("Juan Pérez", resultado.get(1L));
+        assertFalse(resultado.containsKey(99L));
     }
 
     @Test
