@@ -1,6 +1,8 @@
 package com.cipolflo.server.shared.exception;
 
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.exception.ClienteCodigoError;
+import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -41,6 +43,17 @@ import static org.mockito.Mockito.when;
 class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+    @Test
+    void handleClienteNotFoundException_deberiaRetornar404() {
+        ClienteNotFoundException ex = new ClienteNotFoundException(1L);
+
+        ResponseEntity<ErrorResponse> response = handler.handleClienteNotFoundException(ex);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals(ClienteCodigoError.CLIENTE_NO_ENCONTRADO.name(), response.getBody().codigo());
+        assertEquals("Cliente no encontrado con id: 1", response.getBody().descripcion());
+    }
 
     @Test
     void handleServicioNotFoundException_deberiaRetornar404() {
