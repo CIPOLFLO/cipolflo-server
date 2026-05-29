@@ -5,9 +5,12 @@ import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,10 +28,12 @@ class ClienteMapperTest {
         socio.setNumeroSocio(5);
         socio.setEstado(EstadoSocio.ACTIVO);
         socio.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+        socio.setPais("Uruguay");
         socio.setDepartamento("Montevideo");
+        socio.setCiudad("Montevideo");
         socio.setDireccion("Av. 18 de Julio 100");
         socio.setFechaIngreso(LocalDate.of(2022, 1, 1));
-        socio.setMetodoCobro(MetodoCobro.EN_SEDE);
+        socio.setMetodoCobro(MetodoCobro.EFECTIVO);
         return socio;
     }
 
@@ -107,5 +112,71 @@ class ClienteMapperTest {
         assertEquals("Laura Fernández", dto.getNombreCompleto());
         assertEquals("67890123", dto.getCedula());
         assertEquals("laura@mail.com", dto.getEmail());
+    }
+
+    @Test
+    void deberiaMapearTodosLosCamposDeUnSocioEnDetalle() {
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio());
+
+        assertEquals(1L, dto.getId());
+        assertEquals("Juan Pérez", dto.getNombre());
+        assertEquals("12345678", dto.getCedula());
+        assertEquals(LocalDate.of(1990, 1, 1), dto.getFechaNacimiento());
+        assertEquals("099111111", dto.getTelefono());
+        assertEquals("juan@mail.com", dto.getEmail());
+        assertEquals(MetodoCobro.EFECTIVO, dto.getMetodoCobro());
+        assertEquals("Uruguay", dto.getPais());
+        assertEquals("Montevideo", dto.getDepartamento());
+        assertEquals("Montevideo", dto.getCiudad());
+        assertEquals("Av. 18 de Julio 100", dto.getDireccion());
+        assertEquals(5, dto.getNumeroSocio());
+        assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
+        assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
+    }
+
+    @Test
+    void deberiaMapearCamposDeAuditoriaEnDetalle() {
+        Socio socio = crearSocio();
+        Instant ahora = Instant.now();
+        ReflectionTestUtils.setField(socio, "createdAt", ahora);
+        ReflectionTestUtils.setField(socio, "createdBy", "admin@test.com");
+
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio);
+
+        assertEquals(ahora, dto.getCreatedAt());
+        assertEquals("admin@test.com", dto.getCreatedBy());
+    }
+
+    @Test
+    void deberiaMapearTipoComoSocioEnDetalle() {
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio());
+
+        assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
+    }
+
+    @Test
+    void deberiaMapearParticularConCamposSocioNulosEnDetalle() {
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular());
+
+        assertNull(dto.getFechaNacimiento());
+        assertNull(dto.getMetodoCobro());
+        assertNull(dto.getPais());
+        assertNull(dto.getDepartamento());
+        assertNull(dto.getCiudad());
+        assertNull(dto.getDireccion());
+        assertNull(dto.getNumeroSocio());
+        assertNull(dto.getEstado());
+    }
+
+    @Test
+    void deberiaMapearCamposBaseDeParticularEnDetalle() {
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular());
+
+        assertEquals(2L, dto.getId());
+        assertEquals("Laura Fernández", dto.getNombre());
+        assertEquals("67890123", dto.getCedula());
+        assertEquals("099666666", dto.getTelefono());
+        assertEquals("laura@mail.com", dto.getEmail());
+        assertEquals(TipoCliente.PARTICULAR, dto.getTipoCliente());
     }
 }

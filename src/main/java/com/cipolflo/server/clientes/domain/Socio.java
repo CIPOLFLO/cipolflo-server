@@ -26,7 +26,13 @@ public class Socio extends Cliente {
     private EstadoSocio estado;
 
     @Column(nullable = false)
+    private String pais;
+
+    @Column(nullable = false)
     private String departamento;
+
+    @Column(nullable = false)
+    private String ciudad;
 
     @Column(nullable = false)
     private String direccion;

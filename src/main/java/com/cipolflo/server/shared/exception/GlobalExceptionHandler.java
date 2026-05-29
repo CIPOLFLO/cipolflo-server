@@ -1,5 +1,7 @@
 package com.cipolflo.server.shared.exception;
 
+import com.cipolflo.server.clientes.exception.ClienteCodigoError;
+import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -30,6 +32,14 @@ import java.util.stream.Collectors;
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ClienteNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleClienteNotFoundException(ClienteNotFoundException ex) {
+        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ClienteCodigoError.CLIENTE_NO_ENCONTRADO.name(), ex.getMessage()));
+    }
 
     @ExceptionHandler(ServicioNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleServicioNotFoundException(ServicioNotFoundException ex) {

@@ -1,9 +1,12 @@
 package com.cipolflo.server.clientes.controller;
 
+import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
+import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
+import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
-import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
-import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -16,6 +19,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,6 +45,16 @@ class ClienteControllerTest {
 
     private PageResponse<ListadoClientesResponseDto> paginaVacia() {
         return new PageResponse<>(List.of(), 0, 10, 0, 0, true, true);
+    }
+
+    private ClienteResponseDto detalleCliente() {
+        return new ClienteResponseDto(
+                1L, "Juan Pérez", "12345678", LocalDate.of(1990, 1, 1),
+                "099111111", "juan@mail.com", MetodoCobro.EFECTIVO,
+                "Uruguay", "Montevideo", "Montevideo", "Av. 18 de Julio 100",
+                5, TipoCliente.SOCIO, EstadoSocio.ACTIVO, null,
+                null, null, null, null
+        );
     }
 
     private PageResponse<ListadoClientesResponseDto> paginaConResultados() {
@@ -215,5 +229,45 @@ class ClienteControllerTest {
                 .andExpect(status().isOk());
 
         verify(clienteService).getListadoClientes(any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarDetalleDelClienteCuandoExiste() throws Exception {
+        when(clienteService.getDetalleCliente(1L)).thenReturn(detalleCliente());
+
+        mockMvc.perform(get("/api/v1/clientes/1"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).getDetalleCliente(1L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoClienteNoExiste() throws Exception {
+        when(clienteService.getDetalleCliente(99L)).thenThrow(new ClienteNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/clientes/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlPedirDetalleSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdEsNegativoEnDetalle() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdEsTextoEnDetalle() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/abc"))
+                .andExpect(status().isBadRequest());
     }
 }

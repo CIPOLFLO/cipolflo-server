@@ -6,8 +6,10 @@ import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
+import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -23,10 +25,12 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -59,10 +63,12 @@ class ClienteServiceTest {
         socio.setNumeroSocio(nroSocio);
         socio.setEstado(estado);
         socio.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+        socio.setPais("Uruguay");
         socio.setDepartamento("Montevideo");
+        socio.setCiudad("Montevideo");
         socio.setDireccion("Calle 1");
         socio.setFechaIngreso(LocalDate.of(2022, 1, 1));
-        socio.setMetodoCobro(MetodoCobro.EN_SEDE);
+        socio.setMetodoCobro(MetodoCobro.EFECTIVO);
         return socio;
     }
 
@@ -135,5 +141,31 @@ class ClienteServiceTest {
         assertEquals(TipoCliente.PARTICULAR, dto.getTipoCliente());
         assertNull(dto.getNumeroSocio());
         assertNull(dto.getEstado());
+    }
+
+    @Test
+    void deberiaRetornarDetalleDeUnSocio() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 3, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+
+        ClienteResponseDto dto = clienteService.getDetalleCliente(1L);
+
+        assertNotNull(dto);
+        assertEquals(1L, dto.getId());
+        assertEquals("Juan Pérez", dto.getNombre());
+        assertEquals("12345678", dto.getCedula());
+        assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
+        assertEquals(3, dto.getNumeroSocio());
+        assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
+        assertEquals("Uruguay", dto.getPais());
+        verify(clienteRepository).findById(1L);
+    }
+
+    @Test
+    void deberiaLanzarClienteNotFoundExceptionCuandoClienteNoExiste() {
+        when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ClienteNotFoundException.class, () -> clienteService.getDetalleCliente(99L));
+        verify(clienteRepository).findById(99L);
     }
 }

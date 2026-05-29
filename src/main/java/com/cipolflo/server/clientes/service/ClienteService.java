@@ -1,8 +1,10 @@
 package com.cipolflo.server.clientes.service;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
+import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
@@ -34,5 +36,12 @@ public class ClienteService implements IClienteService {
                 .map(ClienteMapper::toListadoResponseDto);
 
         return PaginationMapper.toPageResponse(page);
+    }
+
+    @Override
+    public ClienteResponseDto getDetalleCliente(Long id) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new ClienteNotFoundException(id));
+        return ClienteMapper.toDetalleResponseDto(cliente);
     }
 }
