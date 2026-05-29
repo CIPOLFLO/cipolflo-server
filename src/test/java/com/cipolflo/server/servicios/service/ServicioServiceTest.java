@@ -18,6 +18,7 @@ import com.cipolflo.server.servicios.validator.ServicioRegistroValidator;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
+import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
@@ -857,5 +858,87 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         assertThrows(IllegalStateException.class,
                 () -> servicioService.getReservasProximas(servicioId));
+    }
+
+    @Test
+    void deberiaMapearTodosLosCamposDelDtoCorrectamente() {
+        Long servicioId = 1L;
+        Long clienteId = 10L;
+        Instant fechaEntrada = Instant.parse("2026-06-01T10:00:00Z");
+        Instant fechaSalida = Instant.parse("2026-06-05T10:00:00Z");
+
+        Servicio servicio = crearServicio(servicioId, true);
+
+        Reserva reserva = Reserva.crear(
+                clienteId,
+                servicioId,
+                Procedencia.CAMPING,
+                fechaEntrada,
+                fechaSalida,
+                false
+        );
+        ReflectionTestUtils.setField(reserva, "id", 5L);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reserva));
+        when(clienteService.getNombresByIds(any())).thenReturn(Map.of(clienteId, "Ana García"));
+
+        List<ReservaProximaResponseDto> resultado = servicioService.getReservasProximas(servicioId);
+
+        assertEquals(1, resultado.size());
+        ReservaProximaResponseDto dto = resultado.get(0);
+        assertEquals(5L, dto.getId());
+        assertEquals(clienteId, dto.getClienteId());
+        assertEquals("Ana García", dto.getNombreCliente());
+        assertEquals(fechaEntrada, dto.getFechaEntrada());
+        assertEquals(fechaSalida, dto.getFechaSalida());
+        assertFalse(dto.getPago());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
+    }
+
+    @Test
+    void deberiaResolverNombreCorrectamenteParaMultiplesReservasYClientes() {
+        Long servicioId = 1L;
+        Long clienteId1 = 10L;
+        Long clienteId2 = 20L;
+
+        Servicio servicio = crearServicio(servicioId, true);
+
+        Reserva reserva1 = Reserva.crear(
+                clienteId1,
+                servicioId,
+                Procedencia.CAMPING,
+                Instant.now().plusSeconds(86400),
+                Instant.now().plusSeconds(172800),
+                false
+        );
+        ReflectionTestUtils.setField(reserva1, "id", 1L);
+
+        Reserva reserva2 = Reserva.crear(
+                clienteId2,
+                servicioId,
+                Procedencia.CAMPING,
+                Instant.now().plusSeconds(259200),
+                Instant.now().plusSeconds(345600),
+                false
+        );
+        ReflectionTestUtils.setField(reserva2, "id", 2L);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reserva1, reserva2));
+        when(clienteService.getNombresByIds(any())).thenReturn(Map.of(
+                clienteId1, "Juan Pérez",
+                clienteId2, "Ana García"
+        ));
+
+        List<ReservaProximaResponseDto> resultado = servicioService.getReservasProximas(servicioId);
+
+        assertEquals(2, resultado.size());
+        assertEquals(1L, resultado.get(0).getId());
+        assertEquals(clienteId1, resultado.get(0).getClienteId());
+        assertEquals("Juan Pérez", resultado.get(0).getNombreCliente());
+        assertEquals(2L, resultado.get(1).getId());
+        assertEquals(clienteId2, resultado.get(1).getClienteId());
+        assertEquals("Ana García", resultado.get(1).getNombreCliente());
     }
 }
