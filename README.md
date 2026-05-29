@@ -246,7 +246,7 @@ Cliente (abstracta)
 | `Particular` | Extiende Cliente sin campos adicionales |
 | `Socio` | Extiende Cliente con número de socio, fecha de nacimiento, estado, domicilio, cuotas |
 | `PagoCuota` | Registro de pago de cuota mensual de un socio |
-| `EstadoSocio` | Enum: `AL_DIA`, `INACTIVO`, `DE_BAJA` |
+| `EstadoSocio` | Enum: `ACTIVO`, `INACTIVO`, `DE_BAJA` |
 | `MetodoCobro` | Enum: `EN_SEDE`, `DESCUENTO_SALARIO`, `TRANSFERENCIA` |
 | `ClienteRepository` | `JpaRepository<Cliente, Long>` |
 | `IClienteService` / `ClienteService` | Interfaz + implementación del servicio |

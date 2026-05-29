@@ -1,5 +1,6 @@
 package com.cipolflo.server.servicios.service;
 
+import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
@@ -54,6 +55,8 @@ class ServicioServiceTest {
     private ServicioRepository servicioRepository;
     @Mock
     private IReservaService reservaService;
+    @Mock
+    private IClienteService clienteService;
     @Mock
     private ModificacionServicioValidator modificacionServicioValidator;
     @Mock
