@@ -1,10 +1,10 @@
 package com.cipolflo.server.clientes.service;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.mapper.ClienteMapper;
-import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -12,6 +12,10 @@ import com.cipolflo.server.shared.pagination.PaginationMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ClienteService implements IClienteService {
@@ -34,5 +38,14 @@ public class ClienteService implements IClienteService {
                 .map(ClienteMapper::toListadoResponseDto);
 
         return PaginationMapper.toPageResponse(page);
+    }
+
+    @Override
+    public Map<Long, String> getNombresByIds(Collection<Long> ids) {
+        return clienteRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(
+                        Cliente::getId,
+                        Cliente::getNombreCompleto
+                ));
     }
 }
