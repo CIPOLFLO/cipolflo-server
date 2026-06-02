@@ -14,7 +14,9 @@ import com.cipolflo.server.shared.pagination.PaginationMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
+import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.clientes.domain.Socio;
+import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,9 +24,11 @@ import java.util.stream.Collectors;
 @Service
 public class ClienteService implements IClienteService {
     private final ClienteRepository clienteRepository;
+    private final IReservaService reservaService;
 
-    public ClienteService(ClienteRepository clienteRepository) {
+    public ClienteService(ClienteRepository clienteRepository, IReservaService reservaService) {
         this.clienteRepository = clienteRepository;
+        this.reservaService = reservaService;
     }
 
     @Override
@@ -57,4 +61,18 @@ public class ClienteService implements IClienteService {
                         Cliente::getNombreCompleto
                 ));
     }
+
+    @Override
+    public void darDeBajaSocio(Long id) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new SocioNotFoundException(id));
+        if (!(cliente instanceof Socio socio)) {
+            throw new SocioNotFoundException(id);
+        }
+        socio.darDeBaja();
+        reservaService.cancelarReservasFuturasPorCliente(socio.getId());
+        clienteRepository.save(socio);
+    }
+
+
 }

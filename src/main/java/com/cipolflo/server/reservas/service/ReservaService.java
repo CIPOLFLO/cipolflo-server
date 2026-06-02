@@ -43,4 +43,14 @@ public class ReservaService implements IReservaService {
         reservas.forEach(Reserva::cancelar);
         reservaRepository.saveAll(reservas);
     }
+    @Override
+    public void cancelarReservasFuturasPorCliente(Long clienteId) {
+        List<Reserva> reservas = reservaRepository.findByClienteIdAndFechaEntradaAfterAndEstadoIn(
+                clienteId,
+                Instant.now(),
+                List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA)
+        );
+
+        cancelarTodas(reservas);
+    }
 }

@@ -16,4 +16,6 @@ public interface IClienteService {
     ClienteResponseDto getDetalleCliente(Long id);
 
     Map<Long, String> getNombresByIds(Collection<Long> ids);
+
+    void darDeBajaSocio(Long id);
 }
