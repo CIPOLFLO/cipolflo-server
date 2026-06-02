@@ -2,6 +2,7 @@ package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
@@ -11,6 +12,8 @@ import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.servicios.service.IServicioService;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
+import com.cipolflo.server.shared.pagination.PageResponse;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
@@ -55,6 +58,10 @@ public class ServicioControllerTest {
     private IServicioService servicioService;
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    private PageResponse<ListadoServiciosResponseDto> paginaVaciaServicios() {
+        return new PageResponse<>(List.of(), 0, 10, 0, 0, true, true);
+    }
 
     @Test
     @WithMockUser
@@ -564,6 +571,37 @@ public class ServicioControllerTest {
         ).andExpect(status().isBadRequest());
 
         verify(servicioService).registrarServicio(any(ServicioRegistroRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaAceptarSortFieldValidoCuandoSeListanServicios() throws Exception {
+        when(servicioService.getListadoServicios(any(), any())).thenReturn(paginaVaciaServicios());
+
+        mockMvc.perform(get("/api/v1/servicios")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "nombre")
+                        .param("sortOrder", "ASC"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoSortFieldEsInvalidoCuandoSeListanServicios() throws Exception {
+        mockMvc.perform(get("/api/v1/servicios")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "campoInexistente"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoSortOrderEsInvalidoCuandoSeListanServicios() throws Exception {
+        mockMvc.perform(get("/api/v1/servicios")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "nombre")
+                        .param("sortOrder", "INVALIDO"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
