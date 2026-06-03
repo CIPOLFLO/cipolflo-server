@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,6 +65,7 @@ public class ClienteService implements IClienteService {
     }
 
     @Override
+    @Transactional
     public void darDeBajaSocio(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new SocioNotFoundException(id));
