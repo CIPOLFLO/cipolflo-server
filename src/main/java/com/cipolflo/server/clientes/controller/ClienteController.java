@@ -18,10 +18,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PatchMapping;
 
+import java.util.Set;
+
 @RestController
 @Validated
 @RequestMapping("/api/v1/clientes")
 public class ClienteController {
+
+    private static final Set<String> CAMPOS_ORDEN_PERMITIDOS = Set.of(
+            "nombreCompleto", "cedula", "numeroSocio"
+    );
+
     private final IClienteService clienteService;
 
     public ClienteController(IClienteService clienteService) {
@@ -33,6 +40,11 @@ public class ClienteController {
     public ResponseEntity<PageResponse<ListadoClientesResponseDto>> getListadoClientes(
             @Valid @ModelAttribute ListadoClientesRequestDto filtros,
             @Valid @ModelAttribute PageRequestDto pageRequest) {
+        if (pageRequest.sortField() != null
+                && !CAMPOS_ORDEN_PERMITIDOS.contains(pageRequest.sortField())) {
+            throw new IllegalArgumentException(
+                    "sortField inválido. Valores permitidos: " + CAMPOS_ORDEN_PERMITIDOS);
+        }
         return ResponseEntity.ok(clienteService.getListadoClientes(filtros, pageRequest));
     }
 

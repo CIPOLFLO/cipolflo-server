@@ -330,7 +330,7 @@ class ServicioServiceTest {
     }
 
     private PageRequestDto pageRequest() {
-        return new PageRequestDto(0, 10);
+        return new PageRequestDto(0, 10, null, null);
     }
 
     @Test

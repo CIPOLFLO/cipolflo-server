@@ -29,7 +29,6 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ClienteController.class)
 class ClienteControllerTest {
@@ -271,6 +270,37 @@ class ClienteControllerTest {
     @WithMockUser
     void deberiaRetornarBadRequestCuandoIdEsTextoEnDetalle() throws Exception {
         mockMvc.perform(get("/api/v1/clientes/abc"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaAceptarSortFieldValidoCuandoSeListanClientes() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaVacia());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "nombreCompleto")
+                        .param("sortOrder", "ASC"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoSortFieldEsInvalidoCuandoSeListanClientes() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "campoInexistente"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoSortOrderEsInvalidoCuandoSeListanClientes() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "nombreCompleto")
+                        .param("sortOrder", "INVALIDO"))
                 .andExpect(status().isBadRequest());
     }
 

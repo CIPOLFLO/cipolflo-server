@@ -73,6 +73,14 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(ServicioCodigoError.RESERVA_NO_CANCELABLE.name(), ex.getMessage()));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.warn("Argumento inválido: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(), ex.getMessage()));
+    }
+
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ErrorResponse> handleHandlerMethodValidationException(HandlerMethodValidationException ex) {
         boolean esPathVariable = ex.getValueResults().stream()
