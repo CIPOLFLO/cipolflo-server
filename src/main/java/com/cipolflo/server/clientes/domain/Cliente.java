@@ -31,4 +31,11 @@ public abstract class Cliente extends AuditableEntity {
     private String mail;
 
     private String notas;
+
+    public void modificar(String nombreCompleto, String telefono, String mail, String notas) {
+        this.nombreCompleto = nombreCompleto;
+        this.telefono = telefono;
+        this.mail = mail;
+        this.notas = notas;
+    }
 }

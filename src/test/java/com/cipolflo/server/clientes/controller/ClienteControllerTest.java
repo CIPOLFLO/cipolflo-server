@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -23,9 +24,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ClienteController.class)
@@ -269,5 +273,117 @@ class ClienteControllerTest {
     void deberiaRetornarBadRequestCuandoIdEsTextoEnDetalle() throws Exception {
         mockMvc.perform(get("/api/v1/clientes/abc"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // --- modificarParticular ---
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdEsNegativoEnModificarParticular() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/particulares/-1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltanCamposRequeridosEnModificarParticular() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoParticularNoExisteOEsSocio() throws Exception {
+        when(clienteService.modificarParticular(eq(99L), any())).thenThrow(new ClienteNotFoundException(99L));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/99")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaModificarParticularExitosamente() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any())).thenReturn(detalleCliente());
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombreCompleto\":\"Juan Pérez\",\"telefono\":\"099111111\"}"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).modificarParticular(eq(1L), any());
+    }
+
+    // --- modificarSocio ---
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdEsNegativoEnModificarSocio() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/socios/-1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltanCamposRequeridosEnModificarSocio() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoSocioNoExisteOEsParticular() throws Exception {
+        when(clienteService.modificarSocio(eq(99L), any())).thenThrow(new ClienteNotFoundException(99L));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/99")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaModificarSocioExitosamente() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any())).thenReturn(detalleCliente());
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isOk());
+
+        verify(clienteService).modificarSocio(eq(1L), any());
+    }
+
+    private String bodyValidoSocio() {
+        return """
+                {
+                  "cedula": "12345678",
+                  "nombreCompleto": "Juan Pérez",
+                  "telefono": "099111111",
+                  "fechaNacimiento": "1990-01-01",
+                  "pais": "Uruguay",
+                  "departamento": "Montevideo",
+                  "ciudad": "Montevideo",
+                  "direccion": "Av. 18 de Julio 100",
+                  "metodoCobro": "EFECTIVO"
+                }
+                """;
     }
 }
