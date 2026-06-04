@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PatchMapping;
 
 import java.util.Set;
 
@@ -52,5 +53,15 @@ public class ClienteController {
     public ResponseEntity<ClienteResponseDto> getDetalleCliente(
             @PathVariable @Positive(message = "El id del cliente debe ser un número positivo") Long id) {
         return ResponseEntity.ok(clienteService.getDetalleCliente(id));
+    }
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/socios/{id}/baja")
+    public ResponseEntity<Void> darDeBajaSocio(
+            @PathVariable
+            @Positive(message = "El id del socio debe ser un número positivo")
+            Long id) {
+
+        clienteService.darDeBajaSocio(id);
+        return ResponseEntity.noContent().build();
     }
 }
