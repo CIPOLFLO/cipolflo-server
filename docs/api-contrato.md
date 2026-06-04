@@ -455,6 +455,7 @@ Modifica los datos de un cliente particular.
 **Body** (`application/json`):
 ```json
 {
+  "cedula": "12345672",
   "nombreCompleto": "Laura Fernández",
   "telefono": "099222222",
   "mail": "laura@mail.com",
@@ -462,12 +463,13 @@ Modifica los datos de un cliente particular.
 }
 ```
 
-| Campo            | Tipo   | Obligatorio | Validación  |
-|------------------|--------|-------------|-------------|
-| `nombreCompleto` | string | Sí          | no vacío    |
-| `telefono`       | string | Sí          | no vacío    |
-| `mail`           | string | No          | —           |
-| `notas`          | string | No          | —           |
+| Campo            | Tipo   | Obligatorio | Validación                                      |
+|------------------|--------|-------------|-------------------------------------------------|
+| `cedula`         | string | Sí          | no vacío, algoritmo de cédula uruguaya, única   |
+| `nombreCompleto` | string | Sí          | no vacío                                        |
+| `telefono`       | string | Sí          | no vacío                                        |
+| `mail`           | string | No          | formato email válido si se envía, único         |
+| `notas`          | string | No          | —                                               |
 
 **Respuestas:**
 - `200` — cliente modificado; mismo body que `GET /api/v1/clientes/{id}`
@@ -528,9 +530,10 @@ Modifica los datos de un socio.
 #### `ModificacionParticularRequestDto` — body en `PUT /api/v1/clientes/particulares/{id}`
 ```typescript
 {
+  cedula: string          // obligatorio, algoritmo cédula uruguaya, única
   nombreCompleto: string  // obligatorio, no vacío
   telefono: string        // obligatorio, no vacío
-  mail?: string           // opcional
+  mail?: string           // opcional, formato email válido si se envía, único
   notas?: string          // opcional
 }
 ```

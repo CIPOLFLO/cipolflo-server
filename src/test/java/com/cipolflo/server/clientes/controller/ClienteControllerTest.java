@@ -7,6 +7,7 @@ import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -283,7 +284,7 @@ class ClienteControllerTest {
         mockMvc.perform(put("/api/v1/clientes/particulares/-1")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\"}"))
+                        .content(bodyValidoParticular()))
                 .andExpect(status().isBadRequest());
     }
 
@@ -305,7 +306,7 @@ class ClienteControllerTest {
         mockMvc.perform(put("/api/v1/clientes/particulares/99")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\"}"))
+                        .content(bodyValidoParticular()))
                 .andExpect(status().isNotFound());
     }
 
@@ -317,7 +318,7 @@ class ClienteControllerTest {
         mockMvc.perform(put("/api/v1/clientes/particulares/1")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombreCompleto\":\"Juan Pérez\",\"telefono\":\"099111111\"}"))
+                        .content(bodyValidoParticular()))
                 .andExpect(status().isOk());
 
         verify(clienteService).modificarParticular(eq(1L), any());
@@ -371,12 +372,120 @@ class ClienteControllerTest {
         verify(clienteService).modificarSocio(eq(1L), any());
     }
 
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsInvalidaEnModificarParticular() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("CEDULA_INVALIDA", "La cédula ingresada no es válida"));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoParticular()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsDuplicadaEnModificarParticular() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoParticular()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEmailEsInvalidoEnModificarParticular() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\",\"mail\":\"no-es-un-email\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEmailEsDuplicadoEnModificarParticular() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\",\"mail\":\"juan@mail.com\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEmailEsInvalidoEnModificarSocio() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocioConEmail("no-es-un-email")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEmailEsDuplicadoEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocioConEmail("juan@mail.com")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsInvalidaEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("CEDULA_INVALIDA", "La cédula ingresada no es válida"));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsDuplicadaEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isBadRequest());
+    }
+
+    private String bodyValidoParticular() {
+        return "{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan Pérez\",\"telefono\":\"099111111\"}";
+    }
+
     private String bodyValidoSocio() {
+        return bodyValidoSocioConEmail(null);
+    }
+
+    private String bodyValidoSocioConEmail(String mail) {
+        String mailJson = mail != null ? "\"mail\": \"" + mail + "\"," : "";
         return """
                 {
-                  "cedula": "12345678",
+                  "cedula": "12345672",
                   "nombreCompleto": "Juan Pérez",
                   "telefono": "099111111",
+                  %s
                   "fechaNacimiento": "1990-01-01",
                   "pais": "Uruguay",
                   "departamento": "Montevideo",
@@ -384,6 +493,6 @@ class ClienteControllerTest {
                   "direccion": "Av. 18 de Julio 100",
                   "metodoCobro": "EFECTIVO"
                 }
-                """;
+                """.formatted(mailJson);
     }
 }

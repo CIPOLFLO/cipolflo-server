@@ -15,6 +15,7 @@ import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,7 @@ class ClienteServiceTest {
 
     private ModificacionParticularRequestDto dtoParticular(String nombre, String telefono) {
         ModificacionParticularRequestDto dto = new ModificacionParticularRequestDto();
+        dto.setCedula("12345672");
         dto.setNombreCompleto(nombre);
         dto.setTelefono(telefono);
         return dto;
@@ -102,7 +104,7 @@ class ClienteServiceTest {
 
     private ModificacionSocioRequestDto dtoSocio(String nombre, String telefono) {
         ModificacionSocioRequestDto dto = new ModificacionSocioRequestDto();
-        dto.setCedula("12345678");
+        dto.setCedula("12345672");
         dto.setNombreCompleto(nombre);
         dto.setTelefono(telefono);
         dto.setFechaNacimiento(LocalDate.of(1990, 1, 1));
@@ -245,6 +247,19 @@ class ClienteServiceTest {
     // --- modificarParticular ---
 
     @Test
+    void deberiaLanzarExceptionCuandoValidadorParticularFalla() {
+        Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+
+        ModificacionParticularRequestDto dto = dtoParticular("Juan", "099000000");
+        org.mockito.Mockito.doThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"))
+                .when(modificacionParticularValidator).validar(1L, dto);
+
+        assertThrows(ClienteValidacionException.class,
+                () -> clienteService.modificarParticular(1L, dto));
+    }
+
+    @Test
     void deberiaLanzarExceptionAlModificarParticularConIdInexistente() {
         when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -269,11 +284,13 @@ class ClienteServiceTest {
         when(clienteRepository.save(particular)).thenReturn(particular);
 
         ModificacionParticularRequestDto dto = dtoParticular("Juan Modificado", "099999999");
+        dto.setCedula("1.234.567-2");
         dto.setMail("nuevo@mail.com");
 
         ClienteResponseDto resultado = clienteService.modificarParticular(1L, dto);
 
         assertNotNull(resultado);
+        assertEquals("12345672", particular.getCedula());
         assertEquals("Juan Modificado", particular.getNombreCompleto());
         assertEquals("099999999", particular.getTelefono());
         assertEquals("nuevo@mail.com", particular.getMail());
@@ -282,6 +299,19 @@ class ClienteServiceTest {
     }
 
     // --- modificarSocio ---
+
+    @Test
+    void deberiaLanzarExceptionCuandoValidadorSocioFalla() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345672", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+
+        ModificacionSocioRequestDto dto = dtoSocio("Juan", "099000000");
+        org.mockito.Mockito.doThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"))
+                .when(modificacionSocioValidator).validar(1L, dto);
+
+        assertThrows(ClienteValidacionException.class,
+                () -> clienteService.modificarSocio(1L, dto));
+    }
 
     @Test
     void deberiaLanzarExceptionAlModificarSocioConIdInexistente() {
@@ -308,7 +338,7 @@ class ClienteServiceTest {
         when(clienteRepository.save(socio)).thenReturn(socio);
 
         ModificacionSocioRequestDto dto = dtoSocio("Juan Modificado", "099999999");
-        dto.setCedula("99999999");
+        dto.setCedula("9.999.999-9");
         dto.setMail("nuevo@mail.com");
         dto.setPais("Argentina");
         dto.setCiudad("Buenos Aires");

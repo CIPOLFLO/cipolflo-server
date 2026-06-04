@@ -11,4 +11,9 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class Particular extends Cliente {
+
+    public void modificar(String cedula, String nombreCompleto, String telefono, String mail, String notas) {
+        this.setCedula(cedula);
+        super.modificar(nombreCompleto, telefono, mail, notas);
+    }
 }

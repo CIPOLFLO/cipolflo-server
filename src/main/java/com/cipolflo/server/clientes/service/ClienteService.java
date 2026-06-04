@@ -83,7 +83,9 @@ public class ClienteService implements IClienteService {
 
         modificacionParticularValidator.validar(id, dto);
 
-        particular.modificar(dto.getNombreCompleto(), dto.getTelefono(), dto.getMail(), dto.getNotas());
+        String cedulaNormalizada = dto.getCedula().replaceAll("\\D", "");
+
+        particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), dto.getMail(), dto.getNotas());
 
         return ClienteMapper.toDetalleResponseDto(clienteRepository.save(particular));
     }
@@ -100,8 +102,10 @@ public class ClienteService implements IClienteService {
 
         modificacionSocioValidator.validar(id, dto);
 
+        String cedulaNormalizada = dto.getCedula().replaceAll("\\D", "");
+
         socio.modificar(
-                dto.getCedula(),
+                cedulaNormalizada,
                 dto.getNombreCompleto(),
                 dto.getTelefono(),
                 dto.getMail(),

@@ -2,5 +2,8 @@ package com.cipolflo.server.clientes.exception;
 
 public enum ClienteCodigoError {
     CLIENTE_NO_ENCONTRADO,
-    CLIENTE_VALIDACION_FALLIDA
+    CEDULA_INVALIDA,
+    CEDULA_DUPLICADA,
+    EMAIL_INVALIDO,
+    EMAIL_DUPLICADO
 }
