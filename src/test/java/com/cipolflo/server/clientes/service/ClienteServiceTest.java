@@ -59,7 +59,7 @@ class ClienteServiceTest {
     private ClienteService clienteService;
 
     private PageRequestDto pageRequest() {
-        return new PageRequestDto(0, 10);
+        return new PageRequestDto(0, 10, null, null);
     }
 
     private ListadoClientesRequestDto sinFiltros() {

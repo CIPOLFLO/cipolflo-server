@@ -276,6 +276,37 @@ class ClienteControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    @WithMockUser
+    void deberiaAceptarSortFieldValidoCuandoSeListanClientes() throws Exception {
+        when(clienteService.getListadoClientes(any(), any())).thenReturn(paginaVacia());
+
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "nombreCompleto")
+                        .param("sortOrder", "ASC"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoSortFieldEsInvalidoCuandoSeListanClientes() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "campoInexistente"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoSortOrderEsInvalidoCuandoSeListanClientes() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes")
+                        .param("page", "0").param("size", "10")
+                        .param("sortField", "nombreCompleto")
+                        .param("sortOrder", "INVALIDO"))
+                .andExpect(status().isBadRequest());
+    }
+
     // --- modificarParticular ---
 
     @Test
