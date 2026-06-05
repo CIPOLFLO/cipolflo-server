@@ -48,4 +48,25 @@ class CedulaUnicaValidatorTest {
 
         verify(clienteRepository).existsByCedulaAndIdNot("12345672", 1L);
     }
+
+    @Test
+    void deberiaLanzarExceptionCuandoCedulaEsNula() {
+        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
+                () -> validator.validar(null, 1L));
+        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExceptionCuandoCedulaEsBlank() {
+        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
+                () -> validator.validar("   ", 1L));
+        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExceptionCuandoCedulaNormalizadaEsVacia() {
+        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
+                () -> validator.validar("...-", 1L));
+        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
+    }
 }

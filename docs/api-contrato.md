@@ -500,12 +500,12 @@ Modifica los datos de un socio.
 }
 ```
 
-| Campo             | Tipo           | Obligatorio | Validación |
-|-------------------|----------------|-------------|------------|
-| `cedula`          | string         | Sí          | no vacío   |
-| `nombreCompleto`  | string         | Sí          | no vacío   |
-| `telefono`        | string         | Sí          | no vacío   |
-| `mail`            | string         | No          | —          |
+| Campo             | Tipo           | Obligatorio | Validación                                      |
+|-------------------|----------------|-------------|-------------------------------------------------|
+| `cedula`          | string         | Sí          | no vacío, algoritmo de cédula uruguaya, única   |
+| `nombreCompleto`  | string         | Sí          | no vacío                                        |
+| `telefono`        | string         | Sí          | no vacío                                        |
+| `mail`            | string         | No          | formato email válido si se envía, único         |
 | `notas`           | string         | No          | —          |
 | `fechaNacimiento` | string (date)  | Sí          | `yyyy-MM-dd` |
 | `pais`            | string         | Sí          | no vacío   |
@@ -541,10 +541,10 @@ Modifica los datos de un socio.
 #### `ModificacionSocioRequestDto` — body en `PUT /api/v1/clientes/socios/{id}`
 ```typescript
 {
-  cedula: string              // obligatorio, no vacío
+  cedula: string              // obligatorio, algoritmo cédula uruguaya, única
   nombreCompleto: string      // obligatorio, no vacío
   telefono: string            // obligatorio, no vacío
-  mail?: string               // opcional
+  mail?: string               // opcional, formato email válido si se envía, único
   notas?: string              // opcional
   fechaNacimiento: string     // obligatorio, LocalDate yyyy-MM-dd
   pais: string                // obligatorio, no vacío

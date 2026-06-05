@@ -13,12 +13,12 @@ class CedulaFormatoValidatorTest {
     private final CedulaFormatoValidator validator = new CedulaFormatoValidator();
 
     @Test
-    void deberiaValidarCedulaValidade8Digitos() {
+    void deberiaValidarCedulaValida8Digitos() {
         assertDoesNotThrow(() -> validator.validar("12345672"));
     }
 
     @Test
-    void deberiaValidarCedulaValidade7Digitos() {
+    void deberiaValidarCedulaValida7Digitos() {
         assertDoesNotThrow(() -> validator.validar("1234561"));
     }
 

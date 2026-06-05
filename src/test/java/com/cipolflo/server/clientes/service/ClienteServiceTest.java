@@ -298,6 +298,20 @@ class ClienteServiceTest {
         verify(modificacionParticularValidator).validar(1L, dto);
     }
 
+    @Test
+    void deberiaNormalizarMailConEspaciosAlModificarParticular() {
+        Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+        when(clienteRepository.save(particular)).thenReturn(particular);
+
+        ModificacionParticularRequestDto dto = dtoParticular("Juan Pérez", "099000000");
+        dto.setMail("  espacios@mail.com  ");
+
+        clienteService.modificarParticular(1L, dto);
+
+        assertEquals("espacios@mail.com", particular.getMail());
+    }
+
     // --- modificarSocio ---
 
     @Test
@@ -355,5 +369,19 @@ class ClienteServiceTest {
         assertEquals(MetodoCobro.TRANSFERENCIA, socio.getMetodoCobro());
         verify(clienteRepository).save(socio);
         verify(modificacionSocioValidator).validar(1L, dto);
+    }
+
+    @Test
+    void deberiaNormalizarMailConEspaciosAlModificarSocio() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(clienteRepository.save(socio)).thenReturn(socio);
+
+        ModificacionSocioRequestDto dto = dtoSocio("Juan Pérez", "099000000");
+        dto.setMail("  espacios@mail.com  ");
+
+        clienteService.modificarSocio(1L, dto);
+
+        assertEquals("espacios@mail.com", socio.getMail());
     }
 }
