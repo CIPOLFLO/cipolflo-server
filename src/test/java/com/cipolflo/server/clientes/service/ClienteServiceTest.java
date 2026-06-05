@@ -12,10 +12,12 @@ import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
 import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
+import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
@@ -40,14 +42,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClienteServiceTest {
 
     @Mock
     private ClienteRepository clienteRepository;
+    @Mock
+    private IReservaService reservaService;
 
     @Mock
     private ModificacionParticularValidator modificacionParticularValidator;
@@ -242,6 +245,79 @@ class ClienteServiceTest {
 
         assertThrows(ClienteNotFoundException.class, () -> clienteService.getDetalleCliente(99L));
         verify(clienteRepository).findById(99L);
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoSocioNoExiste() {
+        Long socioId = 99L;
+
+        when(clienteRepository.findById(socioId))
+                .thenReturn(Optional.empty());
+
+        assertThrows(SocioNotFoundException.class, () -> {
+            clienteService.darDeBajaSocio(socioId);
+        });
+
+        verify(clienteRepository).findById(socioId);
+        verify(reservaService, never()).cancelarReservasFuturasPorCliente(anyLong());
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    void deberiaDarDeBajaSocioSinReservas() {
+        Long socioId = 1L;
+
+        Socio socio = new Socio();
+        socio.setId(socioId);
+        socio.setEstado(EstadoSocio.ACTIVO);
+
+        when(clienteRepository.findById(socioId))
+                .thenReturn(Optional.of(socio));
+
+        clienteService.darDeBajaSocio(socioId);
+
+        assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
+
+        verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
+        verify(clienteRepository).save(socio);
+    }
+
+    @Test
+    void deberiaDarDeBajaSocioConReservasFuturas() {
+        Long socioId = 1L;
+
+        Socio socio = new Socio();
+        socio.setId(socioId);
+        socio.setEstado(EstadoSocio.ACTIVO);
+
+        when(clienteRepository.findById(socioId))
+                .thenReturn(Optional.of(socio));
+
+        clienteService.darDeBajaSocio(socioId);
+
+        assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
+
+        verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
+        verify(clienteRepository).save(socio);
+    }
+
+    @Test
+    void deberiaDarDeBajaSocioConReservasPasadasSinTocarlas() {
+        Long socioId = 1L;
+
+        Socio socio = new Socio();
+        socio.setId(socioId);
+        socio.setEstado(EstadoSocio.ACTIVO);
+
+        when(clienteRepository.findById(socioId))
+                .thenReturn(Optional.of(socio));
+
+        clienteService.darDeBajaSocio(socioId);
+
+        assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
+
+        verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
+        verify(clienteRepository).save(socio);
     }
 
     // --- modificarParticular ---

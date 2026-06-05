@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
+import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -188,7 +188,6 @@ public class GlobalExceptionHandler {
                 );
             }
         }
-
         return ResponseEntity.badRequest().body(
                 new ErrorResponse(
                         "SOLICITUD_INVALIDA",
@@ -196,4 +195,14 @@ public class GlobalExceptionHandler {
                 )
         );
     }
+
+    @ExceptionHandler(SocioNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSocioNotFoundException(SocioNotFoundException ex) {
+        log.warn("Socio no encontrado: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ClienteCodigoError.SOCIO_NO_ENCONTRADO.name(), ex.getMessage()));
+    }
+
+
 }

@@ -16,7 +16,6 @@
 6. [Clientes — DTOs](#clientes--dtos)
 7. [Manejo de errores](#manejo-de-errores)
 
-> **Nuevos endpoints (DEV-76):** `PUT /api/v1/clientes/particulares/{id}` y `PUT /api/v1/clientes/socios/{id}`
 
 ---
 
@@ -452,6 +451,22 @@ Retorna el detalle completo de un cliente.
 ```
 
 > Los campos `fechaNacimiento`, `metodoPago`, `pais`, `departamento`, `ciudad`, `direccion`, `numeroSocio` y `estado` son `null` para clientes de tipo `PARTICULAR`.
+
+---
+
+### `PATCH /api/v1/clientes/socios/{id}/baja`
+Da de baja a un socio y cancela automáticamente todas sus reservas futuras en estado `PENDIENTE` o `CONFIRMADA` (incluso las pagas).
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 204:** No Content
+
+**Errores:**
+
+| HTTP Status | Código                  | Cuándo ocurre                                    |
+|-------------|-------------------------|--------------------------------------------------|
+| 400         | `ID_INVALIDO`           | El `id` no es un número positivo                 |
+| 404         | `SOCIO_NO_ENCONTRADO`   | No existe un socio con ese `id`                  |
 
 ---
 

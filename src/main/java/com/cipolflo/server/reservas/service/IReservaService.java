@@ -9,4 +9,6 @@ public interface IReservaService {
     List<Reserva> obtenerProximasPorServicioEnRango(Long servicioId);
 
     void cancelarTodas(List<Reserva> reservas);
+
+    void cancelarReservasFuturasPorCliente(Long clienteId);
 }

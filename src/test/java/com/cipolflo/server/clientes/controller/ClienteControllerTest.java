@@ -7,7 +7,6 @@ import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
-import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -15,23 +14,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
-import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ClienteController.class)
 class ClienteControllerTest {
@@ -306,6 +306,50 @@ class ClienteControllerTest {
                         .param("sortOrder", "INVALIDO"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @WithMockUser
+    void deberiaDarDeBajaSocioExitosamente() throws Exception {
+        Long socioId = 1L;
+
+        mockMvc.perform(
+                        patch("/api/v1/clientes/socios/1/baja")
+                                .with(csrf())
+                )
+                .andExpect(status().isNoContent());
+
+        verify(clienteService).darDeBajaSocio(socioId);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdEsInvalido() throws Exception {
+        mockMvc.perform(
+                        patch("/api/v1/clientes/socios/0/baja")
+                                .with(csrf())
+                )
+                .andExpect(status().isBadRequest());
+
+        verify(clienteService, never()).darDeBajaSocio(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoSocioNoExiste() throws Exception {
+        Long socioId = 99L;
+
+        doThrow(new SocioNotFoundException(socioId))
+                .when(clienteService).darDeBajaSocio(socioId);
+
+        mockMvc.perform(
+                        patch("/api/v1/clientes/socios/99/baja")
+                                .with(csrf())
+                )
+                .andExpect(status().isNotFound());
+
+        verify(clienteService).darDeBajaSocio(socioId);
+    }
+
 
     // --- modificarParticular ---
 

@@ -19,6 +19,8 @@ public interface IClienteService {
 
     Map<Long, String> getNombresByIds(Collection<Long> ids);
 
+    void darDeBajaSocio(Long id);
+
     ClienteResponseDto modificarParticular(Long id, ModificacionParticularRequestDto dto);
 
     ClienteResponseDto modificarSocio(Long id, ModificacionSocioRequestDto dto);
