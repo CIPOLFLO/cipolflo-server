@@ -2,6 +2,7 @@ package com.cipolflo.server.shared.exception;
 
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -39,6 +40,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ClienteCodigoError.CLIENTE_NO_ENCONTRADO.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ClienteValidacionException.class)
+    public ResponseEntity<ErrorResponse> handleClienteValidacionException(ClienteValidacionException ex) {
+        log.warn("Validación de negocio fallida [{}]: {}", ex.getCodigo(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
     }
 
     @ExceptionHandler(ServicioNotFoundException.class)

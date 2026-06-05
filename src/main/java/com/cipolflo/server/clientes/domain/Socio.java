@@ -59,4 +59,17 @@ public class Socio extends Cliente {
     public void darDeBaja() {
         this.estado = EstadoSocio.DE_BAJA;
     }
+
+    public void modificar(String cedula, String nombreCompleto, String telefono, String mail, String notas,
+                          LocalDate fechaNacimiento, String pais, String departamento,
+                          String ciudad, String direccion, MetodoCobro metodoCobro) {
+        this.setCedula(cedula);
+        super.modificar(nombreCompleto, telefono, mail, notas);
+        this.fechaNacimiento = fechaNacimiento;
+        this.pais = pais;
+        this.departamento = departamento;
+        this.ciudad = ciudad;
+        this.direccion = direccion;
+        this.metodoCobro = metodoCobro;
+    }
 }

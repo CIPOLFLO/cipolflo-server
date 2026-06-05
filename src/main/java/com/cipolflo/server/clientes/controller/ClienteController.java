@@ -3,6 +3,8 @@ package com.cipolflo.server.clientes.controller;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
+import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
+import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -14,6 +16,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -63,5 +67,21 @@ public class ClienteController {
 
         clienteService.darDeBajaSocio(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/particulares/{id}")
+    public ResponseEntity<ClienteResponseDto> modificarParticular(
+            @PathVariable @Positive(message = "El id del cliente debe ser un número positivo") Long id,
+            @Valid @RequestBody ModificacionParticularRequestDto dto) {
+        return ResponseEntity.ok(clienteService.modificarParticular(id, dto));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/socios/{id}")
+    public ResponseEntity<ClienteResponseDto> modificarSocio(
+            @PathVariable @Positive(message = "El id del cliente debe ser un número positivo") Long id,
+            @Valid @RequestBody ModificacionSocioRequestDto dto) {
+        return ResponseEntity.ok(clienteService.modificarSocio(id, dto));
     }
 }

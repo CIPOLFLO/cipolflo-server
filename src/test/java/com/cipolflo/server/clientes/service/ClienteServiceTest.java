@@ -9,9 +9,14 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
+import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
+import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
+import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
+import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -46,6 +51,13 @@ class ClienteServiceTest {
     private ClienteRepository clienteRepository;
     @Mock
     private IReservaService reservaService;
+
+    @Mock
+    private ModificacionParticularValidator modificacionParticularValidator;
+
+    @Mock
+    private ModificacionSocioValidator modificacionSocioValidator;
+
     @InjectMocks
     private ClienteService clienteService;
 
@@ -83,6 +95,28 @@ class ClienteServiceTest {
         particular.setCedula(cedula);
         particular.setTelefono("099000000");
         return particular;
+    }
+
+    private ModificacionParticularRequestDto dtoParticular(String nombre, String telefono) {
+        ModificacionParticularRequestDto dto = new ModificacionParticularRequestDto();
+        dto.setCedula("12345672");
+        dto.setNombreCompleto(nombre);
+        dto.setTelefono(telefono);
+        return dto;
+    }
+
+    private ModificacionSocioRequestDto dtoSocio(String nombre, String telefono) {
+        ModificacionSocioRequestDto dto = new ModificacionSocioRequestDto();
+        dto.setCedula("12345672");
+        dto.setNombreCompleto(nombre);
+        dto.setTelefono(telefono);
+        dto.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+        dto.setPais("Uruguay");
+        dto.setDepartamento("Montevideo");
+        dto.setCiudad("Montevideo");
+        dto.setDireccion("Calle 1");
+        dto.setMetodoCobro(MetodoCobro.TRANSFERENCIA);
+        return dto;
     }
 
     @Test
@@ -284,5 +318,146 @@ class ClienteServiceTest {
 
         verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
         verify(clienteRepository).save(socio);
+    }
+
+    // --- modificarParticular ---
+
+    @Test
+    void deberiaLanzarExceptionCuandoValidadorParticularFalla() {
+        Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+
+        ModificacionParticularRequestDto dto = dtoParticular("Juan", "099000000");
+        org.mockito.Mockito.doThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"))
+                .when(modificacionParticularValidator).validar(1L, dto);
+
+        assertThrows(ClienteValidacionException.class,
+                () -> clienteService.modificarParticular(1L, dto));
+    }
+
+    @Test
+    void deberiaLanzarExceptionAlModificarParticularConIdInexistente() {
+        when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ClienteNotFoundException.class,
+                () -> clienteService.modificarParticular(99L, dtoParticular("Juan", "099000000")));
+        verify(clienteRepository).findById(99L);
+    }
+
+    @Test
+    void deberiaLanzarExceptionAlModificarParticularConIdDeSocio() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+
+        assertThrows(ClienteNotFoundException.class,
+                () -> clienteService.modificarParticular(1L, dtoParticular("Juan", "099000000")));
+    }
+
+    @Test
+    void deberiaModificarParticularCorrectamente() {
+        Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+        when(clienteRepository.saveAndFlush(particular)).thenReturn(particular);
+
+        ModificacionParticularRequestDto dto = dtoParticular("Juan Modificado", "099999999");
+        dto.setCedula("1.234.567-2");
+        dto.setMail("nuevo@mail.com");
+
+        ClienteResponseDto resultado = clienteService.modificarParticular(1L, dto);
+
+        assertNotNull(resultado);
+        assertEquals("12345672", particular.getCedula());
+        assertEquals("Juan Modificado", particular.getNombreCompleto());
+        assertEquals("099999999", particular.getTelefono());
+        assertEquals("nuevo@mail.com", particular.getMail());
+        verify(clienteRepository).saveAndFlush(particular);
+        verify(modificacionParticularValidator).validar(1L, dto);
+    }
+
+    @Test
+    void deberiaNormalizarMailConEspaciosAlModificarParticular() {
+        Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+        when(clienteRepository.saveAndFlush(particular)).thenReturn(particular);
+
+        ModificacionParticularRequestDto dto = dtoParticular("Juan Pérez", "099000000");
+        dto.setMail("  espacios@mail.com  ");
+
+        clienteService.modificarParticular(1L, dto);
+
+        assertEquals("espacios@mail.com", particular.getMail());
+    }
+
+    // --- modificarSocio ---
+
+    @Test
+    void deberiaLanzarExceptionCuandoValidadorSocioFalla() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345672", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+
+        ModificacionSocioRequestDto dto = dtoSocio("Juan", "099000000");
+        org.mockito.Mockito.doThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"))
+                .when(modificacionSocioValidator).validar(1L, dto);
+
+        assertThrows(ClienteValidacionException.class,
+                () -> clienteService.modificarSocio(1L, dto));
+    }
+
+    @Test
+    void deberiaLanzarExceptionAlModificarSocioConIdInexistente() {
+        when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ClienteNotFoundException.class,
+                () -> clienteService.modificarSocio(99L, dtoSocio("Juan", "099000000")));
+        verify(clienteRepository).findById(99L);
+    }
+
+    @Test
+    void deberiaLanzarExceptionAlModificarSocioConIdDeParticular() {
+        Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+
+        assertThrows(ClienteNotFoundException.class,
+                () -> clienteService.modificarSocio(1L, dtoSocio("Juan", "099000000")));
+    }
+
+    @Test
+    void deberiaModificarSocioCorrectamente() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(clienteRepository.saveAndFlush(socio)).thenReturn(socio);
+
+        ModificacionSocioRequestDto dto = dtoSocio("Juan Modificado", "099999999");
+        dto.setCedula("9.999.999-9");
+        dto.setMail("nuevo@mail.com");
+        dto.setPais("Argentina");
+        dto.setCiudad("Buenos Aires");
+
+        ClienteResponseDto resultado = clienteService.modificarSocio(1L, dto);
+
+        assertNotNull(resultado);
+        assertEquals("99999999", socio.getCedula());
+        assertEquals("Juan Modificado", socio.getNombreCompleto());
+        assertEquals("099999999", socio.getTelefono());
+        assertEquals("nuevo@mail.com", socio.getMail());
+        assertEquals("Argentina", socio.getPais());
+        assertEquals("Buenos Aires", socio.getCiudad());
+        assertEquals(MetodoCobro.TRANSFERENCIA, socio.getMetodoCobro());
+        verify(clienteRepository).saveAndFlush(socio);
+        verify(modificacionSocioValidator).validar(1L, dto);
+    }
+
+    @Test
+    void deberiaNormalizarMailConEspaciosAlModificarSocio() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(clienteRepository.saveAndFlush(socio)).thenReturn(socio);
+
+        ModificacionSocioRequestDto dto = dtoSocio("Juan Pérez", "099000000");
+        dto.setMail("  espacios@mail.com  ");
+
+        clienteService.modificarSocio(1L, dto);
+
+        assertEquals("espacios@mail.com", socio.getMail());
     }
 }

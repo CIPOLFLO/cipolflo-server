@@ -16,6 +16,7 @@
 6. [Clientes — DTOs](#clientes--dtos)
 7. [Manejo de errores](#manejo-de-errores)
 
+
 ---
 
 ## Enums
@@ -469,9 +470,113 @@ Da de baja a un socio y cancela automáticamente todas sus reservas futuras en e
 
 ---
 
+### `PUT /api/v1/clientes/particulares/{id}`
+Modifica los datos de un cliente particular.
+
+**Path param:** `id` — integer positivo. Si no es positivo retorna 400 con código `ID_INVALIDO`.
+
+**Body** (`application/json`):
+```json
+{
+  "cedula": "12345672",
+  "nombreCompleto": "Laura Fernández",
+  "telefono": "099222222",
+  "mail": "laura@mail.com",
+  "notas": "Prefiere contacto por WhatsApp"
+}
+```
+
+| Campo            | Tipo   | Obligatorio | Validación                                      |
+|------------------|--------|-------------|-------------------------------------------------|
+| `cedula`         | string | Sí          | no vacío, algoritmo de cédula uruguaya, única   |
+| `nombreCompleto` | string | Sí          | no vacío                                        |
+| `telefono`       | string | Sí          | no vacío                                        |
+| `mail`           | string | No          | formato email válido si se envía, único         |
+| `notas`          | string | No          | —                                               |
+
+**Respuestas:**
+- `200` — cliente modificado; mismo body que `GET /api/v1/clientes/{id}`
+- `400` — campo obligatorio faltante o vacío (código `SOLICITUD_INVALIDA`), o id inválido (código `ID_INVALIDO`)
+- `404` — el id no corresponde a un Particular (no existe o es un Socio) (código `CLIENTE_NO_ENCONTRADO`)
+
+---
+
+### `PUT /api/v1/clientes/socios/{id}`
+Modifica los datos de un socio.
+
+**Path param:** `id` — integer positivo. Si no es positivo retorna 400 con código `ID_INVALIDO`.
+
+**Body** (`application/json`):
+```json
+{
+  "cedula": "12345678",
+  "nombreCompleto": "Juan Pérez",
+  "telefono": "099111111",
+  "mail": "juan@mail.com",
+  "notas": null,
+  "fechaNacimiento": "1990-01-01",
+  "pais": "Uruguay",
+  "departamento": "Montevideo",
+  "ciudad": "Montevideo",
+  "direccion": "Av. 18 de Julio 100",
+  "metodoCobro": "EN_SEDE"
+}
+```
+
+| Campo             | Tipo           | Obligatorio | Validación                                      |
+|-------------------|----------------|-------------|-------------------------------------------------|
+| `cedula`          | string         | Sí          | no vacío, algoritmo de cédula uruguaya, única   |
+| `nombreCompleto`  | string         | Sí          | no vacío                                        |
+| `telefono`        | string         | Sí          | no vacío                                        |
+| `mail`            | string         | No          | formato email válido si se envía, único         |
+| `notas`           | string         | No          | —          |
+| `fechaNacimiento` | string (date)  | Sí          | `yyyy-MM-dd` |
+| `pais`            | string         | Sí          | no vacío   |
+| `departamento`    | string         | Sí          | no vacío   |
+| `ciudad`          | string         | Sí          | no vacío   |
+| `direccion`       | string         | Sí          | no vacío   |
+| `metodoCobro`     | `MetodoCobro`  | Sí          | —          |
+
+> Campos no modificables: `numeroSocio`, `estado`, `fechaIngreso`, `mesesSinPagar`, `fechaUltimoPago`.
+
+**Respuestas:**
+- `200` — socio modificado; mismo body que `GET /api/v1/clientes/{id}`
+- `400` — campo obligatorio faltante o vacío (código `SOLICITUD_INVALIDA`), o id inválido (código `ID_INVALIDO`)
+- `404` — el id no corresponde a un Socio (no existe o es un Particular) (código `CLIENTE_NO_ENCONTRADO`)
+
+---
+
 ## Clientes — DTOs
 
 ### Request DTOs
+
+#### `ModificacionParticularRequestDto` — body en `PUT /api/v1/clientes/particulares/{id}`
+```typescript
+{
+  cedula: string          // obligatorio, algoritmo cédula uruguaya, única
+  nombreCompleto: string  // obligatorio, no vacío
+  telefono: string        // obligatorio, no vacío
+  mail?: string           // opcional, formato email válido si se envía, único
+  notas?: string          // opcional
+}
+```
+
+#### `ModificacionSocioRequestDto` — body en `PUT /api/v1/clientes/socios/{id}`
+```typescript
+{
+  cedula: string              // obligatorio, algoritmo cédula uruguaya, única
+  nombreCompleto: string      // obligatorio, no vacío
+  telefono: string            // obligatorio, no vacío
+  mail?: string               // opcional, formato email válido si se envía, único
+  notas?: string              // opcional
+  fechaNacimiento: string     // obligatorio, LocalDate yyyy-MM-dd
+  pais: string                // obligatorio, no vacío
+  departamento: string        // obligatorio, no vacío
+  ciudad: string              // obligatorio, no vacío
+  direccion: string           // obligatorio, no vacío
+  metodoCobro: MetodoCobro    // obligatorio
+}
+```
 
 #### `ListadoClientesRequestDto` — query params en `GET /api/v1/clientes`
 ```typescript

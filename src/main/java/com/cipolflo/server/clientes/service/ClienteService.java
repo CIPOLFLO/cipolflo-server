@@ -1,23 +1,32 @@
 package com.cipolflo.server.clientes.service;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.Particular;
+import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
+import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
+import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
+import com.cipolflo.server.clientes.exception.ClienteCodigoError;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
+import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
+import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import com.cipolflo.server.reservas.service.IReservaService;
-import com.cipolflo.server.clientes.domain.Socio;
-import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import org.springframework.transaction.annotation.Transactional;
+import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 
 import java.util.Collection;
 import java.util.Map;
@@ -27,10 +36,17 @@ import java.util.stream.Collectors;
 public class ClienteService implements IClienteService {
     private final ClienteRepository clienteRepository;
     private final IReservaService reservaService;
+    private final ModificacionParticularValidator modificacionParticularValidator;
+    private final ModificacionSocioValidator modificacionSocioValidator;
 
-    public ClienteService(ClienteRepository clienteRepository, IReservaService reservaService) {
+    public ClienteService(ClienteRepository clienteRepository,
+                          IReservaService reservaService,
+                          ModificacionParticularValidator modificacionParticularValidator,
+                          ModificacionSocioValidator modificacionSocioValidator) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
+        this.modificacionParticularValidator = modificacionParticularValidator;
+        this.modificacionSocioValidator = modificacionSocioValidator;
     }
 
     @Override
@@ -78,4 +94,70 @@ public class ClienteService implements IClienteService {
     }
 
 
+
+    @Override
+    @Transactional
+    public ClienteResponseDto modificarParticular(Long id, ModificacionParticularRequestDto dto) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new ClienteNotFoundException(id));
+
+        if (!(cliente instanceof Particular particular)) {
+            throw new ClienteNotFoundException(id);
+        }
+
+        modificacionParticularValidator.validar(id, dto);
+
+        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
+        String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+
+        particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), mailNormalizado, dto.getNotas());
+
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular));
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                    "Ya existe un cliente con esa cédula"
+            );
+        }
+    }
+
+    @Override
+    @Transactional
+    public ClienteResponseDto modificarSocio(Long id, ModificacionSocioRequestDto dto) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new ClienteNotFoundException(id));
+
+        if (!(cliente instanceof Socio socio)) {
+            throw new ClienteNotFoundException(id);
+        }
+
+        modificacionSocioValidator.validar(id, dto);
+
+        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
+        String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+
+        socio.modificar(
+                cedulaNormalizada,
+                dto.getNombreCompleto(),
+                dto.getTelefono(),
+                mailNormalizado,
+                dto.getNotas(),
+                dto.getFechaNacimiento(),
+                dto.getPais(),
+                dto.getDepartamento(),
+                dto.getCiudad(),
+                dto.getDireccion(),
+                dto.getMetodoCobro()
+        );
+
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio));
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                    "Ya existe un cliente con esa cédula"
+            );
+        }
+    }
 }

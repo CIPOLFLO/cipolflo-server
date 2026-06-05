@@ -7,6 +7,8 @@ import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -14,21 +16,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
-import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ClienteController.class)
 class ClienteControllerTest {
@@ -347,4 +354,230 @@ class ClienteControllerTest {
         verify(clienteService).darDeBajaSocio(socioId);
     }
 
+
+    // --- modificarParticular ---
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdEsNegativoEnModificarParticular() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/particulares/-1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoParticular()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltanCamposRequeridosEnModificarParticular() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoParticularNoExisteOEsSocio() throws Exception {
+        when(clienteService.modificarParticular(eq(99L), any())).thenThrow(new ClienteNotFoundException(99L));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/99")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoParticular()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaModificarParticularExitosamente() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any())).thenReturn(detalleCliente());
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoParticular()))
+                .andExpect(status().isOk());
+
+        verify(clienteService).modificarParticular(eq(1L), any());
+    }
+
+    // --- modificarSocio ---
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdEsNegativoEnModificarSocio() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/socios/-1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltanCamposRequeridosEnModificarSocio() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoSocioNoExisteOEsParticular() throws Exception {
+        when(clienteService.modificarSocio(eq(99L), any())).thenThrow(new ClienteNotFoundException(99L));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/99")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaModificarSocioExitosamente() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any())).thenReturn(detalleCliente());
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isOk());
+
+        verify(clienteService).modificarSocio(eq(1L), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsInvalidaEnModificarParticular() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("CEDULA_INVALIDA", "La cédula ingresada no es válida"));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoParticular()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsDuplicadaEnModificarParticular() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoParticular()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEmailEsInvalidoEnModificarParticular() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("EMAIL_INVALIDO", "El email ingresado no es válido"));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\",\"mail\":\"no-es-un-email\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEmailEsDuplicadoEnModificarParticular() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"));
+
+        mockMvc.perform(put("/api/v1/clientes/particulares/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\",\"mail\":\"juan@mail.com\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEmailEsInvalidoEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("EMAIL_INVALIDO", "El email ingresado no es válido"));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocioConEmail("no-es-un-email")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoEmailEsDuplicadoEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocioConEmail("juan@mail.com")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsInvalidaEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("CEDULA_INVALIDA", "La cédula ingresada no es válida"));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsDuplicadaEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValidoSocio()))
+                .andExpect(status().isBadRequest());
+    }
+
+    private String bodyValidoParticular() {
+        return "{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan Pérez\",\"telefono\":\"099111111\"}";
+    }
+
+    private String bodyValidoSocio() {
+        return bodyValidoSocioConEmail(null);
+    }
+
+    private String bodyValidoSocioConEmail(String mail) {
+        String mailJson = mail != null ? "\"mail\": \"" + mail + "\"," : "";
+        return """
+                {
+                  "cedula": "12345672",
+                  "nombreCompleto": "Juan Pérez",
+                  "telefono": "099111111",
+                  %s
+                  "fechaNacimiento": "1990-01-01",
+                  "pais": "Uruguay",
+                  "departamento": "Montevideo",
+                  "ciudad": "Montevideo",
+                  "direccion": "Av. 18 de Julio 100",
+                  "metodoCobro": "EFECTIVO"
+                }
+                """.formatted(mailJson);
+    }
 }
