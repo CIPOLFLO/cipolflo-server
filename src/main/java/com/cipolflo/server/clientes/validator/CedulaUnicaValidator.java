@@ -3,6 +3,7 @@ package com.cipolflo.server.clientes.validator;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,7 +25,7 @@ public class CedulaUnicaValidator {
             );
         }
 
-        String normalizada = cedula.replaceAll("\\D", "");
+        String normalizada = CedulaNormalizador.normalizar(cedula);
 
         if (normalizada.isEmpty()) {
             throw new ClienteValidacionException(

@@ -432,10 +432,13 @@ class ClienteControllerTest {
     @Test
     @WithMockUser
     void deberiaRetornarBadRequestCuandoEmailEsInvalidoEnModificarParticular() throws Exception {
+        when(clienteService.modificarParticular(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("EMAIL_INVALIDO", "El email ingresado no es válido"));
+
         mockMvc.perform(put("/api/v1/clientes/particulares/1")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\",\"mail\":\"no-es-un-email\"}"))
+                        .content("{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\",\"mail\":\"no-es-un-email\"}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -448,13 +451,16 @@ class ClienteControllerTest {
         mockMvc.perform(put("/api/v1/clientes/particulares/1")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\",\"mail\":\"juan@mail.com\"}"))
+                        .content("{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan\",\"telefono\":\"099000000\",\"mail\":\"juan@mail.com\"}"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     @WithMockUser
     void deberiaRetornarBadRequestCuandoEmailEsInvalidoEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException("EMAIL_INVALIDO", "El email ingresado no es válido"));
+
         mockMvc.perform(put("/api/v1/clientes/socios/1")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)

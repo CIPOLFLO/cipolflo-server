@@ -281,7 +281,7 @@ class ClienteServiceTest {
     void deberiaModificarParticularCorrectamente() {
         Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
-        when(clienteRepository.save(particular)).thenReturn(particular);
+        when(clienteRepository.saveAndFlush(particular)).thenReturn(particular);
 
         ModificacionParticularRequestDto dto = dtoParticular("Juan Modificado", "099999999");
         dto.setCedula("1.234.567-2");
@@ -294,7 +294,7 @@ class ClienteServiceTest {
         assertEquals("Juan Modificado", particular.getNombreCompleto());
         assertEquals("099999999", particular.getTelefono());
         assertEquals("nuevo@mail.com", particular.getMail());
-        verify(clienteRepository).save(particular);
+        verify(clienteRepository).saveAndFlush(particular);
         verify(modificacionParticularValidator).validar(1L, dto);
     }
 
@@ -302,7 +302,7 @@ class ClienteServiceTest {
     void deberiaNormalizarMailConEspaciosAlModificarParticular() {
         Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
-        when(clienteRepository.save(particular)).thenReturn(particular);
+        when(clienteRepository.saveAndFlush(particular)).thenReturn(particular);
 
         ModificacionParticularRequestDto dto = dtoParticular("Juan Pérez", "099000000");
         dto.setMail("  espacios@mail.com  ");
@@ -349,7 +349,7 @@ class ClienteServiceTest {
     void deberiaModificarSocioCorrectamente() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(clienteRepository.save(socio)).thenReturn(socio);
+        when(clienteRepository.saveAndFlush(socio)).thenReturn(socio);
 
         ModificacionSocioRequestDto dto = dtoSocio("Juan Modificado", "099999999");
         dto.setCedula("9.999.999-9");
@@ -367,7 +367,7 @@ class ClienteServiceTest {
         assertEquals("Argentina", socio.getPais());
         assertEquals("Buenos Aires", socio.getCiudad());
         assertEquals(MetodoCobro.TRANSFERENCIA, socio.getMetodoCobro());
-        verify(clienteRepository).save(socio);
+        verify(clienteRepository).saveAndFlush(socio);
         verify(modificacionSocioValidator).validar(1L, dto);
     }
 
@@ -375,7 +375,7 @@ class ClienteServiceTest {
     void deberiaNormalizarMailConEspaciosAlModificarSocio() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(clienteRepository.save(socio)).thenReturn(socio);
+        when(clienteRepository.saveAndFlush(socio)).thenReturn(socio);
 
         ModificacionSocioRequestDto dto = dtoSocio("Juan Pérez", "099000000");
         dto.setMail("  espacios@mail.com  ");

@@ -1,6 +1,5 @@
 package com.cipolflo.server.clientes.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +19,6 @@ public class ModificacionParticularRequestDto {
     @NotBlank(message = "El teléfono es obligatorio")
     private String telefono;
 
-    @Email(message = "El email ingresado no es válido")
     private String mail;
 
     private String notas;

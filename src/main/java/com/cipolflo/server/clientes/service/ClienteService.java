@@ -6,17 +6,21 @@ import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
 import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
+import com.cipolflo.server.clientes.exception.ClienteCodigoError;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -83,12 +87,19 @@ public class ClienteService implements IClienteService {
 
         modificacionParticularValidator.validar(id, dto);
 
-        String cedulaNormalizada = dto.getCedula().replaceAll("\\D", "");
+        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
 
         particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), mailNormalizado, dto.getNotas());
 
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(particular));
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular));
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                    "Ya existe un cliente con esa cédula"
+            );
+        }
     }
 
     @Override
@@ -103,7 +114,7 @@ public class ClienteService implements IClienteService {
 
         modificacionSocioValidator.validar(id, dto);
 
-        String cedulaNormalizada = dto.getCedula().replaceAll("\\D", "");
+        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
 
         socio.modificar(
@@ -120,6 +131,13 @@ public class ClienteService implements IClienteService {
                 dto.getMetodoCobro()
         );
 
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio));
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                    "Ya existe un cliente con esa cédula"
+            );
+        }
     }
 }

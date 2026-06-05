@@ -2,6 +2,7 @@ package com.cipolflo.server.clientes.validator;
 
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -10,9 +11,9 @@ public class CedulaFormatoValidator {
     private static final int[] FACTORES = {2, 9, 8, 7, 6, 3, 4};
 
     public void validar(String cedula) {
-        if (cedula == null || cedula.isBlank()) return;
+        if (cedula == null || cedula.isBlank()) lanzarInvalida();
 
-        String soloDigitos = cedula.replaceAll("\\D", "");
+        String soloDigitos = CedulaNormalizador.normalizar(cedula);
 
         if (soloDigitos.length() < 7 || soloDigitos.length() > 8) {
             lanzarInvalida();

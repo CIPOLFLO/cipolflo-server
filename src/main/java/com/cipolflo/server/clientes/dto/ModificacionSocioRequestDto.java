@@ -1,7 +1,6 @@
 package com.cipolflo.server.clientes.dto;
 
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -24,7 +23,6 @@ public class ModificacionSocioRequestDto {
     @NotBlank(message = "El teléfono es obligatorio")
     private String telefono;
 
-    @Email(message = "El email ingresado no es válido")
     private String mail;
 
     private String notas;

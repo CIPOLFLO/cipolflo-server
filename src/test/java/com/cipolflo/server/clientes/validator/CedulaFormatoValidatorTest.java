@@ -28,13 +28,17 @@ class CedulaFormatoValidatorTest {
     }
 
     @Test
-    void deberiaPermitirCedulaNula() {
-        assertDoesNotThrow(() -> validator.validar(null));
+    void deberiaLanzarExceptionCuandoCedulaEsNula() {
+        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
+                () -> validator.validar(null));
+        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
     }
 
     @Test
-    void deberiaPermitirCedulaBlank() {
-        assertDoesNotThrow(() -> validator.validar("   "));
+    void deberiaLanzarExceptionCuandoCedulaEsBlank() {
+        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
+                () -> validator.validar("   "));
+        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
     }
 
     @Test
