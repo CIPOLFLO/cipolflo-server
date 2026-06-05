@@ -24,4 +24,19 @@ public class EmailUnicoValidator {
             );
         }
     }
+
+    public void validar(String email) {
+        if (email == null || email.isBlank()) {
+            return;
+        }
+
+        String normalizado = email.trim();
+
+        if (clienteRepository.existsByMail(normalizado)) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.EMAIL_DUPLICADO.name(),
+                    "Ya existe un cliente con ese email"
+            );
+        }
+    }
 }

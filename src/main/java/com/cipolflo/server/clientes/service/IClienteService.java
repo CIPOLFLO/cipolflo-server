@@ -1,13 +1,10 @@
 package com.cipolflo.server.clientes.service;
 
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
-import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
+import com.cipolflo.server.clientes.dto.*;
+
 import java.util.Collection;
 import java.util.Map;
 
-import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 
@@ -24,4 +21,7 @@ public interface IClienteService {
     ClienteResponseDto modificarParticular(Long id, ModificacionParticularRequestDto dto);
 
     ClienteResponseDto modificarSocio(Long id, ModificacionSocioRequestDto dto);
+
+    ClienteResponseDto registrarSocio(RegistroSocioRequestDto dto);
+
 }

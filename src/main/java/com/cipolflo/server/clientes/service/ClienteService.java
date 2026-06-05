@@ -3,20 +3,18 @@ package com.cipolflo.server.clientes.service;
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
-import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
+import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
-import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
+import com.cipolflo.server.clientes.validator.CedulaUnicaValidator;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
+import com.cipolflo.server.clientes.validator.RegistroSocioValidator;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
@@ -38,15 +36,19 @@ public class ClienteService implements IClienteService {
     private final IReservaService reservaService;
     private final ModificacionParticularValidator modificacionParticularValidator;
     private final ModificacionSocioValidator modificacionSocioValidator;
+    RegistroSocioValidator registroSocioValidator;
 
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
-                          ModificacionSocioValidator modificacionSocioValidator) {
+                          ModificacionSocioValidator modificacionSocioValidator,
+                          RegistroSocioValidator registroSocioValidator) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
         this.modificacionSocioValidator = modificacionSocioValidator;
+        this.registroSocioValidator = registroSocioValidator;
+
     }
 
     @Override
@@ -92,8 +94,6 @@ public class ClienteService implements IClienteService {
         reservaService.cancelarReservasFuturasPorCliente(socio.getId());
         clienteRepository.save(socio);
     }
-
-
 
     @Override
     @Transactional
@@ -159,5 +159,30 @@ public class ClienteService implements IClienteService {
                     "Ya existe un cliente con esa cédula"
             );
         }
+    }
+
+    @Override
+    @Transactional
+    public ClienteResponseDto registrarSocio(RegistroSocioRequestDto dto) {
+        registroSocioValidator.validar(dto);
+        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
+        String mailNormalizado = dto.getEmail() != null ? dto.getEmail().trim() : null;
+        Integer numeroSocio = clienteRepository.findMaxNumeroSocio()
+                .orElse(0) + 1;
+        Socio socio = Socio.registrar(
+                cedulaNormalizada,
+                dto.getNombre(),
+                dto.getTelefono(),
+                mailNormalizado,
+                dto.getFechaNacimiento(),
+                dto.getMetodoCobro(),
+                dto.getPais(),
+                dto.getDepartamento(),
+                dto.getCiudad(),
+                dto.getDireccion(),
+                dto.getObservaciones(),
+                numeroSocio
+        );
+        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
     }
 }

@@ -41,4 +41,29 @@ public class CedulaUnicaValidator {
             );
         }
     }
+
+    public void validar(String cedula) {
+        if (cedula == null || cedula.isBlank()) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_INVALIDA.name(),
+                    "La cédula ingresada no es válida"
+            );
+        }
+
+        String normalizada = CedulaNormalizador.normalizar(cedula);
+
+        if (normalizada.isEmpty()) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_INVALIDA.name(),
+                    "La cédula ingresada no es válida"
+            );
+        }
+
+        if (clienteRepository.existsByCedula(normalizada)) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_YA_REGISTRADA.name(),
+                    "Ya existe un cliente con esa cédula"
+            );
+        }
+    }
 }

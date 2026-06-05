@@ -72,4 +72,37 @@ public class Socio extends Cliente {
         this.direccion = direccion;
         this.metodoCobro = metodoCobro;
     }
+
+    public static Socio registrar(
+            String cedula,
+            String nombre,
+            String telefono,
+            String mail,
+            LocalDate fechaNacimiento,
+            MetodoCobro metodoCobro,
+            String pais,
+            String departamento,
+            String ciudad,
+            String direccion,
+            String notas,
+            Integer numeroSocio
+    ) {
+        Socio socio = new Socio();
+        socio.setCedula(cedula);
+        socio.setNombreCompleto(nombre);
+        socio.setTelefono(telefono);
+        socio.setMail(mail);
+        socio.setFechaNacimiento(fechaNacimiento);
+        socio.setMetodoCobro(metodoCobro);
+        socio.setPais(pais);
+        socio.setDepartamento(departamento);
+        socio.setCiudad(ciudad);
+        socio.setDireccion(direccion);
+        socio.setNotas(notas);
+        socio.setNumeroSocio(numeroSocio);
+        socio.setEstado(EstadoSocio.ACTIVO);
+        socio.setFechaIngreso(LocalDate.now());
+        socio.setMesesSinPagar(0);
+        return socio;
+    }
 }
