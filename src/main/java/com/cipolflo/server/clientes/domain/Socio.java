@@ -2,12 +2,14 @@ package com.cipolflo.server.clientes.domain;
 
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
+import com.cipolflo.server.clientes.dto.RegistroSocioRequestDto;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Entity
 @DiscriminatorValue("SOCIO")
@@ -74,34 +76,26 @@ public class Socio extends Cliente {
     }
 
     public static Socio registrar(
-            String cedula,
-            String nombre,
-            String telefono,
-            String mail,
-            LocalDate fechaNacimiento,
-            MetodoCobro metodoCobro,
-            String pais,
-            String departamento,
-            String ciudad,
-            String direccion,
-            String notas,
+            RegistroSocioRequestDto dto,
+            String cedulaNormalizada,
+            String mailNormalizado,
             Integer numeroSocio
     ) {
         Socio socio = new Socio();
-        socio.setCedula(cedula);
-        socio.setNombreCompleto(nombre);
-        socio.setTelefono(telefono);
-        socio.setMail(mail);
-        socio.setFechaNacimiento(fechaNacimiento);
-        socio.setMetodoCobro(metodoCobro);
-        socio.setPais(pais);
-        socio.setDepartamento(departamento);
-        socio.setCiudad(ciudad);
-        socio.setDireccion(direccion);
-        socio.setNotas(notas);
+        socio.setCedula(cedulaNormalizada);
+        socio.setNombreCompleto(dto.getNombre());
+        socio.setTelefono(dto.getTelefono());
+        socio.setMail(mailNormalizado);
+        socio.setFechaNacimiento(dto.getFechaNacimiento());
+        socio.setMetodoCobro(dto.getMetodoCobro());
+        socio.setPais(dto.getPais());
+        socio.setDepartamento(dto.getDepartamento());
+        socio.setCiudad(dto.getCiudad());
+        socio.setDireccion(dto.getDireccion());
+        socio.setNotas(dto.getObservaciones());
         socio.setNumeroSocio(numeroSocio);
         socio.setEstado(EstadoSocio.ACTIVO);
-        socio.setFechaIngreso(LocalDate.now());
+        socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
         socio.setMesesSinPagar(0);
         return socio;
     }

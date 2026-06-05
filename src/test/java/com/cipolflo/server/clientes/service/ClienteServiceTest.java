@@ -29,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,12 +77,12 @@ class ClienteServiceTest {
         socio.setMail("socio@mail.com");
         socio.setNumeroSocio(nroSocio);
         socio.setEstado(estado);
-        socio.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+        socio.setFechaNacimiento(LocalDate.of(1990, Month.JANUARY, 1));
         socio.setPais("Uruguay");
         socio.setDepartamento("Montevideo");
         socio.setCiudad("Montevideo");
         socio.setDireccion("Calle 1");
-        socio.setFechaIngreso(LocalDate.of(2022, 1, 1));
+        socio.setFechaIngreso(LocalDate.of(2022, Month.JANUARY, 1));
         socio.setMetodoCobro(MetodoCobro.EFECTIVO);
         return socio;
     }
@@ -108,7 +109,7 @@ class ClienteServiceTest {
         dto.setCedula("12345672");
         dto.setNombreCompleto(nombre);
         dto.setTelefono(telefono);
-        dto.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+        dto.setFechaNacimiento(LocalDate.of(1990, Month.JANUARY, 1));
         dto.setPais("Uruguay");
         dto.setDepartamento("Montevideo");
         dto.setCiudad("Montevideo");
@@ -121,7 +122,7 @@ class ClienteServiceTest {
         RegistroSocioRequestDto dto = new RegistroSocioRequestDto();
         dto.setCedula("1.234.567-8");
         dto.setNombre("Juan Pérez");
-        dto.setFechaNacimiento(LocalDate.of(1990, 5, 10));
+        dto.setFechaNacimiento(LocalDate.of(1990, Month.MAY, 10));
         dto.setTelefono("099123456");
         dto.setEmail("juan@mail.com");
         dto.setMetodoCobro(MetodoCobro.EFECTIVO);

@@ -170,17 +170,9 @@ public class ClienteService implements IClienteService {
         Integer numeroSocio = clienteRepository.findMaxNumeroSocio()
                 .orElse(0) + 1;
         Socio socio = Socio.registrar(
+                dto,
                 cedulaNormalizada,
-                dto.getNombre(),
-                dto.getTelefono(),
                 mailNormalizado,
-                dto.getFechaNacimiento(),
-                dto.getMetodoCobro(),
-                dto.getPais(),
-                dto.getDepartamento(),
-                dto.getCiudad(),
-                dto.getDireccion(),
-                dto.getObservaciones(),
                 numeroSocio
         );
         return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
