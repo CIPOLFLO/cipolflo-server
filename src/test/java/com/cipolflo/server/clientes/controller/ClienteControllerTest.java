@@ -24,6 +24,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -58,7 +59,7 @@ class ClienteControllerTest {
 
     private ClienteResponseDto detalleCliente() {
         return new ClienteResponseDto(
-                1L, "Juan Pérez", "12345678", LocalDate.of(1990, 1, 1),
+                1L, "Juan Pérez", "12345678", LocalDate.of(1990, Month.JANUARY, 1),
                 "099111111", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. 18 de Julio 100",
                 5, TipoCliente.SOCIO, EstadoSocio.ACTIVO, null,
@@ -588,7 +589,7 @@ class ClienteControllerTest {
                 1L,
                 "Juan Pérez",
                 "12345678",
-                LocalDate.of(1990, 5, 10),
+                LocalDate.of(1990, Month.MAY, 10),
                 "099123456",
                 "juan@mail.com",
                 MetodoCobro.EFECTIVO,

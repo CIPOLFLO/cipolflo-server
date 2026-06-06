@@ -12,8 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CedulaUnicaValidatorTest {
@@ -68,5 +67,13 @@ class CedulaUnicaValidatorTest {
         ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
                 () -> validator.validar("...-", 1L));
         assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
+    }
+    @Test
+    void deberiaLanzarErrorCuandoCedulaNormalizadaQuedaVacia() {
+        ClienteValidacionException exception =
+                assertThrows(ClienteValidacionException.class, () -> validator.validar("...---"));
+
+        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), exception.getCodigo());
+        verifyNoInteractions(clienteRepository);
     }
 }

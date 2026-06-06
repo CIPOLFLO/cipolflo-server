@@ -543,4 +543,25 @@ class ClienteServiceTest {
         verify(registroSocioValidator).validar(dto);
         verify(clienteRepository).save(any(Socio.class));
     }
+
+    @Test
+    void deberiaRegistrarSocioSinEmail() {
+        RegistroSocioRequestDto dto = crearRegistroSocioRequest();
+        dto.setEmail(null);
+
+        when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.empty());
+        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+            Socio socio = invocation.getArgument(0);
+            socio.setId(1L);
+            return socio;
+        });
+
+        ClienteResponseDto response = clienteService.registrarSocio(dto);
+
+        assertNotNull(response);
+        assertNull(response.getEmail());
+
+        verify(registroSocioValidator).validar(dto);
+        verify(clienteRepository).save(any(Socio.class));
+    }
 }

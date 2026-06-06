@@ -12,9 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class EmailUnicoValidatorTest {
@@ -63,4 +61,20 @@ class EmailUnicoValidatorTest {
 
         verify(clienteRepository).existsByMailIgnoreCaseAndIdNot("juan@mail.com", 1L);
     }
+
+    @Test
+    void noDeberiaConsultarRepositorioCuandoEmailEsNull() {
+        validator.validar(null);
+
+        verifyNoInteractions(clienteRepository);
+    }
+
+    @Test
+    void noDeberiaConsultarRepositorioCuandoEmailEstaEnBlanco() {
+        validator.validar("   ");
+
+        verifyNoInteractions(clienteRepository);
+    }
 }
+
+
