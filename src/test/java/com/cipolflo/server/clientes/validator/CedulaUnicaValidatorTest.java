@@ -76,4 +76,34 @@ class CedulaUnicaValidatorTest {
         assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), exception.getCodigo());
         verifyNoInteractions(clienteRepository);
     }
+    @Test
+    void deberiaPermitirCedulaNoExistenteEnRegistro() {
+        when(clienteRepository.existsByCedula("12345672")).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar("12345672"));
+
+        verify(clienteRepository).existsByCedula("12345672");
+    }
+
+    @Test
+    void deberiaLanzarExceptionCuandoCedulaYaExisteEnRegistro() {
+        when(clienteRepository.existsByCedula("12345672")).thenReturn(true);
+
+        ClienteValidacionException ex = assertThrows(
+                ClienteValidacionException.class,
+                () -> validator.validar("12345672")
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_YA_REGISTRADA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaNormalizarCedulaAntesDeConsultarEnRegistro() {
+        when(clienteRepository.existsByCedula("12345672")).thenReturn(false);
+
+        validator.validar("1.234.567-2");
+
+        verify(clienteRepository).existsByCedula("12345672");
+    }
+
 }
