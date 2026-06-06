@@ -29,6 +29,7 @@ dependencies {
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	compileOnly ("org.projectlombok:lombok")
 	runtimeOnly ("org.postgresql:postgresql")
+	implementation ("org.liquibase:liquibase-core")
 	annotationProcessor ("org.projectlombok:lombok")
 	testImplementation ("org.springframework.boot:spring-boot-starter-test")
 	testImplementation ("org.springframework.security:spring-security-test")

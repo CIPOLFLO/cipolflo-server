@@ -11,6 +11,7 @@ Backend del sistema de gestión del Club CIPOLFLO. Administra clientes, socios, 
 - **Spring Data JPA + Hibernate**
 - **Spring Security**
 - **PostgreSQL**
+- **Liquibase**
 - **Gradle (Kotlin DSL)**
 - **Lombok**
 
@@ -120,7 +121,7 @@ Asegurarse de que Docker Desktop esté abierto y corriendo, luego ejecutar en la
 docker compose up -d
 ```
 
-Postgres queda corriendo en `localhost:5433`. El schema se crea automáticamente la primera vez desde `docker/init.sql`.
+Postgres queda corriendo en `localhost:5433`. Liquibase aplica automáticamente las migraciones pendientes al iniciar la app.
 
 Para detenerla sin borrar los datos:
 
@@ -165,6 +166,80 @@ El archivo `gradle/verification-metadata.xml` contiene los checksums SHA-256 de 
 
 ```bash
 ./gradlew --write-verification-metadata sha256 help
+```
+
+---
+
+## Migraciones de base de datos
+
+El schema de la base de datos se gestiona con **Liquibase**. Al iniciar la app, Liquibase compara las migraciones ya aplicadas (registradas en la tabla `DATABASECHANGELOG`) con las del proyecto y ejecuta solo las pendientes.
+
+### Estructura
+
+```
+src/main/resources/db/changelog/
+├── db.changelog-master.yaml          ← índice de migraciones (punto de entrada)
+└── migrations/
+    └── 001_initial_schema.sql        ← schema inicial
+    └── 002_descripcion_cambio.sql    ← próximas migraciones
+```
+
+### Cómo agregar una nueva migración
+
+Seguir siempre este proceso al introducir cambios en el schema (nueva tabla, columna, índice, constraint, etc.):
+
+**1. Crear el archivo SQL de la migración**
+
+Crear un archivo nuevo en `src/main/resources/db/changelog/migrations/` con el siguiente formato de nombre:
+
+```
+NNN_descripcion_breve.sql
+```
+
+Donde `NNN` es el número correlativo siguiente (ej: `002`, `003`). La descripción debe ser en minúsculas con guiones bajos.
+
+El contenido del archivo debe seguir el formato de Liquibase para SQL:
+
+```sql
+--liquibase formatted sql
+
+--changeset cipolflo:NNN-descripcion-breve
+-- DDL aquí
+ALTER TABLE public.cliente ADD COLUMN fecha_baja date;
+
+--rollback ALTER TABLE public.cliente DROP COLUMN fecha_baja;
+```
+
+Reglas del formato:
+- La primera línea del archivo debe ser siempre `--liquibase formatted sql`.
+- Cada changeset necesita `--changeset autor:id`. El `id` debe ser único en todo el proyecto — usar el número de migración como prefijo garantiza esto.
+- Agregar siempre `--rollback` con el SQL inverso. Si el rollback es imposible (ej: `DROP TABLE`), usar `--rollback empty`.
+- Un changeset **nunca se modifica** una vez aplicado. Si hay un error, corregirlo en una migración nueva.
+
+**2. Registrar la migración en el changelog maestro**
+
+Abrir `src/main/resources/db/changelog/db.changelog-master.yaml` y agregar el `include` al final:
+
+```yaml
+databaseChangeLog:
+  - include:
+      file: db/changelog/migrations/001_initial_schema.sql
+  - include:
+      file: db/changelog/migrations/002_descripcion_breve.sql   # ← agregar acá
+```
+
+**3. Verificar localmente**
+
+Reiniciar la app. Liquibase aplica la migración al arrancar y lo registra en `DATABASECHANGELOG`. Si hay algún error en el SQL, la app no levanta y el mensaje de error indica el changeset fallido.
+
+### Reset completo de la base de datos
+
+Si necesitás partir de cero (ej: al trabajar en migraciones en desarrollo):
+
+```bash
+docker compose down -v   # elimina el volumen — borra todos los datos
+docker compose up -d     # recrea el contenedor
+# al correr la app, Liquibase aplica todas las migraciones desde cero
 ```
 
 ---
@@ -369,11 +444,12 @@ Priorizar tests unitarios en la capa de dominio (sin Spring context) y tests de 
 Seguir este orden dentro del módulo correspondiente:
 
 1. **Dominio** — agregar o modificar la entidad en `{modulo}/domain/`. Si hay enums nuevos, agregarlos en `{modulo}/domain/enums/`.
-2. **Repository** — si se necesitan queries personalizadas, agregarlas en `{modulo}/repository/` extendiendo o anotando el repositorio existente.
-3. **DTOs** — definir los campos de entrada y salida en `{modulo}/dto/`.
-4. **Servicio** — declarar el método en `I{Modulo}Service` e implementarlo en `{Modulo}Service`.
-5. **Controller** — exponer el endpoint en `{Modulo}Controller` mapeando DTO ↔ entidad.
-6. **Test** — escribir el test en `src/test/.../{modulo}/` al mismo nivel que la clase testeada.
+2. **Migración** — si el cambio implica modificar el schema (nueva tabla, columna, índice, etc.), crear la migración correspondiente antes de tocar la entidad. Ver la sección [Migraciones de base de datos](#migraciones-de-base-de-datos).
+3. **Repository** — si se necesitan queries personalizadas, agregarlas en `{modulo}/repository/` extendiendo o anotando el repositorio existente.
+4. **DTOs** — definir los campos de entrada y salida en `{modulo}/dto/`.
+5. **Servicio** — declarar el método en `I{Modulo}Service` e implementarlo en `{Modulo}Service`.
+6. **Controller** — exponer el endpoint en `{Modulo}Controller` mapeando DTO ↔ entidad.
+7. **Test** — escribir el test en `src/test/.../{modulo}/` al mismo nivel que la clase testeada.
 
 Si la funcionalidad involucra un concepto transversal a varios módulos (ej. un nuevo enum de estado, una nueva forma de pago), va en `shared/`.
 
