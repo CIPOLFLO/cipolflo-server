@@ -36,7 +36,7 @@ public class Socio extends Cliente {
     @Column(nullable = false)
     private String ciudad;
 
-    @Column(nullable = false)
+    @Column()
     private String direccion;
 
     @Column(nullable = false)
