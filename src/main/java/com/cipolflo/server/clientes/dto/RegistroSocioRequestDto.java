@@ -40,7 +40,6 @@ public class RegistroSocioRequestDto {
     @NotBlank(message = "La ciudad es obligatoria")
     private String ciudad;
 
-    @NotBlank(message = "La dirección es obligatoria")
     private String direccion;
 
     private String observaciones;

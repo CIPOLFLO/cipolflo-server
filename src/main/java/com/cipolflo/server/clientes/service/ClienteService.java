@@ -10,8 +10,8 @@ import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
+import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
-import com.cipolflo.server.clientes.validator.CedulaUnicaValidator;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
 import com.cipolflo.server.clientes.validator.RegistroSocioValidator;
@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,7 +38,7 @@ public class ClienteService implements IClienteService {
     private final IReservaService reservaService;
     private final ModificacionParticularValidator modificacionParticularValidator;
     private final ModificacionSocioValidator modificacionSocioValidator;
-    RegistroSocioValidator registroSocioValidator;
+    private final RegistroSocioValidator registroSocioValidator;
 
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
@@ -105,10 +107,9 @@ public class ClienteService implements IClienteService {
             throw new ClienteNotFoundException(id);
         }
 
-        modificacionParticularValidator.validar(id, dto);
-
         String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+        modificacionParticularValidator.validar(id, dto, cedulaNormalizada, mailNormalizado);
 
         particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), mailNormalizado, dto.getNotas());
 
@@ -132,10 +133,9 @@ public class ClienteService implements IClienteService {
             throw new ClienteNotFoundException(id);
         }
 
-        modificacionSocioValidator.validar(id, dto);
-
         String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+        modificacionSocioValidator.validar(id, dto, cedulaNormalizada, mailNormalizado);
 
         socio.modificar(
                 cedulaNormalizada,
@@ -164,17 +164,27 @@ public class ClienteService implements IClienteService {
     @Override
     @Transactional
     public ClienteResponseDto registrarSocio(RegistroSocioRequestDto dto) {
-        registroSocioValidator.validar(dto);
         String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getEmail() != null ? dto.getEmail().trim() : null;
-        Integer numeroSocio = clienteRepository.findMaxNumeroSocio()
-                .orElse(0) + 1;
-        Socio socio = Socio.registrar(
-                dto,
-                cedulaNormalizada,
-                mailNormalizado,
-                numeroSocio
-        );
+        registroSocioValidator.validar(dto, cedulaNormalizada, mailNormalizado);
+        // TODO: definir estrategia de asignación de número de socio (secuencia DB, lock pesimista, etc.)
+        Integer numeroSocio = clienteRepository.findMaxNumeroSocio().orElse(0) + 1;
+        Socio socio = new Socio();
+        socio.setCedula(cedulaNormalizada);
+        socio.setNombreCompleto(dto.getNombre());
+        socio.setTelefono(dto.getTelefono());
+        socio.setMail(mailNormalizado);
+        socio.setFechaNacimiento(dto.getFechaNacimiento());
+        socio.setMetodoCobro(dto.getMetodoCobro());
+        socio.setPais(dto.getPais());
+        socio.setDepartamento(dto.getDepartamento());
+        socio.setCiudad(dto.getCiudad());
+        socio.setDireccion(dto.getDireccion());
+        socio.setNotas(dto.getObservaciones());
+        socio.setNumeroSocio(numeroSocio);
+        socio.setEstado(EstadoSocio.ACTIVO);
+        socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
+        socio.setMesesSinPagar(0);
         return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
     }
 }

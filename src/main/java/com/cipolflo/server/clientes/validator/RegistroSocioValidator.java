@@ -23,10 +23,10 @@ public class RegistroSocioValidator {
         this.emailUnicoValidator = emailUnicoValidator;
     }
 
-    public void validar(RegistroSocioRequestDto dto) {
+    public void validar(RegistroSocioRequestDto dto, String cedulaNormalizada, String mailNormalizado) {
         cedulaFormatoValidator.validar(dto.getCedula());
-        cedulaUnicaValidator.validar(dto.getCedula());
+        cedulaUnicaValidator.validar(cedulaNormalizada);
         emailFormatoValidator.validar(dto.getEmail());
-        emailUnicoValidator.validar(dto.getEmail());
+        emailUnicoValidator.validar(mailNormalizado);
     }
 }

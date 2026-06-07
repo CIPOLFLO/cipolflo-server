@@ -669,7 +669,7 @@ class ClienteControllerTest {
     void deberiaRetornarBadRequestCuandoCedulaDuplicada() throws Exception {
         when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
                 .thenThrow(new ClienteValidacionException(
-                        ClienteCodigoError.CEDULA_YA_REGISTRADA.name(),
+                        ClienteCodigoError.CEDULA_DUPLICADA.name(),
                         "Ya existe un cliente con esa cédula"
                 ));
 
@@ -692,7 +692,7 @@ class ClienteControllerTest {
                                     """)
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.codigo").value("CEDULA_YA_REGISTRADA"));
+                .andExpect(jsonPath("$.codigo").value("CEDULA_DUPLICADA"));
     }
 
     @Test

@@ -40,15 +40,6 @@ class CedulaUnicaValidatorTest {
     }
 
     @Test
-    void deberiaNormalizarCedulaAntesDeConsultar() {
-        when(clienteRepository.existsByCedulaAndIdNot("12345672", 1L)).thenReturn(false);
-
-        validator.validar("1.234.567-2", 1L);
-
-        verify(clienteRepository).existsByCedulaAndIdNot("12345672", 1L);
-    }
-
-    @Test
     void deberiaLanzarExceptionCuandoCedulaEsNula() {
         ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
                 () -> validator.validar(null, 1L));
@@ -60,21 +51,6 @@ class CedulaUnicaValidatorTest {
         ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
                 () -> validator.validar("   ", 1L));
         assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
-    }
-
-    @Test
-    void deberiaLanzarExceptionCuandoCedulaNormalizadaEsVacia() {
-        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
-                () -> validator.validar("...-", 1L));
-        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
-    }
-    @Test
-    void deberiaLanzarErrorCuandoCedulaNormalizadaQuedaVacia() {
-        ClienteValidacionException exception =
-                assertThrows(ClienteValidacionException.class, () -> validator.validar("...---"));
-
-        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), exception.getCodigo());
-        verifyNoInteractions(clienteRepository);
     }
     @Test
     void deberiaPermitirCedulaNoExistenteEnRegistro() {
@@ -94,16 +70,15 @@ class CedulaUnicaValidatorTest {
                 () -> validator.validar("12345672")
         );
 
-        assertEquals(ClienteCodigoError.CEDULA_YA_REGISTRADA.name(), ex.getCodigo());
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
     }
 
     @Test
-    void deberiaNormalizarCedulaAntesDeConsultarEnRegistro() {
-        when(clienteRepository.existsByCedula("12345672")).thenReturn(false);
+    void deberiaLanzarErrorCuandoCedulaEsNulaEnRegistro() {
+        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
+                () -> validator.validar(null));
 
-        validator.validar("1.234.567-2");
-
-        verify(clienteRepository).existsByCedula("12345672");
+        assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
+        verifyNoInteractions(clienteRepository);
     }
-
 }

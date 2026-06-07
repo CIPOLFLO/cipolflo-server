@@ -14,29 +14,25 @@ public class EmailUnicoValidator {
         this.clienteRepository = clienteRepository;
     }
 
+    // Recibe el mail ya normalizado (trim) por el service antes de llamar al validador
     public void validar(String mail, Long idExcluir) {
         if (mail == null || mail.isBlank()) return;
-
-        if (clienteRepository.existsByMailIgnoreCaseAndIdNot(mail.trim(), idExcluir)) {
-            throw new ClienteValidacionException(
-                    ClienteCodigoError.EMAIL_DUPLICADO.name(),
-                    "El email ingresado ya está en uso"
-            );
+        if (clienteRepository.existsByMailIgnoreCaseAndIdNot(mail, idExcluir)) {
+            lanzarDuplicado();
         }
     }
 
     public void validar(String email) {
-        if (email == null || email.isBlank()) {
-            return;
+        if (email == null || email.isBlank()) return;
+        if (clienteRepository.existsByMailIgnoreCase(email)) {
+            lanzarDuplicado();
         }
+    }
 
-        String normalizado = email.trim();
-
-        if (clienteRepository.existsByMail(normalizado)) {
-            throw new ClienteValidacionException(
-                    ClienteCodigoError.EMAIL_DUPLICADO.name(),
-                    "Ya existe un cliente con ese email"
-            );
-        }
+    private void lanzarDuplicado() {
+        throw new ClienteValidacionException(
+                ClienteCodigoError.EMAIL_DUPLICADO.name(),
+                "Ya existe un cliente con ese email"
+        );
     }
 }

@@ -1,4 +1,3 @@
-
 package com.cipolflo.server.clientes.validator;
 
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
@@ -36,16 +35,19 @@ class RegistroSocioValidatorTest {
     @InjectMocks
     private RegistroSocioValidator validator;
 
+    private static final String CEDULA_NORMALIZADA = "12345678";
+    private static final String MAIL_NORMALIZADO = "juan@mail.com";
+
     @Test
     void deberiaValidarRegistroSocioCorrectamente() {
         RegistroSocioRequestDto dto = crearDto();
 
-        validator.validar(dto);
+        validator.validar(dto, CEDULA_NORMALIZADA, MAIL_NORMALIZADO);
 
         verify(cedulaFormatoValidator).validar(dto.getCedula());
-        verify(cedulaUnicaValidator).validar(dto.getCedula());
+        verify(cedulaUnicaValidator).validar(CEDULA_NORMALIZADA);
         verify(emailFormatoValidator).validar(dto.getEmail());
-        verify(emailUnicoValidator).validar(dto.getEmail());
+        verify(emailUnicoValidator).validar(MAIL_NORMALIZADO);
     }
 
     @Test
@@ -55,7 +57,8 @@ class RegistroSocioValidatorTest {
         doThrow(new ClienteValidacionException("SOLICITUD_INVALIDA", "La cédula ingresada no es válida"))
                 .when(cedulaFormatoValidator).validar(dto.getCedula());
 
-        assertThrows(ClienteValidacionException.class, () -> validator.validar(dto));
+        assertThrows(ClienteValidacionException.class,
+                () -> validator.validar(dto, CEDULA_NORMALIZADA, MAIL_NORMALIZADO));
 
         verify(cedulaFormatoValidator).validar(dto.getCedula());
         verifyNoInteractions(cedulaUnicaValidator, emailFormatoValidator, emailUnicoValidator);
@@ -66,14 +69,15 @@ class RegistroSocioValidatorTest {
         RegistroSocioRequestDto dto = crearDto();
 
         doThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "Ya existe un cliente con ese email"))
-                .when(emailUnicoValidator).validar(dto.getEmail());
+                .when(emailUnicoValidator).validar(MAIL_NORMALIZADO);
 
-        assertThrows(ClienteValidacionException.class, () -> validator.validar(dto));
+        assertThrows(ClienteValidacionException.class,
+                () -> validator.validar(dto, CEDULA_NORMALIZADA, MAIL_NORMALIZADO));
 
         verify(cedulaFormatoValidator).validar(dto.getCedula());
-        verify(cedulaUnicaValidator).validar(dto.getCedula());
+        verify(cedulaUnicaValidator).validar(CEDULA_NORMALIZADA);
         verify(emailFormatoValidator).validar(dto.getEmail());
-        verify(emailUnicoValidator).validar(dto.getEmail());
+        verify(emailUnicoValidator).validar(MAIL_NORMALIZADO);
     }
 
     private RegistroSocioRequestDto crearDto() {

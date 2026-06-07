@@ -2,14 +2,12 @@ package com.cipolflo.server.clientes.domain;
 
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
-import com.cipolflo.server.clientes.dto.RegistroSocioRequestDto;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 
 @Entity
 @DiscriminatorValue("SOCIO")
@@ -36,7 +34,6 @@ public class Socio extends Cliente {
     @Column(nullable = false)
     private String ciudad;
 
-    @Column()
     private String direccion;
 
     @Column(nullable = false)
@@ -75,28 +72,4 @@ public class Socio extends Cliente {
         this.metodoCobro = metodoCobro;
     }
 
-    public static Socio registrar(
-            RegistroSocioRequestDto dto,
-            String cedulaNormalizada,
-            String mailNormalizado,
-            Integer numeroSocio
-    ) {
-        Socio socio = new Socio();
-        socio.setCedula(cedulaNormalizada);
-        socio.setNombreCompleto(dto.getNombre());
-        socio.setTelefono(dto.getTelefono());
-        socio.setMail(mailNormalizado);
-        socio.setFechaNacimiento(dto.getFechaNacimiento());
-        socio.setMetodoCobro(dto.getMetodoCobro());
-        socio.setPais(dto.getPais());
-        socio.setDepartamento(dto.getDepartamento());
-        socio.setCiudad(dto.getCiudad());
-        socio.setDireccion(dto.getDireccion());
-        socio.setNotas(dto.getObservaciones());
-        socio.setNumeroSocio(numeroSocio);
-        socio.setEstado(EstadoSocio.ACTIVO);
-        socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
-        socio.setMesesSinPagar(0);
-        return socio;
-    }
 }

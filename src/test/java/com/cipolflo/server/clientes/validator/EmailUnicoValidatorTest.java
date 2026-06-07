@@ -54,15 +54,6 @@ class EmailUnicoValidatorTest {
     }
 
     @Test
-    void deberiaTrimearEmailAntesDeConsultar() {
-        when(clienteRepository.existsByMailIgnoreCaseAndIdNot("juan@mail.com", 1L)).thenReturn(false);
-
-        validator.validar("  juan@mail.com  ", 1L);
-
-        verify(clienteRepository).existsByMailIgnoreCaseAndIdNot("juan@mail.com", 1L);
-    }
-
-    @Test
     void noDeberiaConsultarRepositorioCuandoEmailEsNull() {
         validator.validar(null);
 
@@ -75,6 +66,32 @@ class EmailUnicoValidatorTest {
 
         verifyNoInteractions(clienteRepository);
     }
+
+    @Test
+    void deberiaPermitirEmailNoExistenteEnRegistro() {
+        when(clienteRepository.existsByMailIgnoreCase("juan@mail.com")).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar("juan@mail.com"));
+
+        verify(clienteRepository).existsByMailIgnoreCase("juan@mail.com");
+    }
+
+    @Test
+    void deberiaLanzarExceptionCuandoEmailYaExisteEnRegistro() {
+        when(clienteRepository.existsByMailIgnoreCase("juan@mail.com")).thenReturn(true);
+
+        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
+                () -> validator.validar("juan@mail.com"));
+
+        assertEquals(ClienteCodigoError.EMAIL_DUPLICADO.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaDetectarEmailDuplicadoIgnorandoCasosEnRegistro() {
+        when(clienteRepository.existsByMailIgnoreCase("JUAN@MAIL.COM")).thenReturn(true);
+
+        assertThrows(ClienteValidacionException.class, () -> validator.validar("JUAN@MAIL.COM"));
+
+        verify(clienteRepository).existsByMailIgnoreCase("JUAN@MAIL.COM");
+    }
 }
-
-

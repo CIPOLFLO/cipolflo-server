@@ -41,6 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -344,7 +346,7 @@ class ClienteServiceTest {
 
         ModificacionParticularRequestDto dto = dtoParticular("Juan", "099000000");
         org.mockito.Mockito.doThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"))
-                .when(modificacionParticularValidator).validar(1L, dto);
+                .when(modificacionParticularValidator).validar(anyLong(), any(ModificacionParticularRequestDto.class), anyString(), any());
 
         assertThrows(ClienteValidacionException.class,
                 () -> clienteService.modificarParticular(1L, dto));
@@ -386,7 +388,7 @@ class ClienteServiceTest {
         assertEquals("099999999", particular.getTelefono());
         assertEquals("nuevo@mail.com", particular.getMail());
         verify(clienteRepository).saveAndFlush(particular);
-        verify(modificacionParticularValidator).validar(1L, dto);
+        verify(modificacionParticularValidator).validar(anyLong(), any(ModificacionParticularRequestDto.class), anyString(), any());
     }
 
     @Test
@@ -412,7 +414,7 @@ class ClienteServiceTest {
 
         ModificacionSocioRequestDto dto = dtoSocio("Juan", "099000000");
         org.mockito.Mockito.doThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"))
-                .when(modificacionSocioValidator).validar(1L, dto);
+                .when(modificacionSocioValidator).validar(anyLong(), any(ModificacionSocioRequestDto.class), anyString(), any());
 
         assertThrows(ClienteValidacionException.class,
                 () -> clienteService.modificarSocio(1L, dto));
@@ -459,7 +461,7 @@ class ClienteServiceTest {
         assertEquals("Buenos Aires", socio.getCiudad());
         assertEquals(MetodoCobro.TRANSFERENCIA, socio.getMetodoCobro());
         verify(clienteRepository).saveAndFlush(socio);
-        verify(modificacionSocioValidator).validar(1L, dto);
+        verify(modificacionSocioValidator).validar(anyLong(), any(ModificacionSocioRequestDto.class), anyString(), any());
     }
 
     @Test
@@ -481,15 +483,13 @@ class ClienteServiceTest {
         RegistroSocioRequestDto dto = crearRegistroSocioRequest();
 
         doThrow(new ClienteValidacionException(
-                ClienteCodigoError.CEDULA_YA_REGISTRADA.name(),
+                ClienteCodigoError.CEDULA_DUPLICADA.name(),
                 "Ya existe un cliente con esa cédula"
-        )).when(registroSocioValidator).validar(dto);
+        )).when(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
 
-        assertThrows(ClienteValidacionException.class, () -> {
-            clienteService.registrarSocio(dto);
-        });
+        assertThrows(ClienteValidacionException.class, () -> clienteService.registrarSocio(dto));
 
-        verify(registroSocioValidator).validar(dto);
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
         verify(clienteRepository, never()).save(any());
     }
 
@@ -512,7 +512,7 @@ class ClienteServiceTest {
         assertNotNull(response);
         assertEquals(11, response.getNumeroSocio());
 
-        verify(registroSocioValidator).validar(dto);
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
         verify(clienteRepository).findMaxNumeroSocio();
         verify(clienteRepository).save(any(Socio.class));
     }
@@ -540,7 +540,7 @@ class ClienteServiceTest {
         assertEquals(EstadoSocio.ACTIVO, response.getEstado());
 
         verify(clienteRepository).findMaxNumeroSocio();
-        verify(registroSocioValidator).validar(dto);
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
         verify(clienteRepository).save(any(Socio.class));
     }
 
@@ -561,7 +561,7 @@ class ClienteServiceTest {
         assertNotNull(response);
         assertNull(response.getEmail());
 
-        verify(registroSocioValidator).validar(dto);
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
         verify(clienteRepository).save(any(Socio.class));
     }
 }

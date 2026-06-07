@@ -16,7 +16,7 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long>, JpaSpec
 
     boolean existsByCedula(String cedula);
 
-    boolean existsByMail(String mail);
+    boolean existsByMailIgnoreCase(String mail);
 
     @Query("SELECT MAX(s.numeroSocio) FROM Socio s")
     Optional<Integer> findMaxNumeroSocio();
