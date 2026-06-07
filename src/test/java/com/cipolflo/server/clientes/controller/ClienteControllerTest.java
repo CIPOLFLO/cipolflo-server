@@ -617,7 +617,7 @@ class ClienteControllerTest {
                                 .content("""
                                     {
                                       "cedula": "1.234.567-8",
-                                      "nombre": "Juan Pérez",
+                                      "nombreCompleto": "Juan Pérez",
                                       "fechaNacimiento": "1990-05-10",
                                       "telefono": "099123456",
                                       "email": "juan@mail.com",
@@ -647,7 +647,7 @@ class ClienteControllerTest {
                                 .content("""
                                     {
                                       "cedula": "",
-                                      "nombre": "Juan Pérez",
+                                      "nombreCompleto": "Juan Pérez",
                                       "fechaNacimiento": "1990-05-10",
                                       "telefono": "099123456",
                                       "metodoCobro": "EFECTIVO",
@@ -680,7 +680,7 @@ class ClienteControllerTest {
                                 .content("""
                                     {
                                       "cedula": "1.234.567-8",
-                                      "nombre": "Juan Pérez",
+                                      "nombreCompleto": "Juan Pérez",
                                       "fechaNacimiento": "1990-05-10",
                                       "telefono": "099123456",
                                       "metodoCobro": "EFECTIVO",
@@ -705,7 +705,7 @@ class ClienteControllerTest {
                                 .content("""
                                     {
                                       "cedula": "1.234.567-8",
-                                      "nombre": "Juan Pérez",
+                                      "nombreCompleto": "Juan Pérez",
                                       "fechaNacimiento": "1990-05-10",
                                       "telefono": "099123456",
                                       "metodoCobro": "INVALIDO",
@@ -738,7 +738,7 @@ class ClienteControllerTest {
                                 .content("""
                                     {
                                       "cedula": "123",
-                                      "nombre": "Juan Pérez",
+                                      "nombreCompleto": "Juan Pérez",
                                       "fechaNacimiento": "1990-05-10",
                                       "telefono": "099123456",
                                       "metodoCobro": "EFECTIVO",

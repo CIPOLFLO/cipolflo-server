@@ -123,7 +123,7 @@ class ClienteServiceTest {
     private RegistroSocioRequestDto crearRegistroSocioRequest() {
         RegistroSocioRequestDto dto = new RegistroSocioRequestDto();
         dto.setCedula("1.234.567-8");
-        dto.setNombre("Juan Pérez");
+        dto.setNombreCompleto("Juan Pérez");
         dto.setFechaNacimiento(LocalDate.of(1990, Month.MAY, 10));
         dto.setTelefono("099123456");
         dto.setEmail("juan@mail.com");

@@ -18,7 +18,7 @@ public class RegistroSocioRequestDto {
     private String cedula;
 
     @NotBlank(message = "El nombre es obligatorio")
-    private String nombre;
+    private String nombreCompleto;
 
     @NotNull(message = "La fecha de nacimiento es obligatoria")
     private LocalDate fechaNacimiento;

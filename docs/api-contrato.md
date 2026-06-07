@@ -546,9 +546,77 @@ Modifica los datos de un socio.
 
 ---
 
+### `POST /api/v1/clientes/socios`
+Registra un nuevo cliente de tipo socio.
+
+**Body** (`application/json`):
+```json
+{
+  "cedula": "1.234.567-8",
+  "nombreCompleto": "Juan Pérez",
+  "fechaNacimiento": "1990-05-10",
+  "telefono": "099123456",
+  "email": "juan@mail.com",
+  "metodoCobro": "EFECTIVO",
+  "pais": "Uruguay",
+  "departamento": "Montevideo",
+  "ciudad": "Montevideo",
+  "direccion": "Av. Italia 1234",
+  "observaciones": "Sin observaciones"
+}
+```
+
+| Campo             | Tipo           | Obligatorio | Validación                                    |
+|-------------------|----------------|-------------|-----------------------------------------------|
+| `cedula`          | string         | Sí          | no vacío, algoritmo de cédula uruguaya, única |
+| `nombreCompleto`  | string         | Sí          | no vacío                                      |
+| `fechaNacimiento` | string (date)  | Sí          | `yyyy-MM-dd`                                  |
+| `telefono`        | string         | Sí          | no vacío                                      |
+| `email`           | string         | No          | formato email válido si se envía, único (case-insensitive) |
+| `metodoCobro`     | `MetodoCobro`  | Sí          | —                                             |
+| `pais`            | string         | Sí          | no vacío                                      |
+| `departamento`    | string         | Sí          | no vacío                                      |
+| `ciudad`          | string         | Sí          | no vacío                                      |
+| `direccion`       | string         | No          | —                                             |
+| `observaciones`   | string         | No          | —                                             |
+
+> La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO`, `mesesSinPagar = 0` y `fechaIngreso` igual a la fecha actual. El `numeroSocio` se asigna de forma incremental.
+
+**Respuesta 201:** mismo body que `GET /api/v1/clientes/{id}`
+
+**Errores:**
+
+| HTTP Status | Código              | Cuándo ocurre                                                 |
+|-------------|---------------------|---------------------------------------------------------------|
+| 400         | `SOLICITUD_INVALIDA`| Campo obligatorio faltante, vacío, o `metodoCobro` inválido  |
+| 400         | `CEDULA_INVALIDA`   | La cédula no cumple el algoritmo de validación uruguayo       |
+| 400         | `CEDULA_DUPLICADA`  | Ya existe un cliente con esa cédula                           |
+| 400         | `EMAIL_INVALIDO`    | El email no tiene formato válido                              |
+| 400         | `EMAIL_DUPLICADO`   | Ya existe un cliente con ese email                            |
+| 401         | —                   | Token ausente, inválido o expirado                            |
+
+---
+
 ## Clientes — DTOs
 
 ### Request DTOs
+
+#### `RegistroSocioRequestDto` — body en `POST /api/v1/clientes/socios`
+```typescript
+{
+  cedula: string              // obligatorio, algoritmo cédula uruguaya, única
+  nombreCompleto: string      // obligatorio, no vacío
+  fechaNacimiento: string     // obligatorio, LocalDate yyyy-MM-dd
+  telefono: string            // obligatorio, no vacío
+  email?: string              // opcional, formato email válido si se envía, único (case-insensitive)
+  metodoCobro: MetodoCobro    // obligatorio
+  pais: string                // obligatorio, no vacío
+  departamento: string        // obligatorio, no vacío
+  ciudad: string              // obligatorio, no vacío
+  direccion?: string          // opcional
+  observaciones?: string      // opcional
+}
+```
 
 #### `ModificacionParticularRequestDto` — body en `PUT /api/v1/clientes/particulares/{id}`
 ```typescript

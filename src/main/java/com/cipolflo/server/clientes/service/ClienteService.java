@@ -171,7 +171,7 @@ public class ClienteService implements IClienteService {
         Integer numeroSocio = clienteRepository.findMaxNumeroSocio().orElse(0) + 1;
         Socio socio = new Socio();
         socio.setCedula(cedulaNormalizada);
-        socio.setNombreCompleto(dto.getNombre());
+        socio.setNombreCompleto(dto.getNombreCompleto());
         socio.setTelefono(dto.getTelefono());
         socio.setMail(mailNormalizado);
         socio.setFechaNacimiento(dto.getFechaNacimiento());
