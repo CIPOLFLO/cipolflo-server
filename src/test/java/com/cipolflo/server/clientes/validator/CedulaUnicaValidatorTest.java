@@ -12,8 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CedulaUnicaValidatorTest {
@@ -41,15 +40,6 @@ class CedulaUnicaValidatorTest {
     }
 
     @Test
-    void deberiaNormalizarCedulaAntesDeConsultar() {
-        when(clienteRepository.existsByCedulaAndIdNot("12345672", 1L)).thenReturn(false);
-
-        validator.validar("1.234.567-2", 1L);
-
-        verify(clienteRepository).existsByCedulaAndIdNot("12345672", 1L);
-    }
-
-    @Test
     void deberiaLanzarExceptionCuandoCedulaEsNula() {
         ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
                 () -> validator.validar(null, 1L));
@@ -62,11 +52,33 @@ class CedulaUnicaValidatorTest {
                 () -> validator.validar("   ", 1L));
         assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
     }
+    @Test
+    void deberiaPermitirCedulaNoExistenteEnRegistro() {
+        when(clienteRepository.existsByCedula("12345672")).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar("12345672"));
+
+        verify(clienteRepository).existsByCedula("12345672");
+    }
 
     @Test
-    void deberiaLanzarExceptionCuandoCedulaNormalizadaEsVacia() {
+    void deberiaLanzarExceptionCuandoCedulaYaExisteEnRegistro() {
+        when(clienteRepository.existsByCedula("12345672")).thenReturn(true);
+
+        ClienteValidacionException ex = assertThrows(
+                ClienteValidacionException.class,
+                () -> validator.validar("12345672")
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoCedulaEsNulaEnRegistro() {
         ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
-                () -> validator.validar("...-", 1L));
+                () -> validator.validar(null));
+
         assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
+        verifyNoInteractions(clienteRepository);
     }
 }

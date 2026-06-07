@@ -1,26 +1,16 @@
 package com.cipolflo.server.clientes.controller;
 
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
-import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
-import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
+import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
 
@@ -83,5 +73,17 @@ public class ClienteController {
             @PathVariable @Positive(message = "El id del cliente debe ser un número positivo") Long id,
             @Valid @RequestBody ModificacionSocioRequestDto dto) {
         return ResponseEntity.ok(clienteService.modificarSocio(id, dto));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/socios")
+    public ResponseEntity<ClienteResponseDto> registrarSocio(
+            @Valid @RequestBody RegistroSocioRequestDto dto) {
+
+        ClienteResponseDto response = clienteService.registrarSocio(dto);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
     }
 }

@@ -12,9 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class EmailUnicoValidatorTest {
@@ -56,11 +54,44 @@ class EmailUnicoValidatorTest {
     }
 
     @Test
-    void deberiaTrimearEmailAntesDeConsultar() {
-        when(clienteRepository.existsByMailIgnoreCaseAndIdNot("juan@mail.com", 1L)).thenReturn(false);
+    void noDeberiaConsultarRepositorioCuandoEmailEsNull() {
+        validator.validar(null);
 
-        validator.validar("  juan@mail.com  ", 1L);
+        verifyNoInteractions(clienteRepository);
+    }
 
-        verify(clienteRepository).existsByMailIgnoreCaseAndIdNot("juan@mail.com", 1L);
+    @Test
+    void noDeberiaConsultarRepositorioCuandoEmailEstaEnBlanco() {
+        validator.validar("   ");
+
+        verifyNoInteractions(clienteRepository);
+    }
+
+    @Test
+    void deberiaPermitirEmailNoExistenteEnRegistro() {
+        when(clienteRepository.existsByMailIgnoreCase("juan@mail.com")).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar("juan@mail.com"));
+
+        verify(clienteRepository).existsByMailIgnoreCase("juan@mail.com");
+    }
+
+    @Test
+    void deberiaLanzarExceptionCuandoEmailYaExisteEnRegistro() {
+        when(clienteRepository.existsByMailIgnoreCase("juan@mail.com")).thenReturn(true);
+
+        ClienteValidacionException ex = assertThrows(ClienteValidacionException.class,
+                () -> validator.validar("juan@mail.com"));
+
+        assertEquals(ClienteCodigoError.EMAIL_DUPLICADO.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaDetectarEmailDuplicadoIgnorandoCasosEnRegistro() {
+        when(clienteRepository.existsByMailIgnoreCase("JUAN@MAIL.COM")).thenReturn(true);
+
+        assertThrows(ClienteValidacionException.class, () -> validator.validar("JUAN@MAIL.COM"));
+
+        verify(clienteRepository).existsByMailIgnoreCase("JUAN@MAIL.COM");
     }
 }

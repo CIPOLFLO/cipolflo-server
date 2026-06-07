@@ -3,20 +3,18 @@ package com.cipolflo.server.clientes.service;
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
-import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
+import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
-import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
+import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
+import com.cipolflo.server.clientes.validator.RegistroSocioValidator;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
@@ -28,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,15 +38,19 @@ public class ClienteService implements IClienteService {
     private final IReservaService reservaService;
     private final ModificacionParticularValidator modificacionParticularValidator;
     private final ModificacionSocioValidator modificacionSocioValidator;
+    private final RegistroSocioValidator registroSocioValidator;
 
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
-                          ModificacionSocioValidator modificacionSocioValidator) {
+                          ModificacionSocioValidator modificacionSocioValidator,
+                          RegistroSocioValidator registroSocioValidator) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
         this.modificacionSocioValidator = modificacionSocioValidator;
+        this.registroSocioValidator = registroSocioValidator;
+
     }
 
     @Override
@@ -93,8 +97,6 @@ public class ClienteService implements IClienteService {
         clienteRepository.save(socio);
     }
 
-
-
     @Override
     @Transactional
     public ClienteResponseDto modificarParticular(Long id, ModificacionParticularRequestDto dto) {
@@ -105,10 +107,9 @@ public class ClienteService implements IClienteService {
             throw new ClienteNotFoundException(id);
         }
 
-        modificacionParticularValidator.validar(id, dto);
-
         String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+        modificacionParticularValidator.validar(id, dto, cedulaNormalizada, mailNormalizado);
 
         particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), mailNormalizado, dto.getNotas());
 
@@ -132,10 +133,9 @@ public class ClienteService implements IClienteService {
             throw new ClienteNotFoundException(id);
         }
 
-        modificacionSocioValidator.validar(id, dto);
-
         String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+        modificacionSocioValidator.validar(id, dto, cedulaNormalizada, mailNormalizado);
 
         socio.modificar(
                 cedulaNormalizada,
@@ -159,5 +159,32 @@ public class ClienteService implements IClienteService {
                     "Ya existe un cliente con esa cédula"
             );
         }
+    }
+
+    @Override
+    @Transactional
+    public ClienteResponseDto registrarSocio(RegistroSocioRequestDto dto) {
+        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
+        String mailNormalizado = dto.getEmail() != null ? dto.getEmail().trim() : null;
+        registroSocioValidator.validar(dto, cedulaNormalizada, mailNormalizado);
+        // TODO: definir estrategia de asignación de número de socio (secuencia DB, lock pesimista, etc.)
+        Integer numeroSocio = clienteRepository.findMaxNumeroSocio().orElse(0) + 1;
+        Socio socio = new Socio();
+        socio.setCedula(cedulaNormalizada);
+        socio.setNombreCompleto(dto.getNombreCompleto());
+        socio.setTelefono(dto.getTelefono());
+        socio.setMail(mailNormalizado);
+        socio.setFechaNacimiento(dto.getFechaNacimiento());
+        socio.setMetodoCobro(dto.getMetodoCobro());
+        socio.setPais(dto.getPais());
+        socio.setDepartamento(dto.getDepartamento());
+        socio.setCiudad(dto.getCiudad());
+        socio.setDireccion(dto.getDireccion());
+        socio.setNotas(dto.getObservaciones());
+        socio.setNumeroSocio(numeroSocio);
+        socio.setEstado(EstadoSocio.ACTIVO);
+        socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
+        socio.setMesesSinPagar(0);
+        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
     }
 }

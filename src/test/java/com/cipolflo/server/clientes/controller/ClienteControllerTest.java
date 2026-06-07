@@ -6,6 +6,8 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
+import com.cipolflo.server.clientes.dto.RegistroSocioRequestDto;
+import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
@@ -22,8 +24,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -32,9 +34,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ClienteController.class)
@@ -58,7 +59,7 @@ class ClienteControllerTest {
 
     private ClienteResponseDto detalleCliente() {
         return new ClienteResponseDto(
-                1L, "Juan Pérez", "12345678", LocalDate.of(1990, 1, 1),
+                1L, "Juan Pérez", "12345678", LocalDate.of(1990, Month.JANUARY, 1),
                 "099111111", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. 18 de Julio 100",
                 5, TipoCliente.SOCIO, EstadoSocio.ACTIVO, null,
@@ -579,5 +580,176 @@ class ClienteControllerTest {
                   "metodoCobro": "EFECTIVO"
                 }
                 """.formatted(mailJson);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRegistrarSocioCorrectamente() throws Exception {
+        ClienteResponseDto response = new ClienteResponseDto(
+                1L,
+                "Juan Pérez",
+                "12345678",
+                LocalDate.of(1990, Month.MAY, 10),
+                "099123456",
+                "juan@mail.com",
+                MetodoCobro.EFECTIVO,
+                "Uruguay",
+                "Montevideo",
+                "Montevideo",
+                "Av. Italia 1234",
+                7,
+                TipoCliente.SOCIO,
+                EstadoSocio.ACTIVO,
+                "Sin observaciones",
+                null,
+                null,
+                null,
+                null
+        );
+
+        when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/socios")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "cedula": "1.234.567-8",
+                                      "nombreCompleto": "Juan Pérez",
+                                      "fechaNacimiento": "1990-05-10",
+                                      "telefono": "099123456",
+                                      "email": "juan@mail.com",
+                                      "metodoCobro": "EFECTIVO",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Av. Italia 1234",
+                                      "observaciones": "Sin observaciones"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipoCliente").value("SOCIO"))
+                .andExpect(jsonPath("$.estado").value("ACTIVO"));
+
+        verify(clienteService).registrarSocio(any(RegistroSocioRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltaCampoRequerido() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/clientes/socios")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "cedula": "",
+                                      "nombreCompleto": "Juan Pérez",
+                                      "fechaNacimiento": "1990-05-10",
+                                      "telefono": "099123456",
+                                      "metodoCobro": "EFECTIVO",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Av. Italia 1234"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(clienteService, never()).registrarSocio(any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaDuplicada() throws Exception {
+        when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
+                .thenThrow(new ClienteValidacionException(
+                        ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                        "Ya existe un cliente con esa cédula"
+                ));
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/socios")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "cedula": "1.234.567-8",
+                                      "nombreCompleto": "Juan Pérez",
+                                      "fechaNacimiento": "1990-05-10",
+                                      "telefono": "099123456",
+                                      "metodoCobro": "EFECTIVO",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Av. Italia 1234"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("CEDULA_DUPLICADA"));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoMetodoCobroEsInvalido() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/clientes/socios")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "cedula": "1.234.567-8",
+                                      "nombreCompleto": "Juan Pérez",
+                                      "fechaNacimiento": "1990-05-10",
+                                      "telefono": "099123456",
+                                      "metodoCobro": "INVALIDO",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Av. Italia 1234"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(clienteService, never()).registrarSocio(any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsInvalida() throws Exception {
+        when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
+                .thenThrow(new ClienteValidacionException(
+                        "SOLICITUD_INVALIDA",
+                        "La cédula ingresada no es válida"
+                ));
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/socios")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "cedula": "123",
+                                      "nombreCompleto": "Juan Pérez",
+                                      "fechaNacimiento": "1990-05-10",
+                                      "telefono": "099123456",
+                                      "metodoCobro": "EFECTIVO",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Av. Italia 1234"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
     }
 }

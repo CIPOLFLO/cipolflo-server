@@ -21,10 +21,10 @@ public class ModificacionParticularValidator {
         this.emailUnicoValidator = emailUnicoValidator;
     }
 
-    public void validar(Long id, ModificacionParticularRequestDto dto) {
+    public void validar(Long id, ModificacionParticularRequestDto dto, String cedulaNormalizada, String mailNormalizado) {
         cedulaFormatoValidator.validar(dto.getCedula());
-        cedulaUnicaValidator.validar(dto.getCedula(), id);
+        cedulaUnicaValidator.validar(cedulaNormalizada, id);
         emailFormatoValidator.validar(dto.getMail());
-        emailUnicoValidator.validar(dto.getMail(), id);
+        emailUnicoValidator.validar(mailNormalizado, id);
     }
 }

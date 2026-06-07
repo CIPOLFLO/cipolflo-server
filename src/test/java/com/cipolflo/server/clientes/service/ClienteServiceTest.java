@@ -6,17 +6,15 @@ import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
-import com.cipolflo.server.clientes.dto.ModificacionParticularRequestDto;
-import com.cipolflo.server.clientes.dto.ModificacionSocioRequestDto;
+import com.cipolflo.server.clientes.dto.*;
+import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.clientes.validator.RegistroSocioValidator;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -31,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,12 +52,12 @@ class ClienteServiceTest {
     private ClienteRepository clienteRepository;
     @Mock
     private IReservaService reservaService;
-
     @Mock
     private ModificacionParticularValidator modificacionParticularValidator;
-
     @Mock
     private ModificacionSocioValidator modificacionSocioValidator;
+    @Mock
+    private RegistroSocioValidator registroSocioValidator;
 
     @InjectMocks
     private ClienteService clienteService;
@@ -78,12 +79,12 @@ class ClienteServiceTest {
         socio.setMail("socio@mail.com");
         socio.setNumeroSocio(nroSocio);
         socio.setEstado(estado);
-        socio.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+        socio.setFechaNacimiento(LocalDate.of(1990, Month.JANUARY, 1));
         socio.setPais("Uruguay");
         socio.setDepartamento("Montevideo");
         socio.setCiudad("Montevideo");
         socio.setDireccion("Calle 1");
-        socio.setFechaIngreso(LocalDate.of(2022, 1, 1));
+        socio.setFechaIngreso(LocalDate.of(2022, Month.JANUARY, 1));
         socio.setMetodoCobro(MetodoCobro.EFECTIVO);
         return socio;
     }
@@ -110,12 +111,28 @@ class ClienteServiceTest {
         dto.setCedula("12345672");
         dto.setNombreCompleto(nombre);
         dto.setTelefono(telefono);
-        dto.setFechaNacimiento(LocalDate.of(1990, 1, 1));
+        dto.setFechaNacimiento(LocalDate.of(1990, Month.JANUARY, 1));
         dto.setPais("Uruguay");
         dto.setDepartamento("Montevideo");
         dto.setCiudad("Montevideo");
         dto.setDireccion("Calle 1");
         dto.setMetodoCobro(MetodoCobro.TRANSFERENCIA);
+        return dto;
+    }
+
+    private RegistroSocioRequestDto crearRegistroSocioRequest() {
+        RegistroSocioRequestDto dto = new RegistroSocioRequestDto();
+        dto.setCedula("1.234.567-8");
+        dto.setNombreCompleto("Juan Pérez");
+        dto.setFechaNacimiento(LocalDate.of(1990, Month.MAY, 10));
+        dto.setTelefono("099123456");
+        dto.setEmail("juan@mail.com");
+        dto.setMetodoCobro(MetodoCobro.EFECTIVO);
+        dto.setPais("Uruguay");
+        dto.setDepartamento("Montevideo");
+        dto.setCiudad("Montevideo");
+        dto.setDireccion("Av. Italia 1234");
+        dto.setObservaciones("Sin observaciones");
         return dto;
     }
 
@@ -329,7 +346,7 @@ class ClienteServiceTest {
 
         ModificacionParticularRequestDto dto = dtoParticular("Juan", "099000000");
         org.mockito.Mockito.doThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"))
-                .when(modificacionParticularValidator).validar(1L, dto);
+                .when(modificacionParticularValidator).validar(anyLong(), any(ModificacionParticularRequestDto.class), anyString(), any());
 
         assertThrows(ClienteValidacionException.class,
                 () -> clienteService.modificarParticular(1L, dto));
@@ -371,7 +388,7 @@ class ClienteServiceTest {
         assertEquals("099999999", particular.getTelefono());
         assertEquals("nuevo@mail.com", particular.getMail());
         verify(clienteRepository).saveAndFlush(particular);
-        verify(modificacionParticularValidator).validar(1L, dto);
+        verify(modificacionParticularValidator).validar(anyLong(), any(ModificacionParticularRequestDto.class), anyString(), any());
     }
 
     @Test
@@ -397,7 +414,7 @@ class ClienteServiceTest {
 
         ModificacionSocioRequestDto dto = dtoSocio("Juan", "099000000");
         org.mockito.Mockito.doThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"))
-                .when(modificacionSocioValidator).validar(1L, dto);
+                .when(modificacionSocioValidator).validar(anyLong(), any(ModificacionSocioRequestDto.class), anyString(), any());
 
         assertThrows(ClienteValidacionException.class,
                 () -> clienteService.modificarSocio(1L, dto));
@@ -444,7 +461,7 @@ class ClienteServiceTest {
         assertEquals("Buenos Aires", socio.getCiudad());
         assertEquals(MetodoCobro.TRANSFERENCIA, socio.getMetodoCobro());
         verify(clienteRepository).saveAndFlush(socio);
-        verify(modificacionSocioValidator).validar(1L, dto);
+        verify(modificacionSocioValidator).validar(anyLong(), any(ModificacionSocioRequestDto.class), anyString(), any());
     }
 
     @Test
@@ -459,5 +476,92 @@ class ClienteServiceTest {
         clienteService.modificarSocio(1L, dto);
 
         assertEquals("espacios@mail.com", socio.getMail());
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoCedulaEstaDuplicadaAlRegistrarSocio() {
+        RegistroSocioRequestDto dto = crearRegistroSocioRequest();
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                "Ya existe un cliente con esa cédula"
+        )).when(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+
+        assertThrows(ClienteValidacionException.class, () -> clienteService.registrarSocio(dto));
+
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    void deberiaAsignarNumeroSocioSiguiente() {
+        RegistroSocioRequestDto dto = crearRegistroSocioRequest();
+
+        when(clienteRepository.findMaxNumeroSocio())
+                .thenReturn(Optional.of(10));
+
+        when(clienteRepository.save(any(Socio.class)))
+                .thenAnswer(invocation -> {
+                    Socio socio = invocation.getArgument(0);
+                    socio.setId(1L);
+                    return socio;
+                });
+
+        ClienteResponseDto response = clienteService.registrarSocio(dto);
+
+        assertNotNull(response);
+        assertEquals(11, response.getNumeroSocio());
+
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+        verify(clienteRepository).findMaxNumeroSocio();
+        verify(clienteRepository).save(any(Socio.class));
+    }
+
+    @Test
+    void deberiaRegistrarSocioCorrectamente() {
+        RegistroSocioRequestDto dto = crearRegistroSocioRequest();
+
+        when(clienteRepository.findMaxNumeroSocio())
+                .thenReturn(Optional.empty());
+
+        when(clienteRepository.save(any(Socio.class)))
+                .thenAnswer(invocation -> {
+                    Socio socio = invocation.getArgument(0);
+                    socio.setId(1L);
+                    return socio;
+                });
+
+        ClienteResponseDto response = clienteService.registrarSocio(dto);
+
+        assertNotNull(response);
+        assertEquals("12345678", response.getCedula());
+        assertEquals(1, response.getNumeroSocio());
+        assertEquals(TipoCliente.SOCIO, response.getTipoCliente());
+        assertEquals(EstadoSocio.ACTIVO, response.getEstado());
+
+        verify(clienteRepository).findMaxNumeroSocio();
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+        verify(clienteRepository).save(any(Socio.class));
+    }
+
+    @Test
+    void deberiaRegistrarSocioSinEmail() {
+        RegistroSocioRequestDto dto = crearRegistroSocioRequest();
+        dto.setEmail(null);
+
+        when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.empty());
+        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+            Socio socio = invocation.getArgument(0);
+            socio.setId(1L);
+            return socio;
+        });
+
+        ClienteResponseDto response = clienteService.registrarSocio(dto);
+
+        assertNotNull(response);
+        assertNull(response.getEmail());
+
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
+        verify(clienteRepository).save(any(Socio.class));
     }
 }
