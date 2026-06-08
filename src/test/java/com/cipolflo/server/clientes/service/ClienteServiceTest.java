@@ -34,15 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -563,5 +556,43 @@ class ClienteServiceTest {
 
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
         verify(clienteRepository).save(any(Socio.class));
+    }
+
+    // --- buscarPorCedula ---
+
+    @Test
+    void deberiaRetornarEmptyCuandoCedulaNoExiste() {
+        when(clienteRepository.findByCedula("99999999")).thenReturn(Optional.empty());
+
+        Optional<BusquedaCedulaResponseDto> resultado = clienteService.buscarPorCedula("99999999");
+
+        assertTrue(resultado.isEmpty());
+        verify(clienteRepository).findByCedula("99999999");
+    }
+
+    @Test
+    void deberiaRetornarDtoCuandoCedulaCorrespondeAParticular() {
+        Particular particular = crearParticular(1L, "Laura Fernández", "12345678");
+        when(clienteRepository.findByCedula("12345678")).thenReturn(Optional.of(particular));
+
+        Optional<BusquedaCedulaResponseDto> resultado = clienteService.buscarPorCedula("12345678");
+
+        assertTrue(resultado.isPresent());
+        assertEquals(TipoCliente.PARTICULAR, resultado.get().getTipoCliente());
+        assertEquals("12345678", resultado.get().getCedula());
+        verify(clienteRepository).findByCedula("12345678");
+    }
+
+    @Test
+    void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findByCedula("12345678")).thenReturn(Optional.of(socio));
+
+        Optional<BusquedaCedulaResponseDto> resultado = clienteService.buscarPorCedula("12345678");
+
+        assertTrue(resultado.isPresent());
+        assertEquals(TipoCliente.SOCIO, resultado.get().getTipoCliente());
+        assertEquals("12345678", resultado.get().getCedula());
+        verify(clienteRepository).findByCedula("12345678");
     }
 }

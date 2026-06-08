@@ -1,5 +1,5 @@
 package com.cipolflo.server.clientes.repository;
-
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
@@ -33,10 +33,9 @@ public class ClienteSpecification {
         if (identificador == null || identificador.isBlank())
             return (root, query, cb) -> cb.conjunction();
 
-        if (!identificador.trim().matches(PATRON_IDENTIFICADOR))
-            return (root, query, cb) -> cb.disjunction();
-
-        String normalizado = identificador.replaceAll("[.\\-]", "").trim();
+       if(!CedulaNormalizador.esFormatoValido(identificador))
+        return (root, query, cb) -> cb.disjunction(); // Si el formato no es válido, no matchea con nada
+        String normalizado = CedulaNormalizador.normalizar(identificador.trim());
         String patron = normalizado + "%";
 
         return (root, query, cb) -> {

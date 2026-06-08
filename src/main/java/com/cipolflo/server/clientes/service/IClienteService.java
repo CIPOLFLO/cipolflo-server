@@ -4,7 +4,9 @@ import com.cipolflo.server.clientes.dto.*;
 
 import java.util.Collection;
 import java.util.Map;
-
+import java.util.Optional;
+import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 
@@ -23,5 +25,7 @@ public interface IClienteService {
     ClienteResponseDto modificarSocio(Long id, ModificacionSocioRequestDto dto);
 
     ClienteResponseDto registrarSocio(RegistroSocioRequestDto dto);
+
+    Optional<BusquedaCedulaResponseDto> buscarPorCedula(String cedula);
 
 }

@@ -25,7 +25,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
+import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 
+import java.util.Optional;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -186,5 +189,12 @@ public class ClienteService implements IClienteService {
         socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
         socio.setMesesSinPagar(0);
         return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
+    }
+
+    @Override
+    public Optional<BusquedaCedulaResponseDto> buscarPorCedula(String cedula) {
+        String cedulaNormalizada = CedulaNormalizador.normalizar(cedula);
+        return clienteRepository.findByCedula(cedulaNormalizada)
+        .map(ClienteMapper::toBusquedaCedulaResponseDto);
     }
 }

@@ -4,14 +4,15 @@ import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
+import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
 import jakarta.validation.Valid;
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Set;
 
 @RestController
@@ -85,5 +86,16 @@ public class ClienteController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/cedula/{cedula}")
+    public ResponseEntity<BusquedaCedulaResponseDto> buscarPorCedula(@PathVariable String cedula) {
+        if(!CedulaNormalizador.esFormatoValido(cedula)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return clienteService.buscarPorCedula(cedula)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
