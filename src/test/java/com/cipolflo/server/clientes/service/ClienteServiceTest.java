@@ -473,17 +473,17 @@ class ClienteServiceTest {
 
     @Test
     void deberiaLanzarErrorCuandoCedulaEstaDuplicadaAlRegistrarSocio() {
-        RegistroSocioRequestDto dto = crearRegistroSocioRequest();
+       RegistroSocioRequestDto dto = crearRegistroSocioRequest();
 
-        doThrow(new ClienteValidacionException(
-                ClienteCodigoError.CEDULA_DUPLICADA.name(),
-                "Ya existe un cliente con esa cédula"
-        )).when(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+    doThrow(new ClienteValidacionException(
+            ClienteCodigoError.CEDULA_DUPLICADA.name(),
+            "Ya existe un cliente con esa cédula"
+    )).when(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
 
-        assertThrows(ClienteValidacionException.class, () -> clienteService.registrarSocio(dto));
+    assertThrows(ClienteValidacionException.class, () -> clienteService.registrarSocio(dto));
 
-        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
-        verify(clienteRepository, never()).save(any());
+    verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+    verify(clienteRepository, never()).save(any());
     }
 
     @Test

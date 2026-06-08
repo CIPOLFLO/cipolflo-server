@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
-import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 
 import java.util.Optional;
 import java.time.LocalDate;

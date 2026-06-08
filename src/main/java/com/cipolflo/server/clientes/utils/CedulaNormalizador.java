@@ -10,7 +10,10 @@ public class CedulaNormalizador {
         return cedula.trim().matches(PATRON_CEDULA);
     }
     public static String normalizar(String cedula) {
-        if (cedula == null) return "";
-        return cedula.replaceAll("\\D", "");
+         if (cedula == null) return "";
+    return cedula.chars()
+            .filter(Character::isDigit)
+            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+            .toString();
     }
 }

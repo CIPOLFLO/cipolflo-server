@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
-import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 

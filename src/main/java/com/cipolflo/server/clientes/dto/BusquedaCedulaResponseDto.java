@@ -2,7 +2,6 @@ package com.cipolflo.server.clientes.dto;
 import lombok.Getter;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.shared.dto.ResponseDto;
-import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 @Getter
 public class BusquedaCedulaResponseDto implements ResponseDto {
 
