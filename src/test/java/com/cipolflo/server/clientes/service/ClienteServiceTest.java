@@ -261,12 +261,9 @@ class ClienteServiceTest {
     void deberiaLanzarErrorCuandoSocioNoExiste() {
         Long socioId = 99L;
 
-        when(clienteRepository.findById(socioId))
-                .thenReturn(Optional.empty());
+        when(clienteRepository.findById(socioId)).thenReturn(Optional.empty());
 
-        assertThrows(SocioNotFoundException.class, () -> {
-            clienteService.darDeBajaSocio(socioId);
-        });
+        assertThrows(SocioNotFoundException.class, () -> clienteService.darDeBajaSocio(socioId));
 
         verify(clienteRepository).findById(socioId);
         verify(reservaService, never()).cancelarReservasFuturasPorCliente(anyLong());
@@ -281,13 +278,11 @@ class ClienteServiceTest {
         socio.setId(socioId);
         socio.setEstado(EstadoSocio.ACTIVO);
 
-        when(clienteRepository.findById(socioId))
-                .thenReturn(Optional.of(socio));
+        when(clienteRepository.findById(socioId)).thenReturn(Optional.of(socio));
 
         clienteService.darDeBajaSocio(socioId);
 
         assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
-
         verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
         verify(clienteRepository).save(socio);
     }
@@ -300,13 +295,11 @@ class ClienteServiceTest {
         socio.setId(socioId);
         socio.setEstado(EstadoSocio.ACTIVO);
 
-        when(clienteRepository.findById(socioId))
-                .thenReturn(Optional.of(socio));
+        when(clienteRepository.findById(socioId)).thenReturn(Optional.of(socio));
 
         clienteService.darDeBajaSocio(socioId);
 
         assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
-
         verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
         verify(clienteRepository).save(socio);
     }
@@ -319,13 +312,11 @@ class ClienteServiceTest {
         socio.setId(socioId);
         socio.setEstado(EstadoSocio.ACTIVO);
 
-        when(clienteRepository.findById(socioId))
-                .thenReturn(Optional.of(socio));
+        when(clienteRepository.findById(socioId)).thenReturn(Optional.of(socio));
 
         clienteService.darDeBajaSocio(socioId);
 
         assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
-
         verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
         verify(clienteRepository).save(socio);
     }
@@ -341,8 +332,7 @@ class ClienteServiceTest {
         org.mockito.Mockito.doThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"))
                 .when(modificacionParticularValidator).validar(anyLong(), any(ModificacionParticularRequestDto.class), anyString(), any());
 
-        assertThrows(ClienteValidacionException.class,
-                () -> clienteService.modificarParticular(1L, dto));
+        assertThrows(ClienteValidacionException.class, () -> clienteService.modificarParticular(1L, dto));
     }
 
     @Test
@@ -409,8 +399,7 @@ class ClienteServiceTest {
         org.mockito.Mockito.doThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"))
                 .when(modificacionSocioValidator).validar(anyLong(), any(ModificacionSocioRequestDto.class), anyString(), any());
 
-        assertThrows(ClienteValidacionException.class,
-                () -> clienteService.modificarSocio(1L, dto));
+        assertThrows(ClienteValidacionException.class, () -> clienteService.modificarSocio(1L, dto));
     }
 
     @Test
@@ -473,32 +462,30 @@ class ClienteServiceTest {
 
     @Test
     void deberiaLanzarErrorCuandoCedulaEstaDuplicadaAlRegistrarSocio() {
-       RegistroSocioRequestDto dto = crearRegistroSocioRequest();
+        RegistroSocioRequestDto dto = crearRegistroSocioRequest();
 
-    doThrow(new ClienteValidacionException(
-            ClienteCodigoError.CEDULA_DUPLICADA.name(),
-            "Ya existe un cliente con esa cédula"
-    )).when(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                "Ya existe un cliente con esa cédula"
+        )).when(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
 
-    assertThrows(ClienteValidacionException.class, () -> clienteService.registrarSocio(dto));
+        assertThrows(ClienteValidacionException.class, () -> clienteService.registrarSocio(dto));
 
-    verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
-    verify(clienteRepository, never()).save(any());
+        verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+        verify(clienteRepository, never()).save(any());
     }
 
     @Test
     void deberiaAsignarNumeroSocioSiguiente() {
         RegistroSocioRequestDto dto = crearRegistroSocioRequest();
 
-        when(clienteRepository.findMaxNumeroSocio())
-                .thenReturn(Optional.of(10));
+        when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.of(10));
 
-        when(clienteRepository.save(any(Socio.class)))
-                .thenAnswer(invocation -> {
-                    Socio socio = invocation.getArgument(0);
-                    socio.setId(1L);
-                    return socio;
-                });
+        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+            Socio socio = invocation.getArgument(0);
+            socio.setId(1L);
+            return socio;
+        });
 
         ClienteResponseDto response = clienteService.registrarSocio(dto);
 
@@ -514,15 +501,13 @@ class ClienteServiceTest {
     void deberiaRegistrarSocioCorrectamente() {
         RegistroSocioRequestDto dto = crearRegistroSocioRequest();
 
-        when(clienteRepository.findMaxNumeroSocio())
-                .thenReturn(Optional.empty());
+        when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.empty());
 
-        when(clienteRepository.save(any(Socio.class)))
-                .thenAnswer(invocation -> {
-                    Socio socio = invocation.getArgument(0);
-                    socio.setId(1L);
-                    return socio;
-                });
+        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+            Socio socio = invocation.getArgument(0);
+            socio.setId(1L);
+            return socio;
+        });
 
         ClienteResponseDto response = clienteService.registrarSocio(dto);
 
