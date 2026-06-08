@@ -36,6 +36,7 @@ public class SecurityConfig {
 
 
     @Bean
+    @SuppressWarnings("java:S4502") // CSRF no aplica: API stateless con JWT en header Authorization
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
