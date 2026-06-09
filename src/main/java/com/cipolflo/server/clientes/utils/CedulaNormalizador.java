@@ -6,18 +6,20 @@ public class CedulaNormalizador {
 
     private CedulaNormalizador() {}
 
-    private static final Pattern PATRON_CEDULA = Pattern.compile("^\\d+(\\.\\d+)*(-\\d+)?$");
-
-    public static boolean esFormatoValido(String cedula) {
+   public static boolean esFormatoValido(String cedula) {
         if (cedula == null || cedula.isBlank()) return false;
-        return PATRON_CEDULA.matcher(cedula.trim()).matches();
+        String trimmed = cedula.trim();
+        return trimmed.chars()
+                .allMatch(c -> Character.isDigit(c) || c == '.' || c == '-')
+                && trimmed.chars().filter(c -> c == '-').count() <= 1
+                && !trimmed.startsWith(".")
+                && !trimmed.startsWith("-")
+                && !trimmed.endsWith(".")
+                && !trimmed.endsWith("-");
     }
 
     public static String normalizar(String cedula) {
         if (cedula == null) return "";
-        return cedula.chars()
-                .filter(Character::isDigit)
-                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                .toString();
+        return cedula.replaceAll("[.\\-]", "");
     }
 }

@@ -91,7 +91,7 @@ public class ClienteController {
 @PreAuthorize("isAuthenticated()")
 @GetMapping("/cedula/{cedula}")
 public ResponseEntity<BusquedaCedulaResponseDto> buscarPorCedula(@PathVariable String cedula) {
-    if (!cedula.matches("^\\d+(\\.\\d+)*(-\\d+)?$")) {
+    if (!CedulaNormalizador.esFormatoValido(cedula)) {
         return ResponseEntity.badRequest().build();
     }
     return clienteService.buscarPorCedula(cedula)
