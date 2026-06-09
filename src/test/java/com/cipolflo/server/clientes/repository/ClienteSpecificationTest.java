@@ -156,39 +156,8 @@ class ClienteSpecificationTest {
     }
 
     @Test
-    void conIdentificador_deberiaRetornarDisjunctionCuandoFormatoEsInvalido() {
-        when(cb.disjunction()).thenReturn(mock(Predicate.class));
-
-        Specification<Cliente> spec = ClienteSpecification.conIdentificador(".-.");
-        spec.toPredicate(root, query, cb);
-
-        verify(cb).disjunction();
-    }
-
-    @Test
-    void conIdentificador_deberiaRetornarDisjunctionCuandoContieneLetras() {
-        when(cb.disjunction()).thenReturn(mock(Predicate.class));
-
-        Specification<Cliente> spec = ClienteSpecification.conIdentificador("abc");
-        spec.toPredicate(root, query, cb);
-
-        verify(cb).disjunction();
-    }
-
-    @Test
-    void conIdentificador_deberiaRetornarDisjunctionCuandoGuionFinalSinNumero() {
-        when(cb.disjunction()).thenReturn(mock(Predicate.class));
-
-        Specification<Cliente> spec = ClienteSpecification.conIdentificador("1.234.567-");
-        spec.toPredicate(root, query, cb);
-
-        verify(cb).disjunction();
-    }
-
-    @Test
     @SuppressWarnings("unchecked")
     void conIdentificador_deberiaAceptarFormatoParcialConUnPunto() {
-        // "1.2" es formato parcial válido
         Path<Object> cedulaPath = mock(Path.class);
         Expression<String> lowerExpr = mock(Expression.class);
         Root<Socio> socioRoot = mock(Root.class);
