@@ -11,6 +11,7 @@ import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
+import com.cipolflo.server.clientes.repository.PagoCuotaRepository;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
@@ -58,6 +59,8 @@ class ClienteServiceTest {
     private ModificacionSocioValidator modificacionSocioValidator;
     @Mock
     private RegistroSocioValidator registroSocioValidator;
+    @Mock
+    private PagoCuotaRepository pagoCuotaRepository;
 
     @InjectMocks
     private ClienteService clienteService;
@@ -242,7 +245,8 @@ class ClienteServiceTest {
     void deberiaRetornarDetalleDeUnSocio() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 3, EstadoSocio.ACTIVO);
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-
+        when(pagoCuotaRepository.findTopBySocioIdOrderByFechaDesc(1L))
+                .thenReturn(Optional.empty());
         ClienteResponseDto dto = clienteService.getDetalleCliente(1L);
 
         assertNotNull(dto);
@@ -253,7 +257,10 @@ class ClienteServiceTest {
         assertEquals(3, dto.getNumeroSocio());
         assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
         assertEquals("Uruguay", dto.getPais());
+        assertNull(dto.getUltimaCuotaPaga());
+
         verify(clienteRepository).findById(1L);
+        verify(pagoCuotaRepository).findTopBySocioIdOrderByFechaDesc(1L);
     }
 
     @Test

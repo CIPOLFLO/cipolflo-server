@@ -1,6 +1,7 @@
 package com.cipolflo.server.clientes.service;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.PagoCuota;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.dto.*;
@@ -11,6 +12,7 @@ import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
+import com.cipolflo.server.clientes.repository.PagoCuotaRepository;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
 import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
@@ -39,9 +41,11 @@ public class ClienteService implements IClienteService {
     private final ModificacionParticularValidator modificacionParticularValidator;
     private final ModificacionSocioValidator modificacionSocioValidator;
     private final RegistroSocioValidator registroSocioValidator;
+    private final PagoCuotaRepository pagoCuotaRepository;
 
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
+                          PagoCuotaRepository pagoCuotaRepository,
                           ModificacionParticularValidator modificacionParticularValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
                           RegistroSocioValidator registroSocioValidator) {
@@ -50,7 +54,7 @@ public class ClienteService implements IClienteService {
         this.modificacionParticularValidator = modificacionParticularValidator;
         this.modificacionSocioValidator = modificacionSocioValidator;
         this.registroSocioValidator = registroSocioValidator;
-
+        this.pagoCuotaRepository = pagoCuotaRepository;
     }
 
     @Override
@@ -72,7 +76,10 @@ public class ClienteService implements IClienteService {
     public ClienteResponseDto getDetalleCliente(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ClienteNotFoundException(id));
-        return ClienteMapper.toDetalleResponseDto(cliente);
+        PagoCuota ultimaCuotaPaga = cliente instanceof Socio socio
+                ? pagoCuotaRepository.findTopBySocioIdOrderByFechaDesc(socio.getId()).orElse(null)
+                : null;
+        return ClienteMapper.toDetalleResponseDto(cliente, ultimaCuotaPaga);
     }
 
     @Override
@@ -114,7 +121,7 @@ public class ClienteService implements IClienteService {
         particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), mailNormalizado, dto.getNotas());
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular));
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null);
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -150,9 +157,12 @@ public class ClienteService implements IClienteService {
                 dto.getDireccion(),
                 dto.getMetodoCobro()
         );
+        PagoCuota ultimaCuotaPaga = pagoCuotaRepository
+                .findTopBySocioIdOrderByFechaDesc(socio.getId())
+                .orElse(null);
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio));
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), ultimaCuotaPaga);
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -185,6 +195,6 @@ public class ClienteService implements IClienteService {
         socio.setEstado(EstadoSocio.ACTIVO);
         socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
         socio.setMesesSinPagar(0);
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
+        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio), null);
     }
 }

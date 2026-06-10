@@ -28,13 +28,14 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
     private final TipoCliente tipoCliente;
     private final EstadoSocio estado;
     private final String observaciones;
+    private final UltimaCuotaPagaDto ultimaCuotaPaga;
 
     public ClienteResponseDto(
             Long id, String nombre, String cedula, LocalDate fechaNacimiento,
             String telefono, String email, MetodoCobro metodoCobro,
             String pais, String departamento, String ciudad, String direccion,
             Integer numeroSocio, TipoCliente tipoCliente, EstadoSocio estado, String observaciones,
-            Instant createdAt, Instant updatedAt, String createdBy, String updatedBy) {
+            Instant createdAt, Instant updatedAt, String createdBy, String updatedBy, UltimaCuotaPagaDto ultimaCuotaPaga) {
         super(createdAt, updatedAt, createdBy, updatedBy);
         this.id = id;
         this.nombre = nombre;
@@ -51,5 +52,7 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
         this.tipoCliente = tipoCliente;
         this.estado = estado;
         this.observaciones = observaciones;
+        this.ultimaCuotaPaga = ultimaCuotaPaga;
+
     }
 }
