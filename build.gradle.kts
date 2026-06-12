@@ -11,6 +11,11 @@ plugins {
 group = "com.cipolflo"
 version = "0.0.1-SNAPSHOT"
 
+// El driver postgresql 42.7.5+ rompe la detección de la tabla databasechangelog
+// de Liquibase (cambio en el manejo del catálogo). Fijamos 42.7.4, última versión
+// sin la regresión. Ver: https://github.com/liquibase/liquibase/issues/6666
+extra["postgresql.version"] = "42.7.4"
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
@@ -27,8 +32,10 @@ dependencies {
 	implementation ("org.springframework.boot:spring-boot-starter-validation")
 	implementation ("org.springframework.boot:spring-boot-starter-web")
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+	implementation ("org.springframework.boot:spring-boot-starter-actuator")
 	compileOnly ("org.projectlombok:lombok")
 	runtimeOnly ("org.postgresql:postgresql")
+	implementation ("org.liquibase:liquibase-core")
 	annotationProcessor ("org.projectlombok:lombok")
 	testImplementation ("org.springframework.boot:spring-boot-starter-test")
 	testImplementation ("org.springframework.security:spring-security-test")
