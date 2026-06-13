@@ -37,7 +37,7 @@ public class ClienteMapper {
                 cliente.getUpdatedAt(),
                 cliente.getCreatedBy(),
                 cliente.getUpdatedBy(),
-                toUltimaCuotaPagaDto(socio, ultimaCuotaPaga)
+                toUltimaCuotaPagaDto(socio, ultimaCuotaPaga, mesCorrespondiente)
         );
     }
 
@@ -53,29 +53,12 @@ public class ClienteMapper {
                 socio != null ? socio.getEstado() : null
         );
     }
-    private static UltimaCuotaPagaDto toUltimaCuotaPagaDto(Socio socio, PagoCuota ultimaCuotaPaga) {
-        if (socio == null || ultimaCuotaPaga == null) {
-            return null;
-        }
-
+    private static UltimaCuotaPagaDto toUltimaCuotaPagaDto(Socio socio, PagoCuota ultimaCuotaPaga, String mesCorrespondiente) {
         return new UltimaCuotaPagaDto(
-                obtenerMesCorrespondiente(ultimaCuotaPaga),
-                ultimaCuotaPaga.getFecha(),
+                mesCorrespondiente,
+                ultimaCuotaPaga.getFechaPago(),
+                ultimaCuotaPaga.getMonto(),
                 ultimaCuotaPaga.getFormaPago()
         );
-    }
-    private static String obtenerMesCorrespondiente(PagoCuota ultimaCuotaPaga) {
-        if (ultimaCuotaPaga == null || ultimaCuotaPaga.getFecha() == null) {
-            return null;
-        }
-
-        var fecha = ultimaCuotaPaga.getFecha()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
-
-        String mes = fecha.getMonth()
-                .getDisplayName(TextStyle.FULL, new Locale("es", "ES"));
-
-        return mes.substring(0, 1).toUpperCase() + mes.substring(1) + " " + fecha.getYear();
     }
 }

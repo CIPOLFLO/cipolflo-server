@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
+import com.cipolflo.server.clientes.service.PagoCuotaService;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -42,19 +43,22 @@ public class ClienteService implements IClienteService {
     private final ModificacionSocioValidator modificacionSocioValidator;
     private final RegistroSocioValidator registroSocioValidator;
     private final PagoCuotaRepository pagoCuotaRepository;
+    private final PagoCuotaService pagoCuotaService;
 
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           PagoCuotaRepository pagoCuotaRepository,
                           ModificacionParticularValidator modificacionParticularValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
-                          RegistroSocioValidator registroSocioValidator) {
+                          RegistroSocioValidator registroSocioValidator,
+                          PagoCuotaService pagoCuotaService) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
         this.modificacionSocioValidator = modificacionSocioValidator;
         this.registroSocioValidator = registroSocioValidator;
         this.pagoCuotaRepository = pagoCuotaRepository;
+        this.pagoCuotaService = pagoCuotaService;
     }
 
     @Override
@@ -160,6 +164,10 @@ public class ClienteService implements IClienteService {
         PagoCuota ultimaCuotaPaga = pagoCuotaRepository
                 .findTopBySocioIdOrderByFechaDesc(socio.getId())
                 .orElse(null);
+
+        String mesCorrespondiente = ultimaCuotaPaga != null
+                ? pagoCuotaService.obtenerMesCorrespondiente(ultimaCuotaPaga)
+                : null;
 
         try {
             return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), ultimaCuotaPaga);
