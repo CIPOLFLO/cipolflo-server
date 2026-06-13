@@ -15,7 +15,7 @@ public class ClienteMapper {
 
     private ClienteMapper() {}
 
-    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, PagoCuota ultimaCuotaPaga) {
+    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, PagoCuota ultimaCuotaPaga, String mesCorrespondiente) {
         Socio socio = cliente instanceof Socio s ? s : null;
         return new ClienteResponseDto(
                 cliente.getId(),
@@ -54,11 +54,13 @@ public class ClienteMapper {
         );
     }
     private static UltimaCuotaPagaDto toUltimaCuotaPagaDto(Socio socio, PagoCuota ultimaCuotaPaga, String mesCorrespondiente) {
+        if (socio == null || ultimaCuotaPaga == null) {
+            return null;
+        }
         return new UltimaCuotaPagaDto(
                 mesCorrespondiente,
-                ultimaCuotaPaga.getFechaPago(),
-                ultimaCuotaPaga.getMonto(),
-                ultimaCuotaPaga.getFormaPago()
+                ultimaCuotaPaga.getFecha(),
+                ultimaCuotaPaga.getImporte()
         );
     }
 }
