@@ -1,6 +1,7 @@
 package com.cipolflo.server.clientes.service;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.PagoCuota;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
@@ -17,6 +18,7 @@ import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.validator.RegistroSocioValidator;
 import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
@@ -247,7 +251,7 @@ class ClienteServiceTest {
     void deberiaRetornarDetalleDeUnSocio() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 3, EstadoSocio.ACTIVO);
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findTopBySocioIdOrderByFechaDesc(1L))
+        when(pagoCuotaRepository.findTopBySocioIdOrderByAnioDescMesDesc(1L))
                 .thenReturn(Optional.empty());
         ClienteResponseDto dto = clienteService.getDetalleCliente(1L);
 
@@ -261,7 +265,7 @@ class ClienteServiceTest {
         assertEquals("Uruguay", dto.getPais());
 
         verify(clienteRepository).findById(1L);
-        verify(pagoCuotaRepository).findTopBySocioIdOrderByFechaDesc(1L);
+        verify(pagoCuotaRepository).findTopBySocioIdOrderByAnioDescMesDesc(1L);
     }
 
     @Test
@@ -572,4 +576,29 @@ class ClienteServiceTest {
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
         verify(clienteRepository).save(any(Socio.class));
     }
+
+    @Test
+    void deberiaRetornarDetalleDeSocioConUltimaCuotaPaga() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 3, EstadoSocio.ACTIVO);
+
+        PagoCuota pago = new PagoCuota();
+        pago.setSocioId(1L);
+        pago.setAnio(2026);
+        pago.setMes(6);
+        pago.setFechaPago(Instant.parse("2026-06-10T10:00:00Z"));
+        pago.setImporte(BigDecimal.valueOf(5000));
+        pago.setFormaPago(FormaPago.EFECTIVO);
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findTopBySocioIdOrderByAnioDescMesDesc(1L))
+                .thenReturn(Optional.of(pago));
+
+        ClienteResponseDto dto = clienteService.getDetalleCliente(1L);
+
+        assertNotNull(dto.getUltimaCuotaPaga());
+        assertEquals(2026, dto.getUltimaCuotaPaga().anio());
+        assertEquals(6, dto.getUltimaCuotaPaga().mes());
+        assertEquals(BigDecimal.valueOf(5000), dto.getUltimaCuotaPaga().importe());
+    }
+
 }

@@ -11,7 +11,15 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-@Table(name = "pago_cuota")
+@Table(
+        name = "pago_cuota",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_pago_cuota_socio_periodo",
+                        columnNames = {"socio_id", "anio", "mes"}
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,11 +29,11 @@ public class PagoCuota extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "socio_id", nullable = false)
     private Long socioId;
 
     @Column(nullable = false)
-    private Instant fecha;
+    private Instant fechaPago;
 
     @Column(nullable = false)
     private BigDecimal importe;
@@ -35,5 +43,32 @@ public class PagoCuota extends AuditableEntity {
     private FormaPago formaPago;
 
     @Column(nullable = false)
-    private Integer cantidadMeses;
+    private Integer anio;
+
+    @Column(nullable = false)
+    private Integer mes;
+
+    private String observaciones;
+
+
+
+    public static PagoCuota crear(
+            Long socioId,
+            Integer anio,
+            Integer mes,
+            Instant fechaPago,
+            BigDecimal importe,
+            FormaPago formaPago,
+            String observaciones
+    ) {
+        PagoCuota pago = new PagoCuota();
+        pago.setSocioId(socioId);
+        pago.setAnio(anio);
+        pago.setMes(mes);
+        pago.setFechaPago(fechaPago);
+        pago.setImporte(importe);
+        pago.setFormaPago(formaPago);
+        pago.setObservaciones(observaciones);
+        return pago;
+    }
 }

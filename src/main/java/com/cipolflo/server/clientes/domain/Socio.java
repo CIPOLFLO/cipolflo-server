@@ -46,14 +46,7 @@ public class Socio extends Cliente {
     private MetodoCobro metodoCobro;
 
     @Column(nullable = false)
-    private Integer mesesSinPagar = 0;
-
-    public void incrementarMesesSinPagar() {
-        this.mesesSinPagar++;
-        if (this.mesesSinPagar >= 3) {
-            this.estado = EstadoSocio.INACTIVO;
-        }
-    }
+    private Integer mesesSinPagar;
 
     public void darDeBaja() {
         this.estado = EstadoSocio.DE_BAJA;
@@ -70,6 +63,18 @@ public class Socio extends Cliente {
         this.ciudad = ciudad;
         this.direccion = direccion;
         this.metodoCobro = metodoCobro;
+    }
+
+    public void actualizarEstadoPorDeuda(int mesesSinPagarCalculados) {
+        this.mesesSinPagar = mesesSinPagarCalculados;
+
+        if (this.estado == EstadoSocio.DE_BAJA) {
+            return;
+        }
+
+        this.estado = mesesSinPagarCalculados >= 3
+                ? EstadoSocio.INACTIVO
+                : EstadoSocio.ACTIVO;
     }
 
 }

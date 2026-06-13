@@ -43,22 +43,19 @@ public class ClienteService implements IClienteService {
     private final ModificacionSocioValidator modificacionSocioValidator;
     private final RegistroSocioValidator registroSocioValidator;
     private final PagoCuotaRepository pagoCuotaRepository;
-    private final PagoCuotaService pagoCuotaService;
 
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           PagoCuotaRepository pagoCuotaRepository,
                           ModificacionParticularValidator modificacionParticularValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
-                          RegistroSocioValidator registroSocioValidator,
-                          PagoCuotaService pagoCuotaService) {
+                          RegistroSocioValidator registroSocioValidator) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
         this.modificacionSocioValidator = modificacionSocioValidator;
         this.registroSocioValidator = registroSocioValidator;
         this.pagoCuotaRepository = pagoCuotaRepository;
-        this.pagoCuotaService = pagoCuotaService;
     }
 
     @Override
@@ -80,13 +77,11 @@ public class ClienteService implements IClienteService {
     public ClienteResponseDto getDetalleCliente(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ClienteNotFoundException(id));
+
         PagoCuota ultimaCuotaPaga = cliente instanceof Socio socio
-                ? pagoCuotaRepository.findTopBySocioIdOrderByFechaDesc(socio.getId()).orElse(null)
+                ? pagoCuotaRepository.findTopBySocioIdOrderByAnioDescMesDesc(socio.getId()).orElse(null)
                 : null;
-        String mesCorrespondiente = ultimaCuotaPaga != null
-                ? pagoCuotaService.obtenerMesCorrespondiente(ultimaCuotaPaga)
-                : null;
-        return ClienteMapper.toDetalleResponseDto(cliente, ultimaCuotaPaga, mesCorrespondiente);
+        return ClienteMapper.toDetalleResponseDto(cliente, ultimaCuotaPaga);
     }
 
     @Override
@@ -128,7 +123,7 @@ public class ClienteService implements IClienteService {
         particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), mailNormalizado, dto.getNotas());
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null, null);
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular),null);
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -165,15 +160,10 @@ public class ClienteService implements IClienteService {
                 dto.getMetodoCobro()
         );
         PagoCuota ultimaCuotaPaga = pagoCuotaRepository
-                .findTopBySocioIdOrderByFechaDesc(socio.getId())
+                .findTopBySocioIdOrderByAnioDescMesDesc(socio.getId())
                 .orElse(null);
-
-        String mesCorrespondiente = ultimaCuotaPaga != null
-                ? pagoCuotaService.obtenerMesCorrespondiente(ultimaCuotaPaga)
-                : null;
-
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), ultimaCuotaPaga,mesCorrespondiente);
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), ultimaCuotaPaga);
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -206,6 +196,6 @@ public class ClienteService implements IClienteService {
         socio.setEstado(EstadoSocio.ACTIVO);
         socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
         socio.setMesesSinPagar(0);
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio), null,null);
+        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio), null);
     }
 }

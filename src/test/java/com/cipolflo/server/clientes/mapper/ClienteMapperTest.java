@@ -12,6 +12,7 @@ import com.cipolflo.server.shared.enums.FormaPago;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -118,7 +119,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTodosLosCamposDeUnSocioEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null, null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
 
         assertEquals(1L, dto.getId());
         assertEquals("Juan Pérez", dto.getNombre());
@@ -143,7 +144,7 @@ class ClienteMapperTest {
         ReflectionTestUtils.setField(socio, "createdAt", ahora);
         ReflectionTestUtils.setField(socio, "createdBy", "admin@test.com");
 
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio, null, null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio, null);
 
         assertEquals(ahora, dto.getCreatedAt());
         assertEquals("admin@test.com", dto.getCreatedBy());
@@ -151,14 +152,14 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTipoComoSocioEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null, null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
 
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
     }
 
     @Test
     void deberiaMapearParticularConCamposSocioNulosEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null, null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null);
 
         assertNull(dto.getFechaNacimiento());
         assertNull(dto.getMetodoCobro());
@@ -172,7 +173,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearCamposBaseDeParticularEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null, null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null);
 
         assertEquals(2L, dto.getId());
         assertEquals("Laura Fernández", dto.getNombre());
@@ -187,18 +188,29 @@ class ClienteMapperTest {
         Socio socio = crearSocio();
 
         PagoCuota pago = new PagoCuota();
-        pago.setFecha(Instant.parse("2026-06-10T10:00:00Z"));
+        pago.setAnio(2026);
+        pago.setMes(6);
+        pago.setImporte(BigDecimal.valueOf(5000));
+        pago.setFechaPago(Instant.parse("2026-06-10T10:00:00Z"));
         pago.setFormaPago(FormaPago.TRANSFERENCIA);
-
         ClienteResponseDto dto =
-                ClienteMapper.toDetalleResponseDto(socio, pago,"enero");
+                ClienteMapper.toDetalleResponseDto(socio, pago);
 
         assertNotNull(dto.getUltimaCuotaPaga());
         assertEquals(
                 Instant.parse("2026-06-10T10:00:00Z"),
                 dto.getUltimaCuotaPaga().fechaPago()
         );
-        assertNotNull(dto.getUltimaCuotaPaga().mesCorrespondiente());
+        assertEquals(2026, dto.getUltimaCuotaPaga().anio());
+        assertEquals(6, dto.getUltimaCuotaPaga().mes());
+        assertEquals(BigDecimal.valueOf(5000), dto.getUltimaCuotaPaga().importe());
+        assertEquals(FormaPago.TRANSFERENCIA, dto.getUltimaCuotaPaga().formaPago());
+    }
+    @Test
+    void deberiaRetornarUltimaCuotaPagaNulaCuandoNoHayPago() {
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
+
+        assertNull(dto.getUltimaCuotaPaga());
     }
 
 

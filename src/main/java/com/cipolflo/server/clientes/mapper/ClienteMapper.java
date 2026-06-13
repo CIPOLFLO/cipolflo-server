@@ -6,16 +6,14 @@ import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
+
 import com.cipolflo.server.clientes.dto.UltimaCuotaPagaDto;
-import java.time.ZoneId;
-import java.time.format.TextStyle;
-import java.util.Locale;
 
 public class ClienteMapper {
 
     private ClienteMapper() {}
 
-    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, PagoCuota ultimaCuotaPaga, String mesCorrespondiente) {
+    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, PagoCuota ultimaCuotaPaga) {
         Socio socio = cliente instanceof Socio s ? s : null;
         return new ClienteResponseDto(
                 cliente.getId(),
@@ -32,12 +30,30 @@ public class ClienteMapper {
                 socio != null ? socio.getNumeroSocio() : null,
                 socio != null ? TipoCliente.SOCIO : TipoCliente.PARTICULAR,
                 socio != null ? socio.getEstado() : null,
+                toUltimaCuotaPagaDto(socio,ultimaCuotaPaga),
                 cliente.getNotas(),
                 cliente.getCreatedAt(),
                 cliente.getUpdatedAt(),
                 cliente.getCreatedBy(),
                 cliente.getUpdatedBy(),
-                toUltimaCuotaPagaDto(socio, ultimaCuotaPaga, mesCorrespondiente)
+                null
+        );
+    }
+
+    private static UltimaCuotaPagaDto toUltimaCuotaPagaDto(
+            Socio socio,
+            PagoCuota ultimaCuotaPaga
+    ) {
+        if (socio == null || ultimaCuotaPaga == null) {
+            return null;
+        }
+
+        return new UltimaCuotaPagaDto(
+                ultimaCuotaPaga.getAnio(),
+                ultimaCuotaPaga.getMes(),
+                ultimaCuotaPaga.getFechaPago(),
+                ultimaCuotaPaga.getImporte(),
+                ultimaCuotaPaga.getFormaPago()
         );
     }
 
@@ -53,14 +69,5 @@ public class ClienteMapper {
                 socio != null ? socio.getEstado() : null
         );
     }
-    private static UltimaCuotaPagaDto toUltimaCuotaPagaDto(Socio socio, PagoCuota ultimaCuotaPaga, String mesCorrespondiente) {
-        if (socio == null || ultimaCuotaPaga == null) {
-            return null;
-        }
-        return new UltimaCuotaPagaDto(
-                mesCorrespondiente,
-                ultimaCuotaPaga.getFecha(),
-                ultimaCuotaPaga.getImporte()
-        );
-    }
+
 }
