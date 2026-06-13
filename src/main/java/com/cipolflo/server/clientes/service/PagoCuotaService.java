@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.format.TextStyle;
 import java.util.Locale;
 
+@Service
 public class PagoCuotaService {
 
     public String obtenerMesCorrespondiente(PagoCuota ultimaCuotaPaga) {
