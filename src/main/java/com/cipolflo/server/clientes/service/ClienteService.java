@@ -86,7 +86,7 @@ public class ClienteService implements IClienteService {
         String mesCorrespondiente = ultimaCuotaPaga != null
                 ? pagoCuotaService.obtenerMesCorrespondiente(ultimaCuotaPaga)
                 : null;
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(cliente), ultimaCuotaPaga, mesCorrespondiente);
+        return ClienteMapper.toDetalleResponseDto(cliente, ultimaCuotaPaga, mesCorrespondiente);
     }
 
     @Override

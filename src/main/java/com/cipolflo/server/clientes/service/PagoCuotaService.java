@@ -10,7 +10,7 @@ import java.util.Locale;
 public class PagoCuotaService {
 
     public String obtenerMesCorrespondiente(PagoCuota ultimaCuotaPaga) {
-        LocalDate fecha = ultimaCuotaPaga.getFechaPago()
+        LocalDate fecha = ultimaCuotaPaga.getFecha()
                 .atZone(ZoneId.of("America/Montevideo"))
                 .toLocalDate();
 

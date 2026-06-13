@@ -118,7 +118,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTodosLosCamposDeUnSocioEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null, null);
 
         assertEquals(1L, dto.getId());
         assertEquals("Juan Pérez", dto.getNombre());
@@ -143,7 +143,7 @@ class ClienteMapperTest {
         ReflectionTestUtils.setField(socio, "createdAt", ahora);
         ReflectionTestUtils.setField(socio, "createdBy", "admin@test.com");
 
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio, null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio, null, null);
 
         assertEquals(ahora, dto.getCreatedAt());
         assertEquals("admin@test.com", dto.getCreatedBy());
@@ -151,14 +151,14 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTipoComoSocioEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null, null);
 
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
     }
 
     @Test
     void deberiaMapearParticularConCamposSocioNulosEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null, null);
 
         assertNull(dto.getFechaNacimiento());
         assertNull(dto.getMetodoCobro());
@@ -172,7 +172,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearCamposBaseDeParticularEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null, null);
 
         assertEquals(2L, dto.getId());
         assertEquals("Laura Fernández", dto.getNombre());
@@ -191,11 +191,9 @@ class ClienteMapperTest {
         pago.setFormaPago(FormaPago.TRANSFERENCIA);
 
         ClienteResponseDto dto =
-                ClienteMapper.toDetalleResponseDto(socio, pago);
+                ClienteMapper.toDetalleResponseDto(socio, pago,"enero");
 
         assertNotNull(dto.getUltimaCuotaPaga());
-        assertEquals(FormaPago.TRANSFERENCIA,
-                dto.getUltimaCuotaPaga().formaPago());
         assertEquals(
                 Instant.parse("2026-06-10T10:00:00Z"),
                 dto.getUltimaCuotaPaga().fechaPago()

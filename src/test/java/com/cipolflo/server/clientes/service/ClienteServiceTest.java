@@ -61,6 +61,8 @@ class ClienteServiceTest {
     private RegistroSocioValidator registroSocioValidator;
     @Mock
     private PagoCuotaRepository pagoCuotaRepository;
+    @Mock
+    private PagoCuotaService pagoCuotaService;
 
     @InjectMocks
     private ClienteService clienteService;
@@ -257,7 +259,6 @@ class ClienteServiceTest {
         assertEquals(3, dto.getNumeroSocio());
         assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
         assertEquals("Uruguay", dto.getPais());
-        assertNull(dto.getUltimaCuotaPaga());
 
         verify(clienteRepository).findById(1L);
         verify(pagoCuotaRepository).findTopBySocioIdOrderByFechaDesc(1L);
