@@ -3,6 +3,7 @@ package com.cipolflo.server.clientes.controller;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
@@ -23,16 +24,17 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import java.util.Optional;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -72,6 +74,22 @@ class ClienteControllerTest {
                 1L, "Juan Pérez", "12345678", "juan@mail.com", TipoCliente.SOCIO, 1, EstadoSocio.ACTIVO
         );
         return new PageResponse<>(List.of(dto), 0, 10, 1, 1, true, true);
+    }
+
+    private BusquedaCedulaResponseDto busquedaParticular() {
+        return new BusquedaCedulaResponseDto(
+                1L, "Laura Fernández", "12345678",
+                "099000000", "laura@mail.com", null,
+                TipoCliente.PARTICULAR
+        );
+    }
+
+    private BusquedaCedulaResponseDto busquedaSocio() {
+        return new BusquedaCedulaResponseDto(
+                2L, "Juan Pérez", "12345678",
+                "099111111", "juan@mail.com", null,
+                TipoCliente.SOCIO
+        );
     }
 
     @Test
@@ -355,7 +373,6 @@ class ClienteControllerTest {
         verify(clienteService).darDeBajaSocio(socioId);
     }
 
-
     // --- modificarParticular ---
 
     @Test
@@ -556,55 +573,89 @@ class ClienteControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    private String bodyValidoParticular() {
-        return "{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan Pérez\",\"telefono\":\"099111111\"}";
+    // --- buscarPorCedula ---
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoCedulaNoEstaRegistrada() throws Exception {
+        when(clienteService.buscarPorCedula("99999999")).thenThrow(new ClienteNotFoundException("Cliente no encontrado"));
+
+        mockMvc.perform(get("/api/v1/clientes/cedula/99999999"))
+                .andExpect(status().isNotFound());
+
+        verify(clienteService).buscarPorCedula("99999999");
     }
 
-    private String bodyValidoSocio() {
-        return bodyValidoSocioConEmail(null);
+    @Test
+    @WithMockUser
+    void deberiaRetornarParticularCuandoCedulaCorrespondeAParticular() throws Exception {
+        when(clienteService.buscarPorCedula("12345678")).thenReturn(busquedaParticular());
+
+        mockMvc.perform(get("/api/v1/clientes/cedula/12345678"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tipoCliente").value("PARTICULAR"));
+
+        verify(clienteService).buscarPorCedula("12345678");
     }
 
-    private String bodyValidoSocioConEmail(String mail) {
-        String mailJson = mail != null ? "\"mail\": \"" + mail + "\"," : "";
-        return """
-                {
-                  "cedula": "12345672",
-                  "nombreCompleto": "Juan Pérez",
-                  "telefono": "099111111",
-                  %s
-                  "fechaNacimiento": "1990-01-01",
-                  "pais": "Uruguay",
-                  "departamento": "Montevideo",
-                  "ciudad": "Montevideo",
-                  "direccion": "Av. 18 de Julio 100",
-                  "metodoCobro": "EFECTIVO"
-                }
-                """.formatted(mailJson);
+    @Test
+    @WithMockUser
+    void deberiaRetornarSocioCuandoCedulaCorrespondeASocio() throws Exception {
+        when(clienteService.buscarPorCedula("12345678")).thenReturn((busquedaSocio()));
+
+        mockMvc.perform(get("/api/v1/clientes/cedula/12345678"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tipoCliente").value("SOCIO"));
+
+        verify(clienteService).buscarPorCedula("12345678");
     }
+
+    @Test
+@WithMockUser
+void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception {
+    doThrow(new ClienteValidacionException(
+            ClienteCodigoError.CEDULA_INVALIDA.name(),
+            "La cédula ingresada no es válida"
+    )).when(clienteService).buscarPorCedula("formato-invalido");
+
+    mockMvc.perform(get("/api/v1/clientes/cedula/formato-invalido"))
+            .andExpect(status().isBadRequest());
+
+    verify(clienteService).buscarPorCedula("formato-invalido");
+}
+
+    @Test
+    @WithMockUser
+    void deberiaEncontrarMismoRegistroConCedulaFormateadaYSinFormatear() throws Exception {
+        when(clienteService.buscarPorCedula(any())).thenReturn((busquedaParticular()));
+
+        mockMvc.perform(get("/api/v1/clientes/cedula/12345678"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/clientes/cedula/1.234.567-8"))
+                .andExpect(status().isOk());
+
+        verify(clienteService, times(2)).buscarPorCedula(any());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlBuscarPorCedulaSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/cedula/12345678"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- registrarSocio ---
 
     @Test
     @WithMockUser
     void deberiaRegistrarSocioCorrectamente() throws Exception {
         ClienteResponseDto response = new ClienteResponseDto(
-                1L,
-                "Juan Pérez",
-                "12345678",
+                1L, "Juan Pérez", "12345678",
                 LocalDate.of(1990, Month.MAY, 10),
-                "099123456",
-                "juan@mail.com",
-                MetodoCobro.EFECTIVO,
-                "Uruguay",
-                "Montevideo",
-                "Montevideo",
-                "Av. Italia 1234",
-                7,
-                TipoCliente.SOCIO,
-                EstadoSocio.ACTIVO,
-                "Sin observaciones",
-                null,
-                null,
-                null,
-                null
+                "099123456", "juan@mail.com", MetodoCobro.EFECTIVO,
+                "Uruguay", "Montevideo", "Montevideo", "Av. Italia 1234",
+                7, TipoCliente.SOCIO, EstadoSocio.ACTIVO, "Sin observaciones",
+                null, null, null, null
         );
 
         when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
@@ -751,5 +802,31 @@ class ClienteControllerTest {
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+    }
+
+    private String bodyValidoParticular() {
+        return "{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan Pérez\",\"telefono\":\"099111111\"}";
+    }
+
+    private String bodyValidoSocio() {
+        return bodyValidoSocioConEmail(null);
+    }
+
+    private String bodyValidoSocioConEmail(String mail) {
+        String mailJson = mail != null ? "\"mail\": \"" + mail + "\"," : "";
+        return """
+                {
+                  "cedula": "12345672",
+                  "nombreCompleto": "Juan Pérez",
+                  "telefono": "099111111",
+                  %s
+                  "fechaNacimiento": "1990-01-01",
+                  "pais": "Uruguay",
+                  "departamento": "Montevideo",
+                  "ciudad": "Montevideo",
+                  "direccion": "Av. 18 de Julio 100",
+                  "metodoCobro": "EFECTIVO"
+                }
+                """.formatted(mailJson);
     }
 }

@@ -25,7 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
-
+import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
+import com.cipolflo.server.clientes.validator.CedulaFormatoValidator;
+import java.util.Optional;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -39,10 +41,11 @@ public class ClienteService implements IClienteService {
     private final ModificacionParticularValidator modificacionParticularValidator;
     private final ModificacionSocioValidator modificacionSocioValidator;
     private final RegistroSocioValidator registroSocioValidator;
-
+    private final CedulaFormatoValidator cedulaFormatoValidator;
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
+                          CedulaFormatoValidator cedulaFormatoValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
                           RegistroSocioValidator registroSocioValidator) {
         this.clienteRepository = clienteRepository;
@@ -50,7 +53,7 @@ public class ClienteService implements IClienteService {
         this.modificacionParticularValidator = modificacionParticularValidator;
         this.modificacionSocioValidator = modificacionSocioValidator;
         this.registroSocioValidator = registroSocioValidator;
-
+        this.cedulaFormatoValidator = cedulaFormatoValidator;
     }
 
     @Override
@@ -187,4 +190,20 @@ public class ClienteService implements IClienteService {
         socio.setMesesSinPagar(0);
         return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
     }
+
+    @Override
+public BusquedaCedulaResponseDto buscarPorCedula(String cedula) {
+
+    cedulaFormatoValidator.validar(cedula);
+
+    String cedulaNormalizada =
+            CedulaNormalizador.normalizar(cedula);
+
+    return clienteRepository.findByCedula(cedulaNormalizada)
+            .map(ClienteMapper::toBusquedaCedulaResponseDto)
+            .orElseThrow(() ->
+                    new ClienteNotFoundException(
+                            "No existe un cliente con esa cédula"
+                    ));
+}
 }

@@ -1,5 +1,6 @@
 package com.cipolflo.server.clientes.repository;
 
+import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
@@ -20,23 +21,32 @@ public class ClienteSpecification {
     }
 
     public static Specification<Cliente> conNombre(String nombre) {
-        if (nombre == null || nombre.isBlank())
+        if (nombre == null || nombre.isBlank()) {
             return (root, query, cb) -> cb.conjunction();
+        }
         String patron = "%" + nombre.trim().toLowerCase() + "%";
         return (root, query, cb) -> cb.like(cb.lower(root.get("nombreCompleto")), patron);
     }
 
-    // Acepta solo dígitos o formato parcial de cédula: x.xxx.xxx-x
-    private static final String PATRON_IDENTIFICADOR = "^\\d+(\\.\\d+)*(-\\d+)?$";
-
     public static Specification<Cliente> conIdentificador(String identificador) {
-        if (identificador == null || identificador.isBlank())
+        if (identificador == null || identificador.isBlank()) {
             return (root, query, cb) -> cb.conjunction();
+        }
 
-        if (!identificador.trim().matches(PATRON_IDENTIFICADOR))
+        String valor = identificador.trim();
+
+        boolean valido = valor.chars().allMatch(c -> Character.isDigit(c) || c == '.' || c == '-')
+                && valor.chars().filter(c -> c == '-').count() <= 1
+                && !valor.startsWith(".")
+                && !valor.startsWith("-")
+                && !valor.endsWith(".")
+                && !valor.endsWith("-");
+
+        if (!valido) {
             return (root, query, cb) -> cb.disjunction();
+        }
 
-        String normalizado = identificador.replaceAll("[.\\-]", "").trim();
+        String normalizado = CedulaNormalizador.normalizar(valor);
         String patron = normalizado + "%";
 
         return (root, query, cb) -> {

@@ -27,22 +27,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
+import java.util.List;
+import com.cipolflo.server.clientes.validator.CedulaFormatoValidator;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,7 +52,8 @@ class ClienteServiceTest {
     private ModificacionSocioValidator modificacionSocioValidator;
     @Mock
     private RegistroSocioValidator registroSocioValidator;
-
+    @Mock
+    private CedulaFormatoValidator cedulaFormatoValidator;
     @InjectMocks
     private ClienteService clienteService;
 
@@ -268,12 +263,9 @@ class ClienteServiceTest {
     void deberiaLanzarErrorCuandoSocioNoExiste() {
         Long socioId = 99L;
 
-        when(clienteRepository.findById(socioId))
-                .thenReturn(Optional.empty());
+        when(clienteRepository.findById(socioId)).thenReturn(Optional.empty());
 
-        assertThrows(SocioNotFoundException.class, () -> {
-            clienteService.darDeBajaSocio(socioId);
-        });
+        assertThrows(SocioNotFoundException.class, () -> clienteService.darDeBajaSocio(socioId));
 
         verify(clienteRepository).findById(socioId);
         verify(reservaService, never()).cancelarReservasFuturasPorCliente(anyLong());
@@ -288,13 +280,11 @@ class ClienteServiceTest {
         socio.setId(socioId);
         socio.setEstado(EstadoSocio.ACTIVO);
 
-        when(clienteRepository.findById(socioId))
-                .thenReturn(Optional.of(socio));
+        when(clienteRepository.findById(socioId)).thenReturn(Optional.of(socio));
 
         clienteService.darDeBajaSocio(socioId);
 
         assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
-
         verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
         verify(clienteRepository).save(socio);
     }
@@ -307,13 +297,11 @@ class ClienteServiceTest {
         socio.setId(socioId);
         socio.setEstado(EstadoSocio.ACTIVO);
 
-        when(clienteRepository.findById(socioId))
-                .thenReturn(Optional.of(socio));
+        when(clienteRepository.findById(socioId)).thenReturn(Optional.of(socio));
 
         clienteService.darDeBajaSocio(socioId);
 
         assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
-
         verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
         verify(clienteRepository).save(socio);
     }
@@ -326,13 +314,11 @@ class ClienteServiceTest {
         socio.setId(socioId);
         socio.setEstado(EstadoSocio.ACTIVO);
 
-        when(clienteRepository.findById(socioId))
-                .thenReturn(Optional.of(socio));
+        when(clienteRepository.findById(socioId)).thenReturn(Optional.of(socio));
 
         clienteService.darDeBajaSocio(socioId);
 
         assertEquals(EstadoSocio.DE_BAJA, socio.getEstado());
-
         verify(reservaService).cancelarReservasFuturasPorCliente(socioId);
         verify(clienteRepository).save(socio);
     }
@@ -348,8 +334,7 @@ class ClienteServiceTest {
         org.mockito.Mockito.doThrow(new ClienteValidacionException("EMAIL_DUPLICADO", "El email ingresado ya está en uso"))
                 .when(modificacionParticularValidator).validar(anyLong(), any(ModificacionParticularRequestDto.class), anyString(), any());
 
-        assertThrows(ClienteValidacionException.class,
-                () -> clienteService.modificarParticular(1L, dto));
+        assertThrows(ClienteValidacionException.class, () -> clienteService.modificarParticular(1L, dto));
     }
 
     @Test
@@ -416,8 +401,7 @@ class ClienteServiceTest {
         org.mockito.Mockito.doThrow(new ClienteValidacionException("CEDULA_DUPLICADA", "Ya existe un cliente con esa cédula"))
                 .when(modificacionSocioValidator).validar(anyLong(), any(ModificacionSocioRequestDto.class), anyString(), any());
 
-        assertThrows(ClienteValidacionException.class,
-                () -> clienteService.modificarSocio(1L, dto));
+        assertThrows(ClienteValidacionException.class, () -> clienteService.modificarSocio(1L, dto));
     }
 
     @Test
@@ -497,15 +481,13 @@ class ClienteServiceTest {
     void deberiaAsignarNumeroSocioSiguiente() {
         RegistroSocioRequestDto dto = crearRegistroSocioRequest();
 
-        when(clienteRepository.findMaxNumeroSocio())
-                .thenReturn(Optional.of(10));
+        when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.of(10));
 
-        when(clienteRepository.save(any(Socio.class)))
-                .thenAnswer(invocation -> {
-                    Socio socio = invocation.getArgument(0);
-                    socio.setId(1L);
-                    return socio;
-                });
+        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+            Socio socio = invocation.getArgument(0);
+            socio.setId(1L);
+            return socio;
+        });
 
         ClienteResponseDto response = clienteService.registrarSocio(dto);
 
@@ -521,15 +503,13 @@ class ClienteServiceTest {
     void deberiaRegistrarSocioCorrectamente() {
         RegistroSocioRequestDto dto = crearRegistroSocioRequest();
 
-        when(clienteRepository.findMaxNumeroSocio())
-                .thenReturn(Optional.empty());
+        when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.empty());
 
-        when(clienteRepository.save(any(Socio.class)))
-                .thenAnswer(invocation -> {
-                    Socio socio = invocation.getArgument(0);
-                    socio.setId(1L);
-                    return socio;
-                });
+        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+            Socio socio = invocation.getArgument(0);
+            socio.setId(1L);
+            return socio;
+        });
 
         ClienteResponseDto response = clienteService.registrarSocio(dto);
 
@@ -564,4 +544,59 @@ class ClienteServiceTest {
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
         verify(clienteRepository).save(any(Socio.class));
     }
+
+    // --- buscarPorCedula ---
+
+
+
+@Test
+void deberiaLanzarClienteNotFoundExceptionCuandoCedulaNoExiste() {
+    when(clienteRepository.findByCedula("99999999"))
+            .thenReturn(Optional.empty());
+
+    assertThrows(
+            ClienteNotFoundException.class,
+            () -> clienteService.buscarPorCedula("99999999")
+    );
+
+    verify(clienteRepository).findByCedula("99999999");
+}
+
+@Test
+void deberiaRetornarDtoCuandoCedulaCorrespondeAParticular() {
+    Particular particular = crearParticular(1L, "Laura Fernández", "12345678");
+
+    when(clienteRepository.findByCedula("12345678"))
+            .thenReturn(Optional.of(particular));
+
+    BusquedaCedulaResponseDto resultado =
+            clienteService.buscarPorCedula("12345678");
+
+    assertEquals(TipoCliente.PARTICULAR, resultado.getTipoCliente());
+    assertEquals("12345678", resultado.getCedula());
+
+    verify(clienteRepository).findByCedula("12345678");
+}
+
+@Test
+void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
+    Socio socio = crearSocio(
+            1L,
+            "Juan Pérez",
+            "12345678",
+            1,
+            EstadoSocio.ACTIVO
+    );
+
+    when(clienteRepository.findByCedula("12345678"))
+            .thenReturn(Optional.of(socio));
+
+    BusquedaCedulaResponseDto resultado =
+            clienteService.buscarPorCedula("12345678");
+
+    assertEquals(TipoCliente.SOCIO, resultado.getTipoCliente());
+    assertEquals("12345678", resultado.getCedula());
+
+    verify(clienteRepository).findByCedula("12345678");
+}
 }
