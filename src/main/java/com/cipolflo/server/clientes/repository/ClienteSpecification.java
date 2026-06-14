@@ -28,19 +28,30 @@ public class ClienteSpecification {
         return (root, query, cb) -> cb.like(cb.lower(root.get("nombreCompleto")), patron);
     }
 
-    public static Specification<Cliente> conIdentificador(String identificador) {
-    if (identificador == null || identificador.isBlank())
+   public static Specification<Cliente> conIdentificador(String identificador) {
+    if (identificador == null || identificador.isBlank()) {
         return (root, query, cb) -> cb.conjunction();
+    }
 
-    String normalizado = CedulaNormalizador.normalizar(identificador.trim());
+    String valor = identificador.trim();
+
+    boolean valido = valor.chars().allMatch(c ->
+            Character.isDigit(c)
+                    || c == '.'
+                    || c == '-');
+
+    if (!valido) {
+        return (root, query, cb) -> cb.disjunction();
+    }
+
+    String normalizado = CedulaNormalizador.normalizar(valor);
     String patron = normalizado + "%";
 
-    return (root, query, cb) -> {
-        Predicate porCedula = cb.like(cb.lower(root.get("cedula")), patron);
-        Predicate porNroSocio = cb.like(
-                cb.function("TEXT", String.class, cb.treat(root, Socio.class).get("numeroSocio")), patron);
-        return cb.or(porCedula, porNroSocio);
-    };
+    return (root, query, cb) ->
+            cb.like(
+                    cb.lower(root.get("cedula")),
+                    patron
+            );
 }
 
     public static Specification<Cliente> conEstado(EstadoSocio estado) {

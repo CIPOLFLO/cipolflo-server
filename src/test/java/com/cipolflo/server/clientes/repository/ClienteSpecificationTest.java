@@ -136,99 +136,62 @@ class ClienteSpecificationTest {
     // --- conIdentificador ---
 
     @Test
-    void conIdentificador_deberiaRetornarConjunctionCuandoEsNull() {
-        when(cb.conjunction()).thenReturn(mock(Predicate.class));
+void conIdentificador_deberiaRetornarConjunctionCuandoEsNull() {
+    when(cb.conjunction()).thenReturn(mock(Predicate.class));
 
-        Specification<Cliente> spec = ClienteSpecification.conIdentificador(null);
-        spec.toPredicate(root, query, cb);
+    Specification<Cliente> spec = ClienteSpecification.conIdentificador(null);
+    spec.toPredicate(root, query, cb);
 
-        verify(cb).conjunction();
-    }
+    verify(cb).conjunction();
+}
 
-    @Test
-    void conIdentificador_deberiaRetornarConjunctionCuandoEsBlanco() {
-        when(cb.conjunction()).thenReturn(mock(Predicate.class));
+@Test
+void conIdentificador_deberiaRetornarConjunctionCuandoEsBlanco() {
+    when(cb.conjunction()).thenReturn(mock(Predicate.class));
 
-        Specification<Cliente> spec = ClienteSpecification.conIdentificador("   ");
-        spec.toPredicate(root, query, cb);
+    Specification<Cliente> spec = ClienteSpecification.conIdentificador("   ");
+    spec.toPredicate(root, query, cb);
 
-        verify(cb).conjunction();
-    }
+    verify(cb).conjunction();
+}
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void conIdentificador_deberiaAceptarFormatoParcialConUnPunto() {
-        Path<Object> cedulaPath = mock(Path.class);
-        Expression<String> lowerExpr = mock(Expression.class);
-        Root<Socio> socioRoot = mock(Root.class);
-        Path<Object> nroSocioPath = mock(Path.class);
-        Expression<String> textExpr = mock(Expression.class);
+@Test
+@SuppressWarnings("unchecked")
+void conIdentificador_deberiaBuscarPorCedulaNormalizada() {
+    Path<Object> cedulaPath = mock(Path.class);
+    Expression<String> lowerExpr = mock(Expression.class);
+    Predicate predicate = mock(Predicate.class);
 
-        when(root.get("cedula")).thenReturn(cedulaPath);
-        when(cb.lower(any())).thenReturn(lowerExpr);
-        when(cb.like(eq(lowerExpr), eq("12%"))).thenReturn(mock(Predicate.class));
-        doReturn(socioRoot).when(cb).treat(root, Socio.class);
-        when(socioRoot.get("numeroSocio")).thenReturn(nroSocioPath);
-        when(cb.function("TEXT", String.class, nroSocioPath)).thenReturn(textExpr);
-        when(cb.like(eq(textExpr), eq("12%"))).thenReturn(mock(Predicate.class));
-        when(cb.or(any(), any())).thenReturn(mock(Predicate.class));
+    when(root.get("cedula")).thenReturn(cedulaPath);
+    when(cb.lower(any())).thenReturn(lowerExpr);
+    when(cb.like(lowerExpr, "12345678%")).thenReturn(predicate);
 
-        Specification<Cliente> spec = ClienteSpecification.conIdentificador("1.2");
-        spec.toPredicate(root, query, cb);
+    Specification<Cliente> spec =
+            ClienteSpecification.conIdentificador("1.234.567-8");
 
-        verify(cb).like(lowerExpr, "12%");
-    }
+    spec.toPredicate(root, query, cb);
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void conIdentificador_deberiaCrearPredicateOrEntreCedulaYNroSocio() {
-        Path<Object> cedulaPath = mock(Path.class);
-        Expression<String> lowerExpr = mock(Expression.class);
-        Root<Socio> socioRoot = mock(Root.class);
-        Path<Object> nroSocioPath = mock(Path.class);
-        Expression<String> textExpr = mock(Expression.class);
-        Predicate cedulaPredicate = mock(Predicate.class);
-        Predicate nroSocioPredicate = mock(Predicate.class);
+    verify(cb).like(lowerExpr, "12345678%");
+}
 
-        when(root.get("cedula")).thenReturn(cedulaPath);
-        when(cb.lower(any())).thenReturn(lowerExpr);
-        when(cb.like(lowerExpr, "123%")).thenReturn(cedulaPredicate);
-        doReturn(socioRoot).when(cb).treat(root, Socio.class);
-        when(socioRoot.get("numeroSocio")).thenReturn(nroSocioPath);
-        when(cb.function("TEXT", String.class, nroSocioPath)).thenReturn(textExpr);
-        when(cb.like(textExpr, "123%")).thenReturn(nroSocioPredicate);
-        when(cb.or(cedulaPredicate, nroSocioPredicate)).thenReturn(mock(Predicate.class));
+@Test
+@SuppressWarnings("unchecked")
+void conIdentificador_deberiaBuscarPorCedulaParcial() {
+    Path<Object> cedulaPath = mock(Path.class);
+    Expression<String> lowerExpr = mock(Expression.class);
+    Predicate predicate = mock(Predicate.class);
 
-        Specification<Cliente> spec = ClienteSpecification.conIdentificador("123");
-        spec.toPredicate(root, query, cb);
+    when(root.get("cedula")).thenReturn(cedulaPath);
+    when(cb.lower(any())).thenReturn(lowerExpr);
+    when(cb.like(lowerExpr, "123%")).thenReturn(predicate);
 
-        verify(cb).or(cedulaPredicate, nroSocioPredicate);
-    }
+    Specification<Cliente> spec =
+            ClienteSpecification.conIdentificador("123");
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void conIdentificador_deberiaNormalizarCedulaQuitandoPuntosYGuiones() {
-        Path<Object> cedulaPath = mock(Path.class);
-        Expression<String> lowerExpr = mock(Expression.class);
-        Root<Socio> socioRoot = mock(Root.class);
-        Path<Object> nroSocioPath = mock(Path.class);
-        Expression<String> textExpr = mock(Expression.class);
+    spec.toPredicate(root, query, cb);
 
-        when(root.get("cedula")).thenReturn(cedulaPath);
-        when(cb.lower(any())).thenReturn(lowerExpr);
-        when(cb.like(eq(lowerExpr), eq("12345678%"))).thenReturn(mock(Predicate.class));
-        doReturn(socioRoot).when(cb).treat(root, Socio.class);
-        when(socioRoot.get("numeroSocio")).thenReturn(nroSocioPath);
-        when(cb.function("TEXT", String.class, nroSocioPath)).thenReturn(textExpr);
-        when(cb.like(eq(textExpr), eq("12345678%"))).thenReturn(mock(Predicate.class));
-        when(cb.or(any(), any())).thenReturn(mock(Predicate.class));
-
-        Specification<Cliente> spec = ClienteSpecification.conIdentificador("1.234.567-8");
-        spec.toPredicate(root, query, cb);
-
-        verify(cb).like(lowerExpr, "12345678%");
-    }
-
+    verify(cb).like(lowerExpr, "123%");
+}
     // --- conEstado ---
 
     @Test

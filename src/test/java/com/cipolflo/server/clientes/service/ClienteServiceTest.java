@@ -27,7 +27,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
+import java.util.List;
+import com.cipolflo.server.clientes.validator.CedulaFormatoValidator;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
@@ -51,7 +52,8 @@ class ClienteServiceTest {
     private ModificacionSocioValidator modificacionSocioValidator;
     @Mock
     private RegistroSocioValidator registroSocioValidator;
-
+    @Mock
+    private CedulaFormatoValidator cedulaFormatoValidator;
     @InjectMocks
     private ClienteService clienteService;
 
@@ -545,39 +547,56 @@ class ClienteServiceTest {
 
     // --- buscarPorCedula ---
 
-    @Test
-    void deberiaRetornarEmptyCuandoCedulaNoExiste() {
-        when(clienteRepository.findByCedula("99999999")).thenReturn(Optional.empty());
 
-        Optional<BusquedaCedulaResponseDto> resultado = clienteService.buscarPorCedula("99999999");
 
-        assertTrue(resultado.isEmpty());
-        verify(clienteRepository).findByCedula("99999999");
-    }
+@Test
+void deberiaLanzarClienteNotFoundExceptionCuandoCedulaNoExiste() {
+    when(clienteRepository.findByCedula("99999999"))
+            .thenReturn(Optional.empty());
 
-    @Test
-    void deberiaRetornarDtoCuandoCedulaCorrespondeAParticular() {
-        Particular particular = crearParticular(1L, "Laura Fernández", "12345678");
-        when(clienteRepository.findByCedula("12345678")).thenReturn(Optional.of(particular));
+    assertThrows(
+            ClienteNotFoundException.class,
+            () -> clienteService.buscarPorCedula("99999999")
+    );
 
-        Optional<BusquedaCedulaResponseDto> resultado = clienteService.buscarPorCedula("12345678");
+    verify(clienteRepository).findByCedula("99999999");
+}
 
-        assertTrue(resultado.isPresent());
-        assertEquals(TipoCliente.PARTICULAR, resultado.get().getTipoCliente());
-        assertEquals("12345678", resultado.get().getCedula());
-        verify(clienteRepository).findByCedula("12345678");
-    }
+@Test
+void deberiaRetornarDtoCuandoCedulaCorrespondeAParticular() {
+    Particular particular = crearParticular(1L, "Laura Fernández", "12345678");
 
-    @Test
-    void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
-        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
-        when(clienteRepository.findByCedula("12345678")).thenReturn(Optional.of(socio));
+    when(clienteRepository.findByCedula("12345678"))
+            .thenReturn(Optional.of(particular));
 
-        Optional<BusquedaCedulaResponseDto> resultado = clienteService.buscarPorCedula("12345678");
+    BusquedaCedulaResponseDto resultado =
+            clienteService.buscarPorCedula("12345678");
 
-        assertTrue(resultado.isPresent());
-        assertEquals(TipoCliente.SOCIO, resultado.get().getTipoCliente());
-        assertEquals("12345678", resultado.get().getCedula());
-        verify(clienteRepository).findByCedula("12345678");
-    }
+    assertEquals(TipoCliente.PARTICULAR, resultado.getTipoCliente());
+    assertEquals("12345678", resultado.getCedula());
+
+    verify(clienteRepository).findByCedula("12345678");
+}
+
+@Test
+void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
+    Socio socio = crearSocio(
+            1L,
+            "Juan Pérez",
+            "12345678",
+            1,
+            EstadoSocio.ACTIVO
+    );
+
+    when(clienteRepository.findByCedula("12345678"))
+            .thenReturn(Optional.of(socio));
+
+    BusquedaCedulaResponseDto resultado =
+            clienteService.buscarPorCedula("12345678");
+
+    assertEquals(TipoCliente.SOCIO, resultado.getTipoCliente());
+    assertEquals("12345678", resultado.getCedula());
+
+    verify(clienteRepository).findByCedula("12345678");
+}
 }

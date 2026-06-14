@@ -578,7 +578,7 @@ class ClienteControllerTest {
     @Test
     @WithMockUser
     void deberiaRetornarNotFoundCuandoCedulaNoEstaRegistrada() throws Exception {
-        when(clienteService.buscarPorCedula("99999999")).thenReturn(Optional.empty());
+        when(clienteService.buscarPorCedula("99999999")).thenThrow(new ClienteNotFoundException("Cliente no encontrado"));
 
         mockMvc.perform(get("/api/v1/clientes/cedula/99999999"))
                 .andExpect(status().isNotFound());
@@ -589,7 +589,7 @@ class ClienteControllerTest {
     @Test
     @WithMockUser
     void deberiaRetornarParticularCuandoCedulaCorrespondeAParticular() throws Exception {
-        when(clienteService.buscarPorCedula("12345678")).thenReturn(Optional.of(busquedaParticular()));
+        when(clienteService.buscarPorCedula("12345678")).thenReturn(busquedaParticular());
 
         mockMvc.perform(get("/api/v1/clientes/cedula/12345678"))
                 .andExpect(status().isOk())
@@ -601,7 +601,7 @@ class ClienteControllerTest {
     @Test
     @WithMockUser
     void deberiaRetornarSocioCuandoCedulaCorrespondeASocio() throws Exception {
-        when(clienteService.buscarPorCedula("12345678")).thenReturn(Optional.of(busquedaSocio()));
+        when(clienteService.buscarPorCedula("12345678")).thenReturn((busquedaSocio()));
 
         mockMvc.perform(get("/api/v1/clientes/cedula/12345678"))
                 .andExpect(status().isOk())
@@ -611,18 +611,23 @@ class ClienteControllerTest {
     }
 
     @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception {
-        mockMvc.perform(get("/api/v1/clientes/cedula/formato-invalido"))
-                .andExpect(status().isBadRequest());
+@WithMockUser
+void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception {
+    doThrow(new ClienteValidacionException(
+            ClienteCodigoError.CEDULA_INVALIDA.name(),
+            "La cédula ingresada no es válida"
+    )).when(clienteService).buscarPorCedula("formato-invalido");
 
-        verify(clienteService, never()).buscarPorCedula(anyString());
-    }
+    mockMvc.perform(get("/api/v1/clientes/cedula/formato-invalido"))
+            .andExpect(status().isBadRequest());
+
+    verify(clienteService).buscarPorCedula("formato-invalido");
+}
 
     @Test
     @WithMockUser
     void deberiaEncontrarMismoRegistroConCedulaFormateadaYSinFormatear() throws Exception {
-        when(clienteService.buscarPorCedula(any())).thenReturn(Optional.of(busquedaParticular()));
+        when(clienteService.buscarPorCedula(any())).thenReturn((busquedaParticular()));
 
         mockMvc.perform(get("/api/v1/clientes/cedula/12345678"))
                 .andExpect(status().isOk());

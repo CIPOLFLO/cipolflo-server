@@ -25,6 +25,6 @@ public interface IClienteService {
 
     ClienteResponseDto registrarSocio(RegistroSocioRequestDto dto);
 
-    Optional<BusquedaCedulaResponseDto> buscarPorCedula(String cedula);
+    BusquedaCedulaResponseDto buscarPorCedula(String cedula);
 
 }
