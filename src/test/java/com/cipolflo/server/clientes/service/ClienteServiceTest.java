@@ -587,7 +587,7 @@ class ClienteServiceTest {
         pago.setMes(6);
         pago.setFechaPago(Instant.parse("2026-06-10T10:00:00Z"));
         pago.setImporte(BigDecimal.valueOf(5000));
-        pago.setFormaPago(FormaPago.EFECTIVO);
+        pago.setMetodoCobro(MetodoCobro.EFECTIVO);
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
         when(pagoCuotaRepository.findTopBySocioIdOrderByAnioDescMesDesc(1L))

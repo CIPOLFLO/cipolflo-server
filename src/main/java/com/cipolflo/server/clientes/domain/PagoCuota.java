@@ -1,7 +1,7 @@
 package com.cipolflo.server.clientes.domain;
 
+import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.shared.AuditableEntity;
-import com.cipolflo.server.shared.enums.FormaPago;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,7 +40,7 @@ public class PagoCuota extends AuditableEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private FormaPago formaPago;
+    private MetodoCobro metodoCobro;
 
     @Column(nullable = false)
     private Integer anio;
@@ -58,7 +58,7 @@ public class PagoCuota extends AuditableEntity {
             Integer mes,
             Instant fechaPago,
             BigDecimal importe,
-            FormaPago formaPago,
+            MetodoCobro metodoCobro,
             String observaciones
     ) {
         PagoCuota pago = new PagoCuota();
@@ -67,7 +67,7 @@ public class PagoCuota extends AuditableEntity {
         pago.setMes(mes);
         pago.setFechaPago(fechaPago);
         pago.setImporte(importe);
-        pago.setFormaPago(formaPago);
+        pago.setMetodoCobro(metodoCobro);
         pago.setObservaciones(observaciones);
         return pago;
     }

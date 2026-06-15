@@ -63,7 +63,9 @@ public class PagoCuotaService {
         BigDecimal importePorMes = request.importeTotal()
                 .divide(BigDecimal.valueOf(request.cantidadMeses()), 2, RoundingMode.HALF_UP);
 
-        Instant fechaPago = Instant.now();
+        Instant fechaPago = request.fechaPago()
+                .atStartOfDay(ZONA)
+                .toInstant();
 
         List<PagoCuota> pagos = periodos.stream()
                 .map(periodo -> PagoCuota.crear(
@@ -72,17 +74,17 @@ public class PagoCuotaService {
                         periodo.getMonthValue(),
                         fechaPago,
                         importePorMes,
-                        request.formaPago(),
+                        request.metodoCobro(),
                         request.observaciones()
                 ))
                 .toList();
 
         pagoCuotaRepository.saveAll(pagos);
 
-        socio.setFechaUltimoPago(LocalDate.now(ZONA));
+        socio.setFechaUltimoPago(request.fechaPago());
 
         int mesesSinPagar = calcularMesesPendientes(socio);
-        socio.actualizarEstadoPorDeuda(mesesSinPagar);
+        socio.actualizarMesesSinPagar(mesesSinPagar);
 
         clienteRepository.save(socio);
     }

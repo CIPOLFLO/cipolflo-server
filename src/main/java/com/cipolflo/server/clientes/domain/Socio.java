@@ -65,7 +65,7 @@ public class Socio extends Cliente {
         this.metodoCobro = metodoCobro;
     }
 
-    public void actualizarEstadoPorDeuda(int mesesSinPagarCalculados) {
+    public void actualizarMesesSinPagar(int mesesSinPagarCalculados) {
         this.mesesSinPagar = mesesSinPagarCalculados;
 
         if (this.estado == EstadoSocio.DE_BAJA) {
@@ -75,6 +75,14 @@ public class Socio extends Cliente {
         this.estado = mesesSinPagarCalculados >= 3
                 ? EstadoSocio.INACTIVO
                 : EstadoSocio.ACTIVO;
+    }
+
+    public void incrementarMesesSinPagar() {
+        this.mesesSinPagar++;
+
+        if (this.estado != EstadoSocio.DE_BAJA && this.mesesSinPagar >= 3) {
+            this.estado = EstadoSocio.INACTIVO;
+        }
     }
 
 }

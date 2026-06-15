@@ -12,7 +12,6 @@ import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.repository.PagoCuotaRepository;
-import com.cipolflo.server.shared.enums.FormaPago;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -57,7 +56,8 @@ class PagoCuotaServiceTest {
                 periodo.getMonthValue(),
                 1,
                 BigDecimal.valueOf(5000),
-                FormaPago.EFECTIVO,
+                MetodoCobro.EFECTIVO,
+                LocalDate.of(2026,6,10),
                 "Pago mensual"
         );
 
@@ -72,7 +72,7 @@ class PagoCuotaServiceTest {
                         periodo.getMonthValue(),
                         Instant.now(),
                         BigDecimal.valueOf(5000),
-                        FormaPago.EFECTIVO,
+                        MetodoCobro.EFECTIVO,
                         "Pago mensual"
                 )));
 
@@ -87,7 +87,7 @@ class PagoCuotaServiceTest {
         assertEquals(periodo.getYear(), pagos.get(0).getAnio());
         assertEquals(periodo.getMonthValue(), pagos.get(0).getMes());
         assertEquals(BigDecimal.valueOf(5000).setScale(2), pagos.get(0).getImporte());
-        assertEquals(FormaPago.EFECTIVO, pagos.get(0).getFormaPago());
+        assertEquals(MetodoCobro.EFECTIVO, pagos.get(0).getMetodoCobro());
 
         verify(clienteRepository).save(socio);
     }
@@ -102,7 +102,8 @@ class PagoCuotaServiceTest {
                 periodo.getMonthValue(),
                 3,
                 BigDecimal.valueOf(15000),
-                FormaPago.TRANSFERENCIA,
+                MetodoCobro.TRANSFERENCIA,
+                LocalDate.of(2026, 6, 10),
                 "Pago de tres meses"
         );
 
@@ -141,7 +142,8 @@ class PagoCuotaServiceTest {
                 periodo.getMonthValue(),
                 1,
                 BigDecimal.valueOf(5000),
-                FormaPago.EFECTIVO,
+                MetodoCobro.EFECTIVO,
+                LocalDate.of(2026, 6, 10),
                 null
         );
 
@@ -194,7 +196,8 @@ class PagoCuotaServiceTest {
                 periodoPago.getMonthValue(),
                 1,
                 BigDecimal.valueOf(5000),
-                FormaPago.EFECTIVO,
+                MetodoCobro.EFECTIVO,
+                LocalDate.of(2026, 6, 10),
                 null
         );
 
@@ -220,7 +223,8 @@ class PagoCuotaServiceTest {
                 inicio.getMonthValue(),
                 1,
                 BigDecimal.valueOf(5000),
-                FormaPago.EFECTIVO,
+                MetodoCobro.EFECTIVO,
+                LocalDate.of(2026, 6, 10),
                 null
         );
 
@@ -246,7 +250,8 @@ class PagoCuotaServiceTest {
                 inicio.getMonthValue(),
                 1,
                 BigDecimal.valueOf(5000),
-                FormaPago.EFECTIVO,
+                MetodoCobro.EFECTIVO,
+                LocalDate.of(2026, 6, 10),
                 null
         );
 
@@ -271,7 +276,8 @@ class PagoCuotaServiceTest {
                 1,
                 1,
                 BigDecimal.valueOf(5000),
-                FormaPago.EFECTIVO,
+                MetodoCobro.EFECTIVO,
+                LocalDate.of(2026, 6, 10),
                 null
         );
 
@@ -292,7 +298,8 @@ class PagoCuotaServiceTest {
                 1,
                 1,
                 BigDecimal.valueOf(5000),
-                FormaPago.EFECTIVO,
+                MetodoCobro.EFECTIVO,
+                LocalDate.of(2026, 6, 10),
                 null
         );
 
@@ -325,7 +332,7 @@ class PagoCuotaServiceTest {
                 periodo.getMonthValue(),
                 Instant.now(),
                 BigDecimal.valueOf(5000),
-                FormaPago.EFECTIVO,
+                MetodoCobro.EFECTIVO,
                 null
         );
     }

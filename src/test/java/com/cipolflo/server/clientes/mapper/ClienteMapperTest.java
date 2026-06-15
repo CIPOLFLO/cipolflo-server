@@ -192,7 +192,7 @@ class ClienteMapperTest {
         pago.setMes(6);
         pago.setImporte(BigDecimal.valueOf(5000));
         pago.setFechaPago(Instant.parse("2026-06-10T10:00:00Z"));
-        pago.setFormaPago(FormaPago.TRANSFERENCIA);
+        pago.setMetodoCobro(MetodoCobro.TRANSFERENCIA);
         ClienteResponseDto dto =
                 ClienteMapper.toDetalleResponseDto(socio, pago);
 
@@ -204,7 +204,7 @@ class ClienteMapperTest {
         assertEquals(2026, dto.getUltimaCuotaPaga().anio());
         assertEquals(6, dto.getUltimaCuotaPaga().mes());
         assertEquals(BigDecimal.valueOf(5000), dto.getUltimaCuotaPaga().importe());
-        assertEquals(FormaPago.TRANSFERENCIA, dto.getUltimaCuotaPaga().formaPago());
+        assertEquals(MetodoCobro.TRANSFERENCIA, dto.getUltimaCuotaPaga().metodoCobro());
     }
     @Test
     void deberiaRetornarUltimaCuotaPagaNulaCuandoNoHayPago() {

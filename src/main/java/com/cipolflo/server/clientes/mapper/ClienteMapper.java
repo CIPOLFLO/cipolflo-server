@@ -30,7 +30,7 @@ public class ClienteMapper {
                 socio != null ? socio.getNumeroSocio() : null,
                 socio != null ? TipoCliente.SOCIO : TipoCliente.PARTICULAR,
                 socio != null ? socio.getEstado() : null,
-                toUltimaCuotaPagaDto(socio,ultimaCuotaPaga),
+                toUltimaCuotaPagaDto(ultimaCuotaPaga),
                 cliente.getNotas(),
                 cliente.getCreatedAt(),
                 cliente.getUpdatedAt(),
@@ -41,10 +41,9 @@ public class ClienteMapper {
     }
 
     private static UltimaCuotaPagaDto toUltimaCuotaPagaDto(
-            Socio socio,
             PagoCuota ultimaCuotaPaga
     ) {
-        if (socio == null || ultimaCuotaPaga == null) {
+        if (ultimaCuotaPaga == null) {
             return null;
         }
 
@@ -53,7 +52,7 @@ public class ClienteMapper {
                 ultimaCuotaPaga.getMes(),
                 ultimaCuotaPaga.getFechaPago(),
                 ultimaCuotaPaga.getImporte(),
-                ultimaCuotaPaga.getFormaPago()
+                ultimaCuotaPaga.getMetodoCobro()
         );
     }
 
