@@ -12,9 +12,7 @@ import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
-import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
-import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
-import com.cipolflo.server.clientes.validator.RegistroSocioValidator;
+import com.cipolflo.server.clientes.validator.*;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
@@ -26,8 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
-import com.cipolflo.server.clientes.validator.CedulaFormatoValidator;
-import java.util.Optional;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -42,18 +39,22 @@ public class ClienteService implements IClienteService {
     private final ModificacionSocioValidator modificacionSocioValidator;
     private final RegistroSocioValidator registroSocioValidator;
     private final CedulaFormatoValidator cedulaFormatoValidator;
+    private final CedulaUnicaValidator cedulaUnicaValidator;
+
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
                           CedulaFormatoValidator cedulaFormatoValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
-                          RegistroSocioValidator registroSocioValidator) {
+                          RegistroSocioValidator registroSocioValidator,
+                          CedulaUnicaValidator cedulaUnicaValidator) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
         this.modificacionSocioValidator = modificacionSocioValidator;
         this.registroSocioValidator = registroSocioValidator;
         this.cedulaFormatoValidator = cedulaFormatoValidator;
+        this.cedulaUnicaValidator = cedulaUnicaValidator;
     }
 
     @Override
@@ -192,18 +193,45 @@ public class ClienteService implements IClienteService {
     }
 
     @Override
-public BusquedaCedulaResponseDto buscarPorCedula(String cedula) {
+    public BusquedaCedulaResponseDto buscarPorCedula(String cedula) {
 
-    cedulaFormatoValidator.validar(cedula);
+        cedulaFormatoValidator.validar(cedula);
 
-    String cedulaNormalizada =
-            CedulaNormalizador.normalizar(cedula);
+        String cedulaNormalizada =
+                CedulaNormalizador.normalizar(cedula);
 
-    return clienteRepository.findByCedula(cedulaNormalizada)
-            .map(ClienteMapper::toBusquedaCedulaResponseDto)
-            .orElseThrow(() ->
-                    new ClienteNotFoundException(
-                            "No existe un cliente con esa cédula"
-                    ));
-}
+        return clienteRepository.findByCedula(cedulaNormalizada)
+                .map(ClienteMapper::toBusquedaCedulaResponseDto)
+                .orElseThrow(() ->
+                        new ClienteNotFoundException(
+                                "No existe un cliente con esa cédula"
+                        ));
+    }
+
+    @Override
+    @Transactional
+    public ClienteResponseDto registrarParticular(RegistroParticularRequestDto dto) {
+        cedulaFormatoValidator.validar(dto.getCedula());
+
+        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
+        String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+
+        cedulaUnicaValidator.validar(cedulaNormalizada);
+
+        Particular particular = Particular.registrar(
+                cedulaNormalizada,
+                dto.getNombre(),
+                dto.getCelular(),
+                mailNormalizado
+        );
+
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.save(particular));
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                    "Ya existe un cliente con esa cédula"
+            );
+        }
+    }
 }

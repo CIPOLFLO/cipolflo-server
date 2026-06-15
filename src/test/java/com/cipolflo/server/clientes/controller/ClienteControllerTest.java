@@ -3,11 +3,7 @@ package com.cipolflo.server.clientes.controller;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
-import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
-import com.cipolflo.server.clientes.dto.RegistroSocioRequestDto;
+import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
@@ -804,6 +800,125 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
     }
 
+    @Test
+    @WithMockUser
+    void deberiaRegistrarParticularCorrectamente() throws Exception {
+        ClienteResponseDto response = new ClienteResponseDto(
+                1L,
+                "Juan Pérez",
+                "12345678",
+                null,
+                "099123456",
+                "juan@mail.com",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                TipoCliente.PARTICULAR,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        when(clienteService.registrarParticular(any(RegistroParticularRequestDto.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/particulares")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                  "cedula": "1.234.567-8",
+                                  "nombre": "Juan Pérez",
+                                  "celular": "099123456",
+                                  "mail": "juan@mail.com"
+                                }
+                                """)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipoCliente").value("PARTICULAR"))
+                .andExpect(jsonPath("$.cedula").value("12345678"));
+
+        verify(clienteService).registrarParticular(any(RegistroParticularRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltaCampoRequeridoEnRegistroParticular() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/clientes/particulares")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                  "cedula": "",
+                                  "nombre": "Juan Pérez",
+                                  "celular": "099123456"
+                                }
+                                """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(clienteService, never()).registrarParticular(any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaDuplicadaEnRegistroParticular() throws Exception {
+        when(clienteService.registrarParticular(any(RegistroParticularRequestDto.class)))
+                .thenThrow(new ClienteValidacionException(
+                        ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                        "Ya existe un cliente con esa cédula"
+                ));
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/particulares")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                  "cedula": "1.234.567-8",
+                                  "nombre": "Juan Pérez",
+                                  "celular": "099123456"
+                                }
+                                """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("CEDULA_DUPLICADA"));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoCedulaEsInvalidaEnRegistroParticular() throws Exception {
+        when(clienteService.registrarParticular(any(RegistroParticularRequestDto.class)))
+                .thenThrow(new ClienteValidacionException(
+                        ClienteCodigoError.CEDULA_INVALIDA.name(),
+                        "La cédula ingresada no es válida"
+                ));
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/particulares")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                  "cedula": "abc",
+                                  "nombre": "Juan Pérez",
+                                  "celular": "099123456"
+                                }
+                                """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("CEDULA_INVALIDA"));
+    }
+
     private String bodyValidoParticular() {
         return "{\"cedula\":\"12345672\",\"nombreCompleto\":\"Juan Pérez\",\"telefono\":\"099111111\"}";
     }
@@ -829,4 +944,8 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 }
                 """.formatted(mailJson);
     }
+
+
+
+
 }

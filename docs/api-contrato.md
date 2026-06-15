@@ -596,6 +596,39 @@ Registra un nuevo cliente de tipo socio.
 | 401         | —                   | Token ausente, inválido o expirado                            |
 
 ---
+### `POST /api/v1/clientes/particulares`
+Registra un nuevo cliente de tipo particular.
+
+**Body** (`application/json`):
+```json
+{
+  "cedula": "1.234.567-8",
+  "nombre": "Laura Fernández",
+  "celular": "099222222",
+  "mail": "laura@mail.com"
+}
+```
+| Campo     | Tipo     | Obligatorio | Validación                     |
+|-----------|----------|-------------|--------------------------------|
+| `cedula`  | string   | Sí          | no vacío, cédula válida, única |
+| `nombre`  | string   | Sí          | no vacío                       |
+| `celular` | string   | Sí          | no vacío                       |
+| `mail`    | string   | No          | —                              |
+
+
+> El campo celular se persiste como telefono. La cédula se normaliza automáticamente, eliminando puntos y guion.
+
+**Respuesta 201:** mismo body que GET `/api/v1/clientes/{id}`
+
+**Errores:**
+
+| HTTP Status | Código                | Cuándo ocurre                              |
+|-------------|-----------------------|---------------------------------------------|
+| 400         | `SOLICITUD_INVALIDA`  | Campo obligatorio faltante o vacío          |
+| 400         | `CEDULA_INVALIDA`     | La cédula no cumple la validación definida  |
+| 400         | `CEDULA_DUPLICADA`    | Ya existe un cliente con esa cédula         |
+| 401         | —                     | Token ausente, inválido o expirado          |
+---
 
 ## Clientes — DTOs
 

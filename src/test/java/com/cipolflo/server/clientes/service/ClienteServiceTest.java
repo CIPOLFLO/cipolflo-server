@@ -11,10 +11,8 @@ import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
-import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
-import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
+import com.cipolflo.server.clientes.validator.*;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
-import com.cipolflo.server.clientes.validator.RegistroSocioValidator;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -28,7 +26,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
-import com.cipolflo.server.clientes.validator.CedulaFormatoValidator;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
@@ -54,6 +51,8 @@ class ClienteServiceTest {
     private RegistroSocioValidator registroSocioValidator;
     @Mock
     private CedulaFormatoValidator cedulaFormatoValidator;
+    @Mock
+    private CedulaUnicaValidator cedulaUnicaValidator;
     @InjectMocks
     private ClienteService clienteService;
 
@@ -599,4 +598,60 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
 
     verify(clienteRepository).findByCedula("12345678");
 }
+    @Test
+    void deberiaRegistrarParticularCorrectamente() {
+        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
+        dto.setCedula("1.234.567-8");
+        dto.setNombre("Juan Pérez");
+        dto.setCelular("099123456");
+        dto.setMail("juan@mail.com");
+
+        Particular particularGuardado = Particular.registrar(
+                "12345678",
+                "Juan Pérez",
+                "099123456",
+                "juan@mail.com"
+        );
+        particularGuardado.setId(1L);
+
+        when(clienteRepository.save(any(Particular.class))).thenReturn(particularGuardado);
+
+        ClienteResponseDto response = clienteService.registrarParticular(dto);
+
+        assertNotNull(response);
+        assertEquals(1L, response.getId());
+        assertEquals("12345678", response.getCedula());
+        assertEquals("Juan Pérez", response.getNombre());
+        assertEquals("099123456", response.getTelefono());
+        assertEquals("juan@mail.com", response.getEmail());
+        assertEquals(TipoCliente.PARTICULAR, response.getTipoCliente());
+        assertNull(response.getNumeroSocio());
+        assertNull(response.getEstado());
+
+        verify(cedulaFormatoValidator).validar("1.234.567-8");
+        verify(cedulaUnicaValidator).validar("12345678");
+        verify(clienteRepository).save(any(Particular.class));
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoCedulaDuplicadaAlRegistrarParticular() {
+        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
+        dto.setCedula("1.234.567-8");
+        dto.setNombre("Juan Pérez");
+        dto.setCelular("099123456");
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                "Ya existe un cliente con esa cédula"
+        )).when(cedulaUnicaValidator).validar("12345678");
+
+        assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.registrarParticular(dto)
+        );
+
+        verify(cedulaFormatoValidator).validar("1.234.567-8");
+        verify(cedulaUnicaValidator).validar("12345678");
+        verify(clienteRepository, never()).save(any());
+    }
 }

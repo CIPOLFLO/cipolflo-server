@@ -88,11 +88,24 @@ public class ClienteController {
                 .body(response);
     }
 
-@PreAuthorize("isAuthenticated()")
-@GetMapping("/cedula/{cedula}")
-public ResponseEntity<BusquedaCedulaResponseDto> buscarPorCedula(@PathVariable String cedula) {
-    return ResponseEntity.ok(
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/cedula/{cedula}")
+    public ResponseEntity<BusquedaCedulaResponseDto> buscarPorCedula(@PathVariable String cedula) {
+        return ResponseEntity.ok(
             clienteService.buscarPorCedula(cedula)
-    );
-}
+        );
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/particulares")
+    public ResponseEntity<ClienteResponseDto> registrarParticular(
+            @Valid @RequestBody RegistroParticularRequestDto dto) {
+
+        ClienteResponseDto response = clienteService.registrarParticular(dto);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
 }
