@@ -61,7 +61,7 @@ class ClienteServiceTest {
     private PagoCuotaRepository pagoCuotaRepository;
     @Mock
     private PagoCuotaService pagoCuotaService;
-
+    @Mock
     private CedulaFormatoValidator cedulaFormatoValidator;
 
     @InjectMocks
@@ -557,7 +557,7 @@ class ClienteServiceTest {
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
         verify(clienteRepository).save(any(Socio.class));
     }
-    
+
     @Test
     void deberiaRetornarDetalleDeSocioConUltimaCuotaPaga() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 3, EstadoSocio.ACTIVO);
