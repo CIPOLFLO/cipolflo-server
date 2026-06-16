@@ -19,6 +19,7 @@ import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -676,5 +677,62 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
 
         verify(clienteRepository, never()).save(any());
         verify(clienteRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void deberiaLanzarCedulaDuplicadaCuandoSaveAndFlushFallaAlModificarParticular() {
+        Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+
+        ModificacionParticularRequestDto dto = dtoParticular("Juan Modificado", "099999999");
+        dto.setCedula("1.234.567-2");
+
+        when(clienteRepository.saveAndFlush(particular))
+                .thenThrow(new DataIntegrityViolationException("duplicada"));
+
+        ClienteValidacionException ex = assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.modificarParticular(1L, dto)
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarCedulaDuplicadaCuandoSaveAndFlushFallaAlModificarSocio() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+
+        ModificacionSocioRequestDto dto = dtoSocio("Juan Modificado", "099999999");
+        dto.setCedula("1.234.567-2");
+
+        when(clienteRepository.saveAndFlush(socio))
+                .thenThrow(new DataIntegrityViolationException("duplicada"));
+
+        ClienteValidacionException ex = assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.modificarSocio(1L, dto)
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
+    }
+    @Test
+    void deberiaLanzarCedulaDuplicadaCuandoSaveAndFlushFallaAlRegistrarParticular() {
+        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
+        dto.setCedula("1.234.567-8");
+        dto.setNombre("Juan Pérez");
+        dto.setCelular("099123456");
+        dto.setMail("juan@mail.com");
+
+        when(clienteRepository.saveAndFlush(any(Particular.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicada"));
+
+        ClienteValidacionException ex = assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.registrarParticular(dto)
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
+        verify(registroParticularValidator).validar(eq(dto), eq("12345678"));
     }
 }
