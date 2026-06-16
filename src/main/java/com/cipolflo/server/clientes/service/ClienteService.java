@@ -206,4 +206,14 @@ public BusquedaCedulaResponseDto buscarPorCedula(String cedula) {
                             "No existe un cliente con esa cédula"
                     ));
 }
+
+    @Override
+    public EstadoSocioResponseDto consultarEstadoSocio(Long id) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new SocioNotFoundException(id));
+        if (!(cliente instanceof Socio socio)) {
+            throw new SocioNotFoundException(id);
+        }
+        return ClienteMapper.toEstadoSocioResponseDto(socio);
+    }
 }

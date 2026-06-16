@@ -49,6 +49,16 @@ public class ClienteController {
             @PathVariable @Positive(message = "El id del cliente debe ser un número positivo") Long id) {
         return ResponseEntity.ok(clienteService.getDetalleCliente(id));
     }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/socios/{id}/estado")
+    public ResponseEntity<EstadoSocioResponseDto> consultarEstadoSocio(
+            @PathVariable
+            @Positive(message = "El id del socio debe ser un número positivo")
+            Long id) {
+        return ResponseEntity.ok(clienteService.consultarEstadoSocio(id));
+    }
+
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/socios/{id}/baja")
     public ResponseEntity<Void> darDeBajaSocio(
