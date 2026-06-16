@@ -39,7 +39,7 @@ public class ClienteService implements IClienteService {
     private final ModificacionSocioValidator modificacionSocioValidator;
     private final RegistroSocioValidator registroSocioValidator;
     private final CedulaFormatoValidator cedulaFormatoValidator;
-    private final CedulaUnicaValidator cedulaUnicaValidator;
+    private final RegistroParticularValidator registroParticularValidator;
 
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
@@ -47,14 +47,14 @@ public class ClienteService implements IClienteService {
                           CedulaFormatoValidator cedulaFormatoValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
                           RegistroSocioValidator registroSocioValidator,
-                          CedulaUnicaValidator cedulaUnicaValidator) {
+                          RegistroParticularValidator registroParticularValidator) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
         this.modificacionSocioValidator = modificacionSocioValidator;
         this.registroSocioValidator = registroSocioValidator;
         this.cedulaFormatoValidator = cedulaFormatoValidator;
-        this.cedulaUnicaValidator = cedulaUnicaValidator;
+        this.registroParticularValidator = registroParticularValidator;
     }
 
     @Override
@@ -211,22 +211,25 @@ public class ClienteService implements IClienteService {
     @Override
     @Transactional
     public ClienteResponseDto registrarParticular(RegistroParticularRequestDto dto) {
-        cedulaFormatoValidator.validar(dto.getCedula());
-
         String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+        String nombreNormalizado = dto.getNombre().trim();
+        String celularNormalizado = dto.getCelular().trim();
 
-        cedulaUnicaValidator.validar(cedulaNormalizada);
+        registroParticularValidator.validar(
+                dto,
+                cedulaNormalizada
+        );
 
         Particular particular = Particular.registrar(
                 cedulaNormalizada,
-                dto.getNombre(),
-                dto.getCelular(),
+                nombreNormalizado,
+                celularNormalizado,
                 mailNormalizado
         );
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.save(particular));
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular));
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),

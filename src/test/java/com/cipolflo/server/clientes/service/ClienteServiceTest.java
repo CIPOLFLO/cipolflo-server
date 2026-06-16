@@ -28,13 +28,13 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 import java.time.LocalDate;
 import java.time.Month;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+import com.cipolflo.server.clientes.validator.RegistroParticularValidator;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import com.cipolflo.server.clientes.validator.CedulaFormatoValidator;
 
 @ExtendWith(MockitoExtension.class)
 class ClienteServiceTest {
@@ -50,9 +50,11 @@ class ClienteServiceTest {
     @Mock
     private RegistroSocioValidator registroSocioValidator;
     @Mock
+    private CedulaUnicaValidator cedulaUnicaValidator;
+    @Mock
     private CedulaFormatoValidator cedulaFormatoValidator;
     @Mock
-    private CedulaUnicaValidator cedulaUnicaValidator;
+    private RegistroParticularValidator registroParticularValidator;
     @InjectMocks
     private ClienteService clienteService;
 
@@ -614,7 +616,7 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         );
         particularGuardado.setId(1L);
 
-        when(clienteRepository.save(any(Particular.class))).thenReturn(particularGuardado);
+        when(clienteRepository.saveAndFlush(any(Particular.class))).thenReturn(particularGuardado);
 
         ClienteResponseDto response = clienteService.registrarParticular(dto);
 
@@ -628,9 +630,8 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         assertNull(response.getNumeroSocio());
         assertNull(response.getEstado());
 
-        verify(cedulaFormatoValidator).validar("1.234.567-8");
-        verify(cedulaUnicaValidator).validar("12345678");
-        verify(clienteRepository).save(any(Particular.class));
+        verify(registroParticularValidator).validar(eq(dto), eq("12345678"));
+        verify(clienteRepository).saveAndFlush(any(Particular.class));
     }
 
     @Test
@@ -643,15 +644,37 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         doThrow(new ClienteValidacionException(
                 ClienteCodigoError.CEDULA_DUPLICADA.name(),
                 "Ya existe un cliente con esa cédula"
-        )).when(cedulaUnicaValidator).validar("12345678");
+        )).when(registroParticularValidator).validar(eq(dto), eq("12345678"));
 
         assertThrows(
                 ClienteValidacionException.class,
                 () -> clienteService.registrarParticular(dto)
         );
 
-        verify(cedulaFormatoValidator).validar("1.234.567-8");
-        verify(cedulaUnicaValidator).validar("12345678");
+        verify(registroParticularValidator).validar(eq(dto), eq("12345678"));
+        verify(clienteRepository, never()).saveAndFlush(any());
+    }
+    @Test
+    void deberiaLanzarErrorCuandoCedulaTieneFormatoInvalido() {
+        RegistroParticularRequestDto dto =
+                new RegistroParticularRequestDto();
+
+        dto.setCedula("abc");
+        dto.setNombre("Juan");
+        dto.setCelular("099111111");
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.CEDULA_INVALIDA.name(),
+                "La cédula ingresada no es válida"
+        )).when(registroParticularValidator).validar(any(), anyString());
+
+        assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.registrarParticular(dto)
+        );
+        verify(registroParticularValidator).validar(eq(dto), eq(""));
+
         verify(clienteRepository, never()).save(any());
+        verify(clienteRepository, never()).saveAndFlush(any());
     }
 }

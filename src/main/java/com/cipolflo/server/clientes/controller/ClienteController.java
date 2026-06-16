@@ -6,7 +6,6 @@ import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
 import jakarta.validation.Valid;
-import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
