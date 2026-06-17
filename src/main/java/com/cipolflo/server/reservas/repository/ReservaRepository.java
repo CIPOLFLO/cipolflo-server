@@ -20,4 +20,11 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
             Instant desde,
             Collection<EstadoReserva> estados
     );
+
+    List<Reserva> findByServicioIdAndEstadoInAndFechaEntradaLessThanAndFechaSalidaGreaterThanEqual(
+            Long servicioId,
+            Collection<EstadoReserva> estados,
+            Instant hastaInstant,
+            Instant desdeInstant
+    );
 }

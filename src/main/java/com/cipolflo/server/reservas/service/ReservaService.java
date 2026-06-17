@@ -6,12 +6,20 @@ import com.cipolflo.server.reservas.repository.ReservaRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
 public class ReservaService implements IReservaService {
     private static final int DIAS_VENTANA_RESERVAS_PROXIMAS = 60;
+
+    private static final List<EstadoReserva> ESTADOS_OCUPANTES = List.of(
+            EstadoReserva.PENDIENTE,
+            EstadoReserva.CONFIRMADA,
+            EstadoReserva.EN_CURSO
+    );
 
     private final ReservaRepository reservaRepository;
 
@@ -36,6 +44,20 @@ public class ReservaService implements IReservaService {
                         EstadoReserva.CONFIRMADA
                 )
         );
+    }
+
+    @Override
+    public List<Reserva> obtenerOcupacionPorServicioEnRango(Long servicioId, LocalDate desde, LocalDate hasta) {
+        Instant desdeInstant = desde.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant hastaInstant = hasta.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        return reservaRepository
+                .findByServicioIdAndEstadoInAndFechaEntradaLessThanAndFechaSalidaGreaterThanEqual(
+                        servicioId,
+                        ESTADOS_OCUPANTES,
+                        hastaInstant,
+                        desdeInstant
+                );
     }
 
     @Override
