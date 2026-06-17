@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "reserva")
@@ -42,10 +42,10 @@ public class Reserva extends AuditableEntity {
     private Procedencia procedencia;
 
     @Column(nullable = false)
-    private Instant fechaEntrada;
+    private LocalDate fechaEntrada;
 
     @Column(nullable = false)
-    private Instant fechaSalida;
+    private LocalDate fechaSalida;
 
     private BigDecimal importe;
 
@@ -68,7 +68,7 @@ public class Reserva extends AuditableEntity {
     private String notas;
 
     public static Reserva crear(Long clienteId, Long servicioId, Procedencia procedencia,
-                                Instant fechaEntrada, Instant fechaSalida,
+                                LocalDate fechaEntrada, LocalDate fechaSalida,
                                 boolean requiereDocumentacionPrevia) {
         Reserva r = new Reserva();
         r.clienteId = clienteId;

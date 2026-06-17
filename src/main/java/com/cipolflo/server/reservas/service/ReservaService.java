@@ -3,12 +3,10 @@ package com.cipolflo.server.reservas.service;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
+import com.cipolflo.server.shared.ZonaHoraria;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -29,11 +27,8 @@ public class ReservaService implements IReservaService {
 
     @Override
     public List<Reserva> obtenerProximasPorServicioEnRango(Long servicioId) {
-        Instant desde = Instant.now();
-        Instant hasta = desde.plus(
-                DIAS_VENTANA_RESERVAS_PROXIMAS,
-                ChronoUnit.DAYS
-        );
+        LocalDate desde = LocalDate.now(ZonaHoraria.URUGUAY);
+        LocalDate hasta = desde.plusDays(DIAS_VENTANA_RESERVAS_PROXIMAS);
 
         return reservaRepository.findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
                 servicioId,
@@ -48,15 +43,12 @@ public class ReservaService implements IReservaService {
 
     @Override
     public List<Reserva> obtenerOcupacionPorServicioEnRango(Long servicioId, LocalDate desde, LocalDate hasta) {
-        Instant desdeInstant = desde.atStartOfDay(ZoneOffset.UTC).toInstant();
-        Instant hastaInstant = hasta.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-
         return reservaRepository
-                .findByServicioIdAndEstadoInAndFechaEntradaLessThanAndFechaSalidaGreaterThanEqual(
+                .findByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                         servicioId,
                         ESTADOS_OCUPANTES,
-                        hastaInstant,
-                        desdeInstant
+                        hasta,
+                        desde
                 );
     }
 
@@ -69,7 +61,7 @@ public class ReservaService implements IReservaService {
     public void cancelarReservasFuturasPorCliente(Long clienteId) {
         List<Reserva> reservas = reservaRepository.findByClienteIdAndFechaEntradaAfterAndEstadoIn(
                 clienteId,
-                Instant.now(),
+                LocalDate.now(ZonaHoraria.URUGUAY),
                 List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA)
         );
 

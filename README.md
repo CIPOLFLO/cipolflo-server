@@ -176,34 +176,39 @@ El schema de la base de datos se gestiona con **Liquibase**. Al iniciar la app, 
 
 ### Estructura
 
+Las migraciones se organizan en **una carpeta por ticket**. Cada carpeta tiene su propio
+changelog "general" que incluye los SQL de esa carpeta, y el master referencia ese
+changelog de carpeta (nunca los SQL sueltos).
+
 ```
 src/main/resources/db/changelog/
-├── db.changelog-master.yaml          ← índice de migraciones (punto de entrada)
+├── db.changelog-master.yaml              ← referencia el changelog de cada carpeta
 └── migrations/
-    └── 001_initial_schema.sql        ← schema inicial
-    └── 002_descripcion_cambio.sql    ← próximas migraciones
+    ├── 001_initial_schema.sql            ← schema inicial
+    └── DEV-117/                          ← una carpeta por ticket
+        ├── db.changelog-DEV-117.yaml     ← changelog general: incluye los SQL de la carpeta
+        └── alter_tipo_fechas_columnas_reserva.sql
 ```
 
 ### Cómo agregar una nueva migración
 
 Seguir siempre este proceso al introducir cambios en el schema (nueva tabla, columna, índice, constraint, etc.):
 
-**1. Crear el archivo SQL de la migración**
+**1. Crear la carpeta del ticket (si no existe) y el archivo SQL de la migración**
 
-Crear un archivo nuevo en `src/main/resources/db/changelog/migrations/` con el siguiente formato de nombre:
+Crear la carpeta `src/main/resources/db/changelog/migrations/{TICKET}/` (ej. `DEV-117/`) y, dentro,
+un archivo SQL con **nombre descriptivo** de lo que hace (en minúsculas con guiones bajos), no numérico:
 
 ```
-NNN_descripcion_breve.sql
+migrations/DEV-117/alter_tipo_fechas_columnas_reserva.sql
 ```
-
-Donde `NNN` es el número correlativo siguiente (ej: `002`, `003`). La descripción debe ser en minúsculas con guiones bajos.
 
 El contenido del archivo debe seguir el formato de Liquibase para SQL:
 
 ```sql
 --liquibase formatted sql
 
---changeset cipolflo:NNN-descripcion-breve
+--changeset cipolflo:DEV-117-descripcion-breve
 -- DDL aquí
 ALTER TABLE public.cliente ADD COLUMN fecha_baja date;
 
@@ -212,23 +217,37 @@ ALTER TABLE public.cliente ADD COLUMN fecha_baja date;
 
 Reglas del formato:
 - La primera línea del archivo debe ser siempre `--liquibase formatted sql`.
-- Cada changeset necesita `--changeset autor:id`. El `id` debe ser único en todo el proyecto — usar el número de migración como prefijo garantiza esto.
+- Cada changeset necesita `--changeset autor:id`. El `id` debe ser único en todo el proyecto — usar el ticket como prefijo (`cipolflo:DEV-117-...`) garantiza esto.
 - Agregar siempre `--rollback` con el SQL inverso. Si el rollback es imposible (ej: `DROP TABLE`), usar `--rollback empty`.
 - Un changeset **nunca se modifica** una vez aplicado. Si hay un error, corregirlo en una migración nueva.
 
-**2. Registrar la migración en el changelog maestro**
+**2. Crear (o actualizar) el changelog general de la carpeta**
 
-Abrir `src/main/resources/db/changelog/db.changelog-master.yaml` y agregar el `include` al final:
+Cada carpeta de ticket tiene un `db.changelog-{TICKET}.yaml` que incluye, en orden, todos los SQL de esa carpeta:
+
+```yaml
+# migrations/DEV-117/db.changelog-DEV-117.yaml
+databaseChangeLog:
+  - include:
+      file: db/changelog/migrations/DEV-117/alter_tipo_fechas_columnas_reserva.sql
+```
+
+Si agregás otra migración al mismo ticket, sumás su `include` a este archivo (no se toca el master).
+
+**3. Registrar la carpeta en el changelog maestro**
+
+Solo la **primera** migración de un ticket requiere tocar el master. Abrir
+`src/main/resources/db/changelog/db.changelog-master.yaml` y agregar el `include` al changelog de la carpeta:
 
 ```yaml
 databaseChangeLog:
   - include:
       file: db/changelog/migrations/001_initial_schema.sql
   - include:
-      file: db/changelog/migrations/002_descripcion_breve.sql   # ← agregar acá
+      file: db/changelog/migrations/DEV-117/db.changelog-DEV-117.yaml   # ← agregar acá
 ```
 
-**3. Verificar localmente**
+**4. Verificar localmente**
 
 Reiniciar la app. Liquibase aplica la migración al arrancar y lo registra en `DATABASECHANGELOG`. Si hay algún error en el SQL, la app no levanta y el mensaje de error indica el changeset fallido.
 

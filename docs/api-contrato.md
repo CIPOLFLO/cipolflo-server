@@ -252,22 +252,22 @@ Retorna las reservas futuras/activas asociadas al servicio (útil antes de desha
   {
     "id": 12,
     "clienteId": 5,
-    "fechaEntrada": "2025-06-01T14:00:00Z",
-    "fechaSalida": "2025-06-03T12:00:00Z",
+    "fechaEntrada": "2025-06-01",
+    "fechaSalida": "2025-06-03",
     "pago": true,
     "estado": "CONFIRMADA"
   }
 ]
 ```
 
-| Campo         | Tipo            | Descripción                         |
-|---------------|-----------------|-------------------------------------|
-| `id`          | integer         | ID de la reserva                    |
-| `clienteId`   | integer         | ID del cliente                      |
-| `fechaEntrada`| string (Instant)| Fecha/hora de entrada UTC           |
-| `fechaSalida` | string (Instant)| Fecha/hora de salida UTC            |
-| `pago`        | boolean         | Si la reserva fue pagada            |
-| `estado`      | `EstadoReserva` | Estado actual de la reserva         |
+| Campo         | Tipo               | Descripción                      |
+|---------------|--------------------|----------------------------------|
+| `id`          | integer            | ID de la reserva                 |
+| `clienteId`   | integer            | ID del cliente                   |
+| `fechaEntrada`| string `LocalDate` | Día de entrada (`yyyy-MM-dd`)    |
+| `fechaSalida` | string `LocalDate` | Día de salida (`yyyy-MM-dd`)     |
+| `pago`        | boolean            | Si la reserva fue pagada         |
+| `estado`      | `EstadoReserva`    | Estado actual de la reserva      |
 
 ---
 
@@ -305,8 +305,8 @@ Retorna las reservas activas del servicio que se solapan con la ventana `[desde,
 |---------------|-----------------|----------------------------------------------|
 | `reservaId`   | integer         | ID de la reserva ocupante                    |
 | `estado`      | `EstadoReserva` | Estado de la reserva                         |
-| `fechaInicio` | string `LocalDate` | Día de entrada (UTC)                      |
-| `fechaFin`    | string `LocalDate` | Día de salida (UTC)                       |
+| `fechaInicio` | string `LocalDate` | Día de entrada (`yyyy-MM-dd`)             |
+| `fechaFin`    | string `LocalDate` | Día de salida (`yyyy-MM-dd`)             |
 
 **Errores:**
 
@@ -404,20 +404,20 @@ Retorna las reservas activas del servicio que se solapan con la ventana `[desde,
 {
   id: number
   clienteId: number
-  fechaEntrada: string   // Instant ISO-8601 UTC
-  fechaSalida: string    // Instant ISO-8601 UTC
+  fechaEntrada: string   // LocalDate yyyy-MM-dd
+  fechaSalida: string    // LocalDate yyyy-MM-dd
   pago: boolean
   estado: EstadoReserva
 }
 ```
 
-#### `ReservaOcupacionDto` — ítem en fechas ocupadas
+#### `ServicioReservaOcupacionDto` — ítem en fechas ocupadas
 ```typescript
 {
   reservaId: number
   estado: EstadoReserva
-  fechaInicio: string    // LocalDate yyyy-MM-dd (UTC)
-  fechaFin: string       // LocalDate yyyy-MM-dd (UTC)
+  fechaInicio: string    // LocalDate yyyy-MM-dd
+  fechaFin: string       // LocalDate yyyy-MM-dd
 }
 ```
 

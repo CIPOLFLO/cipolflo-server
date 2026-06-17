@@ -195,6 +195,36 @@ Regla: el test de `Foo.java` vive en el mismo paquete que `Foo.java`, pero bajo 
 
 ---
 
+## Migraciones de base de datos (Liquibase)
+
+El esquema se versiona con Liquibase. El changelog raíz es `src/main/resources/db/changelog/db.changelog-master.yaml`, que **solo referencia changelogs, no archivos SQL sueltos** (salvo el esquema inicial `001_initial_schema.sql`).
+
+### Estructura
+
+Cada ticket que requiera cambios de esquema crea su propia carpeta bajo `db/changelog/migrations/{TICKET}/`:
+
+```
+db/changelog/
+├── db.changelog-master.yaml              ← referencia el changelog de cada carpeta
+└── migrations/
+    ├── 001_initial_schema.sql            ← esquema inicial
+    └── DEV-117/
+        ├── db.changelog-DEV-117.yaml     ← changelog general: incluye los SQL de la carpeta
+        └── alter_tipo_fechas_columnas_reserva.sql
+```
+
+### Reglas
+
+1. **Una carpeta por ticket**: `migrations/{TICKET}/` (ej. `DEV-117/`).
+2. **Archivos SQL con nombre descriptivo** de lo que hacen (ej. `alter_tipo_fechas_columnas_reserva.sql`), no numéricos.
+3. **Changelog general de la carpeta**: cada carpeta tiene un `db.changelog-{TICKET}.yaml` que incluye, en orden, todos los SQL agregados en esa carpeta.
+4. **El master referencia el changelog de la carpeta**, nunca los SQL directamente.
+5. Los SQL usan `--liquibase formatted sql`, con un `--changeset cipolflo:{TICKET}-descripcion` por cambio y su `--rollback` correspondiente.
+
+Para agregar otra migración al mismo ticket: crear el `.sql` en la carpeta del ticket y sumarlo al `db.changelog-{TICKET}.yaml` de esa carpeta. El master no se toca.
+
+---
+
 ## Credenciales y variables de entorno
 
 Las credenciales de base de datos **nunca** van hardcodeadas en archivos versionados.
