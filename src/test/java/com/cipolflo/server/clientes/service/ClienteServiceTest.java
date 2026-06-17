@@ -31,11 +31,9 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.Map;
 import java.util.Optional;
-import com.cipolflo.server.clientes.validator.RegistroParticularValidator;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import com.cipolflo.server.clientes.validator.CedulaFormatoValidator;
 
 @ExtendWith(MockitoExtension.class)
 class ClienteServiceTest {
@@ -631,7 +629,7 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         assertNull(response.getNumeroSocio());
         assertNull(response.getEstado());
 
-        verify(registroParticularValidator).validar(eq(dto), eq("12345678"));
+        verify(registroParticularValidator).validar(dto, "12345678");
         verify(clienteRepository).saveAndFlush(any(Particular.class));
     }
 
@@ -645,14 +643,14 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         doThrow(new ClienteValidacionException(
                 ClienteCodigoError.CEDULA_DUPLICADA.name(),
                 "Ya existe un cliente con esa cédula"
-        )).when(registroParticularValidator).validar(eq(dto), eq("12345678"));
+        )).when(registroParticularValidator).validar(dto, "12345678");
 
         assertThrows(
                 ClienteValidacionException.class,
                 () -> clienteService.registrarParticular(dto)
         );
 
-        verify(registroParticularValidator).validar(eq(dto), eq("12345678"));
+        verify(registroParticularValidator).validar(dto, "12345678");
         verify(clienteRepository, never()).saveAndFlush(any());
     }
     @Test
@@ -673,7 +671,7 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
                 ClienteValidacionException.class,
                 () -> clienteService.registrarParticular(dto)
         );
-        verify(registroParticularValidator).validar(eq(dto), eq(""));
+        verify(registroParticularValidator).validar(dto, "");
 
         verify(clienteRepository, never()).save(any());
         verify(clienteRepository, never()).saveAndFlush(any());
@@ -733,6 +731,6 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         );
 
         assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
-        verify(registroParticularValidator).validar(eq(dto), eq("12345678"));
+        verify(registroParticularValidator).validar(dto, "12345678");
     }
 }
