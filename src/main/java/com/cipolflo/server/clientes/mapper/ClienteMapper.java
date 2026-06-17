@@ -6,6 +6,7 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
+import com.cipolflo.server.clientes.dto.EstadoSocioResponseDto;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 public class ClienteMapper {
 
@@ -60,4 +61,12 @@ public class ClienteMapper {
             socio != null ? TipoCliente.SOCIO : TipoCliente.PARTICULAR
     );
 }
+
+    public static EstadoSocioResponseDto toEstadoSocioResponseDto(Socio socio) {
+        return new EstadoSocioResponseDto(
+                socio.getId(),
+                socio.getEstado(),
+                socio.getNumeroSocio()
+        );
+    }
 }

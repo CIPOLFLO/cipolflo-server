@@ -11,8 +11,11 @@ import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
-import com.cipolflo.server.clientes.validator.*;
+import com.cipolflo.server.clientes.validator.CedulaUnicaValidator;
+import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
+import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.clientes.validator.RegistroParticularValidator;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -599,6 +602,38 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
 
     verify(clienteRepository).findByCedula("12345678");
 }
+
+    // --- consultarEstadoSocio ---
+
+    @Test
+    void deberiaRetornarEstadoDelSocioCuandoExiste() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 5, EstadoSocio.INACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+
+        EstadoSocioResponseDto resultado = clienteService.consultarEstadoSocio(1L);
+
+        assertEquals(1L, resultado.getId());
+        assertEquals(EstadoSocio.INACTIVO, resultado.getEstado());
+        assertEquals(5, resultado.getNumeroSocio());
+        verify(clienteRepository).findById(1L);
+    }
+
+    @Test
+    void deberiaLanzarSocioNotFoundExceptionCuandoIdNoExisteEnConsultaEstado() {
+        when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(SocioNotFoundException.class, () -> clienteService.consultarEstadoSocio(99L));
+        verify(clienteRepository).findById(99L);
+    }
+
+    @Test
+    void deberiaLanzarSocioNotFoundExceptionCuandoIdEsDeParticularEnConsultaEstado() {
+        Particular particular = crearParticular(1L, "Laura Fernández", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+
+        assertThrows(SocioNotFoundException.class, () -> clienteService.consultarEstadoSocio(1L));
+        verify(clienteRepository).findById(1L);
+    }
     @Test
     void deberiaRegistrarParticularCorrectamente() {
         RegistroParticularRequestDto dto = new RegistroParticularRequestDto();

@@ -209,6 +209,16 @@ public class ClienteService implements IClienteService {
     }
 
     @Override
+    public EstadoSocioResponseDto consultarEstadoSocio(Long id) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new SocioNotFoundException(id));
+        if (!(cliente instanceof Socio socio)) {
+            throw new SocioNotFoundException(id);
+        }
+        return ClienteMapper.toEstadoSocioResponseDto(socio);
+    }
+
+    @Override
     @Transactional
     public ClienteResponseDto registrarParticular(RegistroParticularRequestDto dto) {
         String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());

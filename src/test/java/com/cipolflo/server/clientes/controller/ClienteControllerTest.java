@@ -3,7 +3,12 @@ package com.cipolflo.server.clientes.controller;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
-import com.cipolflo.server.clientes.dto.*;
+import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
+import com.cipolflo.server.clientes.dto.ClienteResponseDto;
+import com.cipolflo.server.clientes.dto.EstadoSocioResponseDto;
+import com.cipolflo.server.clientes.dto.ListadoClientesRequestDto;
+import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
+import com.cipolflo.server.clientes.dto.RegistroSocioRequestDto;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
@@ -20,11 +25,15 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import java.util.Optional;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -363,6 +372,72 @@ class ClienteControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(clienteService).darDeBajaSocio(socioId);
+    }
+
+    // --- consultarEstadoSocio ---
+
+    private EstadoSocioResponseDto estadoSocio() {
+        return new EstadoSocioResponseDto(1L, EstadoSocio.ACTIVO, 5);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarEstadoDelSocioCuandoExiste() throws Exception {
+        when(clienteService.consultarEstadoSocio(1L)).thenReturn(estadoSocio());
+
+        mockMvc.perform(get("/api/v1/clientes/socios/1/estado"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.estado").value("ACTIVO"))
+                .andExpect(jsonPath("$.numeroSocio").value(5));
+
+        verify(clienteService).consultarEstadoSocio(1L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoSocioNoExisteEnConsultaEstado() throws Exception {
+        when(clienteService.consultarEstadoSocio(99L)).thenThrow(new SocioNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/clientes/socios/99/estado"))
+                .andExpect(status().isNotFound());
+
+        verify(clienteService).consultarEstadoSocio(99L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoIdEsDeParticularEnConsultaEstado() throws Exception {
+        when(clienteService.consultarEstadoSocio(2L)).thenThrow(new SocioNotFoundException(2L));
+
+        mockMvc.perform(get("/api/v1/clientes/socios/2/estado"))
+                .andExpect(status().isNotFound());
+
+        verify(clienteService).consultarEstadoSocio(2L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdNoEsPositivoEnConsultaEstado() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/socios/0/estado"))
+                .andExpect(status().isBadRequest());
+
+        verify(clienteService, never()).consultarEstadoSocio(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdNoEsNumericoEnConsultaEstado() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/socios/abc/estado"))
+                .andExpect(status().isBadRequest());
+
+        verify(clienteService, never()).consultarEstadoSocio(anyLong());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlConsultarEstadoSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/socios/1/estado"))
+                .andExpect(status().isUnauthorized());
     }
 
     // --- modificarParticular ---
@@ -940,8 +1015,4 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 }
                 """.formatted(mailJson);
     }
-
-
-
-
 }
