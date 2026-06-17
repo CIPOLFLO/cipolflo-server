@@ -470,6 +470,29 @@ Da de baja a un socio y cancela automáticamente todas sus reservas futuras en e
 
 ---
 
+### `GET /api/v1/clientes/socios/{id}/estado`
+Devuelve el estado actual de un socio puntual (`ACTIVO`, `INACTIVO` o `DE_BAJA`) sin traer su detalle completo. Es de solo lectura: no modifica ningún dato.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:**
+```json
+{
+  "id": 1,
+  "estado": "ACTIVO",
+  "numeroSocio": 5
+}
+```
+
+**Errores:**
+
+| HTTP Status | Código                  | Cuándo ocurre                                                          |
+|-------------|-------------------------|-----------------------------------------------------------------------|
+| 400         | `ID_INVALIDO`           | El `id` no es un número positivo                                      |
+| 404         | `SOCIO_NO_ENCONTRADO`   | No existe un socio con ese `id` (inexistente o corresponde a un particular) |
+
+---
+
 ### `PUT /api/v1/clientes/particulares/{id}`
 Modifica los datos de un cliente particular.
 

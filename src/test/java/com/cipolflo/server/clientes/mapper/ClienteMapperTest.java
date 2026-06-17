@@ -6,6 +6,7 @@ import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
+import com.cipolflo.server.clientes.dto.EstadoSocioResponseDto;
 import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -178,5 +179,14 @@ class ClienteMapperTest {
         assertEquals("099666666", dto.getTelefono());
         assertEquals("laura@mail.com", dto.getEmail());
         assertEquals(TipoCliente.PARTICULAR, dto.getTipoCliente());
+    }
+
+    @Test
+    void deberiaMapearEstadoSocioResponseDto() {
+        EstadoSocioResponseDto dto = ClienteMapper.toEstadoSocioResponseDto(crearSocio());
+
+        assertEquals(1L, dto.getId());
+        assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
+        assertEquals(5, dto.getNumeroSocio());
     }
 }

@@ -34,6 +34,8 @@ Antes de redactar el ticket, resolvé internamente:
 
 ## Paso 3 — Escribir el ticket
 
+**No uses tablas Markdown en ninguna parte del ticket.** Las tablas se ven mal al copiar y pegar en Jira. Expresá todo con listas, sublistas o texto en prosa. Si necesitás presentar pares clave/valor (ej. campos con sus validaciones, o casos de error con su HTTP), usá una lista donde cada ítem incluya el dato en negrita seguido de la descripción (ej. `- **importe**: obligatorio, > 0 → 400 SOLICITUD_INVALIDA`).
+
 Usá exactamente esta estructura:
 
 ---
@@ -90,6 +92,20 @@ Nuevas excepciones, nuevos códigos de error en el enum correspondiente, y el ha
 - `NombreControllerTest`: escenarios HTTP a cubrir.
 - `NombreServiceTest`: caminos de lógica de negocio a cubrir.
 - Cualquier clase utilitaria nueva tiene su propio test.
+
+**Validaciones — dónde y cómo se implementa cada una**
+Explicá en qué capa vive cada validación, cómo se gatilla y qué error HTTP produce. Aplicá el patrón de capas del proyecto:
+- Forma/formato → declarativa en el DTO (Bean Validation), disparada por `@Valid` en el controller.
+- Reglas de negocio (unicidad, cross-field, lookups a BD) → validador `@Component` invocado desde el service. Indicá explícitamente si el ticket NO necesita uno.
+- Invariantes de dominio → dentro de la entidad (factory methods / transiciones).
+- Valores fuera de un enum → deserialización Jackson, ya manejada en `GlobalExceptionHandler`.
+- Aclará qué excepciones ya están cubiertas por el `GlobalExceptionHandler` existente y cuáles (si alguna) hay que agregar.
+
+---
+
+### Paso a paso de implementación
+
+[Lista ordenada de pasos para organizar la implementación. Ordenála por dependencias (lo que no depende de nada primero: enums, dominio, migración) y pensada para TDD (escribir el test antes de la capa donde aplique: service y controller). Cerrá siempre con la actualización de documentación y un paso de verificación de calidad (build + tests + formato + JavaDoc). Terminá con una frase corta que explique la lógica del orden elegido.]
 
 ---
 
