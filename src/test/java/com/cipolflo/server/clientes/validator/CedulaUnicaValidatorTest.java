@@ -81,4 +81,25 @@ class CedulaUnicaValidatorTest {
         assertEquals(ClienteCodigoError.CEDULA_INVALIDA.name(), ex.getCodigo());
         verifyNoInteractions(clienteRepository);
     }
+
+    @Test
+    void deberiaPermitirCedulaLibre() {
+        when(clienteRepository.existsByCedula("12345678")).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar("12345678"));
+
+        verify(clienteRepository).existsByCedula("12345678");
+    }
+    @Test
+    void deberiaLanzarErrorCuandoCedulaYaExiste() {
+        when(clienteRepository.existsByCedula("12345678")).thenReturn(true);
+
+        ClienteValidacionException exception = assertThrows(
+                ClienteValidacionException.class,
+                () -> validator.validar("12345678")
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), exception.getCodigo());
+        verify(clienteRepository).existsByCedula("12345678");
+    }
 }

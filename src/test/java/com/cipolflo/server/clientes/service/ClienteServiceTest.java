@@ -11,16 +11,15 @@ import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
-import com.cipolflo.server.clientes.validator.ModificacionParticularValidator;
-import com.cipolflo.server.clientes.validator.ModificacionSocioValidator;
+import com.cipolflo.server.clientes.validator.*;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
-import com.cipolflo.server.clientes.validator.RegistroSocioValidator;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -28,13 +27,10 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
-import com.cipolflo.server.clientes.validator.CedulaFormatoValidator;
 import java.time.LocalDate;
 import java.time.Month;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -53,7 +49,11 @@ class ClienteServiceTest {
     @Mock
     private RegistroSocioValidator registroSocioValidator;
     @Mock
+    private CedulaUnicaValidator cedulaUnicaValidator;
+    @Mock
     private CedulaFormatoValidator cedulaFormatoValidator;
+    @Mock
+    private RegistroParticularValidator registroParticularValidator;
     @InjectMocks
     private ClienteService clienteService;
 
@@ -630,5 +630,139 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
 
         assertThrows(SocioNotFoundException.class, () -> clienteService.consultarEstadoSocio(1L));
         verify(clienteRepository).findById(1L);
+    }
+    @Test
+    void deberiaRegistrarParticularCorrectamente() {
+        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
+        dto.setCedula("1.234.567-8");
+        dto.setNombre("Juan Pérez");
+        dto.setCelular("099123456");
+        dto.setMail("juan@mail.com");
+
+        Particular particularGuardado = Particular.registrar(
+                "12345678",
+                "Juan Pérez",
+                "099123456",
+                "juan@mail.com"
+        );
+        particularGuardado.setId(1L);
+
+        when(clienteRepository.saveAndFlush(any(Particular.class))).thenReturn(particularGuardado);
+
+        ClienteResponseDto response = clienteService.registrarParticular(dto);
+
+        assertNotNull(response);
+        assertEquals(1L, response.getId());
+        assertEquals("12345678", response.getCedula());
+        assertEquals("Juan Pérez", response.getNombre());
+        assertEquals("099123456", response.getTelefono());
+        assertEquals("juan@mail.com", response.getEmail());
+        assertEquals(TipoCliente.PARTICULAR, response.getTipoCliente());
+        assertNull(response.getNumeroSocio());
+        assertNull(response.getEstado());
+
+        verify(registroParticularValidator).validar(dto, "12345678");
+        verify(clienteRepository).saveAndFlush(any(Particular.class));
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoCedulaDuplicadaAlRegistrarParticular() {
+        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
+        dto.setCedula("1.234.567-8");
+        dto.setNombre("Juan Pérez");
+        dto.setCelular("099123456");
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                "Ya existe un cliente con esa cédula"
+        )).when(registroParticularValidator).validar(dto, "12345678");
+
+        assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.registrarParticular(dto)
+        );
+
+        verify(registroParticularValidator).validar(dto, "12345678");
+        verify(clienteRepository, never()).saveAndFlush(any());
+    }
+    @Test
+    void deberiaLanzarErrorCuandoCedulaTieneFormatoInvalido() {
+        RegistroParticularRequestDto dto =
+                new RegistroParticularRequestDto();
+
+        dto.setCedula("abc");
+        dto.setNombre("Juan");
+        dto.setCelular("099111111");
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.CEDULA_INVALIDA.name(),
+                "La cédula ingresada no es válida"
+        )).when(registroParticularValidator).validar(any(), anyString());
+
+        assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.registrarParticular(dto)
+        );
+        verify(registroParticularValidator).validar(dto, "");
+
+        verify(clienteRepository, never()).save(any());
+        verify(clienteRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void deberiaLanzarCedulaDuplicadaCuandoSaveAndFlushFallaAlModificarParticular() {
+        Particular particular = crearParticular(1L, "Juan Pérez", "12345678");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+
+        ModificacionParticularRequestDto dto = dtoParticular("Juan Modificado", "099999999");
+        dto.setCedula("1.234.567-2");
+
+        when(clienteRepository.saveAndFlush(particular))
+                .thenThrow(new DataIntegrityViolationException("duplicada"));
+
+        ClienteValidacionException ex = assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.modificarParticular(1L, dto)
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarCedulaDuplicadaCuandoSaveAndFlushFallaAlModificarSocio() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+
+        ModificacionSocioRequestDto dto = dtoSocio("Juan Modificado", "099999999");
+        dto.setCedula("1.234.567-2");
+
+        when(clienteRepository.saveAndFlush(socio))
+                .thenThrow(new DataIntegrityViolationException("duplicada"));
+
+        ClienteValidacionException ex = assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.modificarSocio(1L, dto)
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
+    }
+    @Test
+    void deberiaLanzarCedulaDuplicadaCuandoSaveAndFlushFallaAlRegistrarParticular() {
+        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
+        dto.setCedula("1.234.567-8");
+        dto.setNombre("Juan Pérez");
+        dto.setCelular("099123456");
+        dto.setMail("juan@mail.com");
+
+        when(clienteRepository.saveAndFlush(any(Particular.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicada"));
+
+        ClienteValidacionException ex = assertThrows(
+                ClienteValidacionException.class,
+                () -> clienteService.registrarParticular(dto)
+        );
+
+        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
+        verify(registroParticularValidator).validar(dto, "12345678");
     }
 }

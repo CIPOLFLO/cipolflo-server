@@ -6,7 +6,6 @@ import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
 import jakarta.validation.Valid;
-import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -98,11 +97,24 @@ public class ClienteController {
                 .body(response);
     }
 
-@PreAuthorize("isAuthenticated()")
-@GetMapping("/cedula/{cedula}")
-public ResponseEntity<BusquedaCedulaResponseDto> buscarPorCedula(@PathVariable String cedula) {
-    return ResponseEntity.ok(
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/cedula/{cedula}")
+    public ResponseEntity<BusquedaCedulaResponseDto> buscarPorCedula(@PathVariable String cedula) {
+        return ResponseEntity.ok(
             clienteService.buscarPorCedula(cedula)
-    );
-}
+        );
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/particulares")
+    public ResponseEntity<ClienteResponseDto> registrarParticular(
+            @Valid @RequestBody RegistroParticularRequestDto dto) {
+
+        ClienteResponseDto response = clienteService.registrarParticular(dto);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
 }
