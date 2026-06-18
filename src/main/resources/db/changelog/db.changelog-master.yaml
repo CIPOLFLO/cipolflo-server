@@ -1,6 +1,8 @@
 databaseChangeLog:
   - include:
       file: db/changelog/migrations/001_initial_schema.sql
+  - include:
+      file: db/changelog/migrations/DEV-117/db.changelog-DEV-117.yaml
 
   - include:
       file: db/changelog/migrations/002_finanza_registro_manual.sql

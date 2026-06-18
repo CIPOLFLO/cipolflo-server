@@ -263,22 +263,69 @@ Retorna las reservas futuras/activas asociadas al servicio (útil antes de desha
   {
     "id": 12,
     "clienteId": 5,
-    "fechaEntrada": "2025-06-01T14:00:00Z",
-    "fechaSalida": "2025-06-03T12:00:00Z",
+    "fechaEntrada": "2025-06-01",
+    "fechaSalida": "2025-06-03",
     "pago": true,
     "estado": "CONFIRMADA"
   }
 ]
 ```
 
-| Campo         | Tipo            | Descripción                         |
-|---------------|-----------------|-------------------------------------|
-| `id`          | integer         | ID de la reserva                    |
-| `clienteId`   | integer         | ID del cliente                      |
-| `fechaEntrada`| string (Instant)| Fecha/hora de entrada UTC           |
-| `fechaSalida` | string (Instant)| Fecha/hora de salida UTC            |
-| `pago`        | boolean         | Si la reserva fue pagada            |
-| `estado`      | `EstadoReserva` | Estado actual de la reserva         |
+| Campo         | Tipo               | Descripción                      |
+|---------------|--------------------|----------------------------------|
+| `id`          | integer            | ID de la reserva                 |
+| `clienteId`   | integer            | ID del cliente                   |
+| `fechaEntrada`| string `LocalDate` | Día de entrada (`yyyy-MM-dd`)    |
+| `fechaSalida` | string `LocalDate` | Día de salida (`yyyy-MM-dd`)     |
+| `pago`        | boolean            | Si la reserva fue pagada         |
+| `estado`      | `EstadoReserva`    | Estado actual de la reserva      |
+
+---
+
+### `GET /api/v1/servicios/{id}/fechas-ocupadas`
+Retorna las reservas activas del servicio que se solapan con la ventana `[desde, hasta]`, para alimentar el calendario de reservas (días ocupados). Devuelve una fila por reserva (rango `[fechaInicio, fechaFin]`), no un día por fila.
+
+**Path param:** `id` — integer positivo
+
+**Query params:**
+
+| Param   | Tipo                | Descripción                              |
+|---------|---------------------|------------------------------------------|
+| `desde` | string `yyyy-MM-dd` | obligatorio, inicio de la ventana        |
+| `hasta` | string `yyyy-MM-dd` | obligatorio, fin de la ventana inclusive |
+
+**Reglas:**
+- Solo se incluyen reservas en estado `PENDIENTE`, `CONFIRMADA` o `EN_CURSO`.
+- Una reserva es ocupante si su rango `[entrada, salida]` se solapa con la ventana (solapamiento inclusivo: el día de salida cuenta como ocupado).
+- Las fechas se devuelven completas, aunque la reserva empiece antes de `desde` o termine después de `hasta`.
+- `desde` debe ser ≤ `hasta` → si no, 400 (`RANGO_FECHAS_INVALIDO`).
+
+**Respuesta 200:**
+```json
+[
+  {
+    "reservaId": 12,
+    "estado": "CONFIRMADA",
+    "fechaInicio": "2026-06-10",
+    "fechaFin": "2026-06-12"
+  }
+]
+```
+
+| Campo         | Tipo            | Descripción                                  |
+|---------------|-----------------|----------------------------------------------|
+| `reservaId`   | integer         | ID de la reserva ocupante                    |
+| `estado`      | `EstadoReserva` | Estado de la reserva                         |
+| `fechaInicio` | string `LocalDate` | Día de entrada (`yyyy-MM-dd`)             |
+| `fechaFin`    | string `LocalDate` | Día de salida (`yyyy-MM-dd`)             |
+
+**Errores:**
+
+| Status | Código                   | Caso                                      |
+|--------|--------------------------|-------------------------------------------|
+| 400    | `ID_INVALIDO`            | `id` no es entero positivo                |
+| 400    | `RANGO_FECHAS_INVALIDO`  | `desde` > `hasta`                         |
+| 404    | `SERVICIO_NO_ENCONTRADO` | el servicio no existe                     |
 
 ---
 
@@ -368,10 +415,20 @@ Retorna las reservas futuras/activas asociadas al servicio (útil antes de desha
 {
   id: number
   clienteId: number
-  fechaEntrada: string   // Instant ISO-8601 UTC
-  fechaSalida: string    // Instant ISO-8601 UTC
+  fechaEntrada: string   // LocalDate yyyy-MM-dd
+  fechaSalida: string    // LocalDate yyyy-MM-dd
   pago: boolean
   estado: EstadoReserva
+}
+```
+
+#### `ServicioReservaOcupacionDto` — ítem en fechas ocupadas
+```typescript
+{
+  reservaId: number
+  estado: EstadoReserva
+  fechaInicio: string    // LocalDate yyyy-MM-dd
+  fechaFin: string       // LocalDate yyyy-MM-dd
 }
 ```
 
@@ -629,6 +686,39 @@ Registra un nuevo cliente de tipo socio.
 | 400         | `EMAIL_DUPLICADO`   | Ya existe un cliente con ese email                            |
 | 401         | —                   | Token ausente, inválido o expirado                            |
 
+---
+### `POST /api/v1/clientes/particulares`
+Registra un nuevo cliente de tipo particular.
+
+**Body** (`application/json`):
+```json
+{
+  "cedula": "1.234.567-8",
+  "nombre": "Laura Fernández",
+  "celular": "099222222",
+  "mail": "laura@mail.com"
+}
+```
+| Campo     | Tipo     | Obligatorio | Validación                     |
+|-----------|----------|-------------|--------------------------------|
+| `cedula`  | string   | Sí          | no vacío, cédula válida, única |
+| `nombre`  | string   | Sí          | no vacío                       |
+| `celular` | string   | Sí          | no vacío                       |
+| `mail`    | string   | No          | —                              |
+
+
+> El campo celular se persiste como telefono. La cédula se normaliza automáticamente, eliminando puntos y guion.
+
+**Respuesta 201:** mismo body que GET `/api/v1/clientes/{id}`
+
+**Errores:**
+
+| HTTP Status | Código                | Cuándo ocurre                              |
+|-------------|-----------------------|---------------------------------------------|
+| 400         | `SOLICITUD_INVALIDA`  | Campo obligatorio faltante o vacío          |
+| 400         | `CEDULA_INVALIDA`     | La cédula no cumple la validación definida  |
+| 400         | `CEDULA_DUPLICADA`    | Ya existe un cliente con esa cédula         |
+| 401         | —                     | Token ausente, inválido o expirado          |
 ---
 
 ## Clientes — DTOs

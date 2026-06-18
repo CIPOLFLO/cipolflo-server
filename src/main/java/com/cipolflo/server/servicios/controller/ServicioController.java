@@ -1,6 +1,7 @@
 package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
+import com.cipolflo.server.servicios.dto.ServicioReservaOcupacionDto;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
@@ -15,6 +16,7 @@ import jakarta.validation.constraints.Positive;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,10 +25,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 
@@ -92,6 +96,19 @@ public class ServicioController {
             Long id) {
         List<ReservaProximaResponseDto> response =
                 servicioService.getReservasProximas(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/fechas-ocupadas")
+    public ResponseEntity<List<ServicioReservaOcupacionDto>> getFechasOcupadas(
+            @PathVariable
+            @Positive(message = "El id del servicio debe ser un número positivo")
+            Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        List<ServicioReservaOcupacionDto> response =
+                servicioService.getFechasOcupadas(id, desde, hasta);
         return ResponseEntity.ok(response);
     }
 

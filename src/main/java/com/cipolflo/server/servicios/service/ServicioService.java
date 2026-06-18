@@ -6,6 +6,7 @@ import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
+import com.cipolflo.server.servicios.dto.ServicioReservaOcupacionDto;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
 import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
@@ -15,6 +16,9 @@ import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
+import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import com.cipolflo.server.shared.exception.ServicioCodigoError;
+import com.cipolflo.server.servicios.mapper.ServicioReservaOcupacionMapper;
 import com.cipolflo.server.servicios.mapper.ServicioMapper;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import com.cipolflo.server.servicios.validator.ModificacionServicioValidator;
@@ -30,6 +34,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -64,6 +69,28 @@ public class ServicioService implements IServicioService {
         Servicio servicio = servicioRepository.findById(id)
                 .orElseThrow(() -> new ServicioNotFoundException(id));
         return mapToResponse(servicio);
+    }
+
+    @Override
+    public List<ServicioReservaOcupacionDto> getFechasOcupadas(Long id, LocalDate desde, LocalDate hasta) {
+        validarRango(desde, hasta);
+
+        Servicio servicio = servicioRepository.findById(id)
+                .orElseThrow(() -> new ServicioNotFoundException(id));
+
+        List<Reserva> reservas =
+                reservaService.obtenerOcupacionPorServicioEnRango(servicio.getId(), desde, hasta);
+
+        return ServicioReservaOcupacionMapper.toOcupacionDtoList(reservas);
+    }
+
+    private void validarRango(LocalDate desde, LocalDate hasta) {
+        if (desde.isAfter(hasta)) {
+            throw new ServicioValidacionException(
+                    ServicioCodigoError.RANGO_FECHAS_INVALIDO.name(),
+                    "La fecha 'desde' debe ser anterior o igual a 'hasta'"
+            );
+        }
     }
 
     @Override
