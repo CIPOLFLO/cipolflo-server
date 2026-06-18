@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -64,11 +65,14 @@ class FinanzaControllerTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.tipoMovimiento").value("INGRESO"))
                 .andExpect(jsonPath("$.procedencia").value("SEDE"))
                 .andExpect(jsonPath("$.concepto").value("PAGO_RESERVA"))
                 .andExpect(jsonPath("$.importe").value(1500))
-                .andExpect(jsonPath("$.formaPago").value("EFECTIVO"));
+                .andExpect(jsonPath("$.formaPago").value("EFECTIVO"))
+                .andExpect(jsonPath("$.reservaId").value(nullValue()))
+                .andExpect(jsonPath("$.pagoCuotaId").value(nullValue()));
 
         verify(finanzaService).registrarFinanza(any(FinanzaCrearRequestDto.class));
     }
@@ -282,6 +286,60 @@ class FinanzaControllerTest {
                 .andExpect(status().isCreated());
 
         verify(finanzaService).registrarFinanza(any(FinanzaCrearRequestDto.class));
+    }
+
+    @Test
+    void deberiaRetornarBadRequestCuandoFaltaImporte() throws Exception {
+        mockMvc.perform(post("/api/v1/finanzas")
+                        .with(jwt())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tipoMovimiento": "INGRESO",
+                                  "procedencia": "SEDE",
+                                  "concepto": "PAGO_RESERVA",
+                                  "formaPago": "EFECTIVO"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(finanzaService, never()).registrarFinanza(any());
+    }
+
+    @Test
+    void deberiaRetornarBadRequestCuandoTipoMovimientoNoExiste() throws Exception {
+        mockMvc.perform(post("/api/v1/finanzas")
+                        .with(jwt())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tipoMovimiento": "GASTO",
+                                  "procedencia": "SEDE",
+                                  "concepto": "PAGO_RESERVA",
+                                  "importe": 1500,
+                                  "formaPago": "EFECTIVO"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(finanzaService, never()).registrarFinanza(any());
+    }
+
+    @Test
+    void deberiaRetornarBadRequestCuandoJsonEstaMalformado() throws Exception {
+        mockMvc.perform(post("/api/v1/finanzas")
+                        .with(jwt())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"tipoMovimiento\": "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(finanzaService, never()).registrarFinanza(any());
     }
 
     private FinanzaResponseDto response(TipoMovimiento tipoMovimiento) {
