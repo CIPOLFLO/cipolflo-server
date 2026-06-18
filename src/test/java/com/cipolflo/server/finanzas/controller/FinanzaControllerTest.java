@@ -309,6 +309,27 @@ class FinanzaControllerTest {
     }
 
     @Test
+    void deberiaRetornarBadRequestCuandoImporteTieneMasDeDosDecimales() throws Exception {
+        mockMvc.perform(post("/api/v1/finanzas")
+                        .with(jwt())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tipoMovimiento": "INGRESO",
+                                  "procedencia": "SEDE",
+                                  "concepto": "PAGO_RESERVA",
+                                  "importe": 1500.999,
+                                  "formaPago": "EFECTIVO"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(finanzaService, never()).registrarFinanza(any());
+    }
+
+    @Test
     void deberiaRetornarBadRequestCuandoTipoMovimientoNoExiste() throws Exception {
         mockMvc.perform(post("/api/v1/finanzas")
                         .with(jwt())
