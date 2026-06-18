@@ -6,7 +6,9 @@ import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
 import com.cipolflo.server.servicios.dto.ServicioRequestDto;
+import com.cipolflo.server.servicios.dto.ServicioReservaOcupacionDto;
 import com.cipolflo.server.servicios.dto.ServicioResponseDto;
+import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.servicios.service.IServicioService;
@@ -26,6 +28,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -638,5 +641,65 @@ public class ServicioControllerTest {
         ).andExpect(status().isCreated());
 
         verify(servicioService).registrarServicio(any(ServicioRegistroRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarOkConFechasOcupadas() throws Exception {
+        when(servicioService.getFechasOcupadas(eq(1L), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(List.of(new ServicioReservaOcupacionDto(
+                        1L,
+                        EstadoReserva.CONFIRMADA,
+                        LocalDate.of(2026, 6, 17),
+                        LocalDate.of(2026, 6, 19)
+                )));
+
+        mockMvc.perform(get("/api/v1/servicios/1/fechas-ocupadas")
+                        .param("desde", "2026-06-16")
+                        .param("hasta", "2026-06-20"))
+                .andExpect(status().isOk());
+
+        verify(servicioService).getFechasOcupadas(eq(1L), any(LocalDate.class), any(LocalDate.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoElIdEsInvalidoEnFechasOcupadas() throws Exception {
+        mockMvc.perform(get("/api/v1/servicios/0/fechas-ocupadas")
+                        .param("desde", "2026-06-16")
+                        .param("hasta", "2026-06-20"))
+                .andExpect(status().isBadRequest());
+
+        verify(servicioService, never()).getFechasOcupadas(anyLong(), any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltaParametroDeFechaEnFechasOcupadas() throws Exception {
+        mockMvc.perform(get("/api/v1/servicios/1/fechas-ocupadas")
+                        .param("desde", "2026-06-16"))
+                .andExpect(status().isBadRequest());
+
+        verify(servicioService, never()).getFechasOcupadas(anyLong(), any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoElServicioNoExisteEnFechasOcupadas() throws Exception {
+        when(servicioService.getFechasOcupadas(eq(99L), any(LocalDate.class), any(LocalDate.class)))
+                .thenThrow(new ServicioNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/servicios/99/fechas-ocupadas")
+                        .param("desde", "2026-06-16")
+                        .param("hasta", "2026-06-20"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedCuandoUsuarioNoEstaLogueadoEnFechasOcupadas() throws Exception {
+        mockMvc.perform(get("/api/v1/servicios/1/fechas-ocupadas")
+                        .param("desde", "2026-06-16")
+                        .param("hasta", "2026-06-20"))
+                .andExpect(status().isUnauthorized());
     }
 }

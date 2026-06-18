@@ -45,10 +45,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
+import com.cipolflo.server.servicios.dto.ServicioReservaOcupacionDto;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
@@ -209,8 +211,8 @@ class ServicioServiceTest {
                 1L,
                 servicioId,
                 Procedencia.CAMPING,
-                Instant.now().plusSeconds(86400),
-                Instant.now().plusSeconds(172800),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -244,8 +246,8 @@ class ServicioServiceTest {
                 1L,
                 servicioId,
                 Procedencia.CAMPING,
-                Instant.now().plusSeconds(86400),
-                Instant.now().plusSeconds(172800),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -289,8 +291,8 @@ class ServicioServiceTest {
                 1L,
                 servicioId,
                 Procedencia.CAMPING,
-                Instant.now().plusSeconds(86400),
-                Instant.now().plusSeconds(172800),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -560,8 +562,8 @@ class ServicioServiceTest {
                 2L,
                 servicioId,
                 Procedencia.CAMPING,
-                Instant.now().plusSeconds(86400),
-                Instant.now().plusSeconds(172800),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
                 false
         );
         ReflectionTestUtils.setField(reservaProxima, "id", 2L);
@@ -786,8 +788,8 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 clienteId,
                 servicioId,
                 Procedencia.CAMPING,
-                Instant.now().plusSeconds(86400),
-                Instant.now().plusSeconds(172800),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -846,8 +848,8 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 clienteId,
                 servicioId,
                 Procedencia.CAMPING,
-                Instant.now().plusSeconds(86400),
-                Instant.now().plusSeconds(172800),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -864,8 +866,8 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
     void deberiaMapearTodosLosCamposDelDtoCorrectamente() {
         Long servicioId = 1L;
         Long clienteId = 10L;
-        Instant fechaEntrada = Instant.parse("2026-06-01T10:00:00Z");
-        Instant fechaSalida = Instant.parse("2026-06-05T10:00:00Z");
+        LocalDate fechaEntrada = LocalDate.of(2026, 6, 1);
+        LocalDate fechaSalida = LocalDate.of(2026, 6, 5);
 
         Servicio servicio = crearServicio(servicioId, true);
 
@@ -908,8 +910,8 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 clienteId1,
                 servicioId,
                 Procedencia.CAMPING,
-                Instant.now().plusSeconds(86400),
-                Instant.now().plusSeconds(172800),
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
                 false
         );
         ReflectionTestUtils.setField(reserva1, "id", 1L);
@@ -918,8 +920,8 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 clienteId2,
                 servicioId,
                 Procedencia.CAMPING,
-                Instant.now().plusSeconds(259200),
-                Instant.now().plusSeconds(345600),
+                LocalDate.now().plusDays(3),
+                LocalDate.now().plusDays(4),
                 false
         );
         ReflectionTestUtils.setField(reserva2, "id", 2L);
@@ -940,5 +942,104 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         assertEquals(2L, resultado.get(1).getId());
         assertEquals(clienteId2, resultado.get(1).getClienteId());
         assertEquals("Ana García", resultado.get(1).getNombreCliente());
+    }
+
+    @Test
+    void deberiaRetornarFechasOcupadasDelServicio() {
+        Long servicioId = 1L;
+        LocalDate desde = LocalDate.of(2026, 6, 16);
+        LocalDate hasta = LocalDate.of(2026, 6, 20);
+
+        Servicio servicio = crearServicio(servicioId, true);
+
+        Reserva reserva = Reserva.crear(
+                10L,
+                servicioId,
+                Procedencia.CAMPING,
+                LocalDate.of(2026, 6, 17),
+                LocalDate.of(2026, 6, 19),
+                false
+        );
+        ReflectionTestUtils.setField(reserva, "id", 5L);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerOcupacionPorServicioEnRango(servicioId, desde, hasta))
+                .thenReturn(List.of(reserva));
+
+        List<ServicioReservaOcupacionDto> resultado =
+                servicioService.getFechasOcupadas(servicioId, desde, hasta);
+
+        assertEquals(1, resultado.size());
+        ServicioReservaOcupacionDto dto = resultado.get(0);
+        assertEquals(5L, dto.reservaId());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.estado());
+        assertEquals(LocalDate.of(2026, 6, 17), dto.fechaInicio());
+        assertEquals(LocalDate.of(2026, 6, 19), dto.fechaFin());
+        verify(reservaService).obtenerOcupacionPorServicioEnRango(servicioId, desde, hasta);
+    }
+
+    @Test
+    void deberiaRetornarListaVaciaCuandoNoHayFechasOcupadas() {
+        Long servicioId = 1L;
+        LocalDate desde = LocalDate.of(2026, 6, 16);
+        LocalDate hasta = LocalDate.of(2026, 6, 20);
+
+        Servicio servicio = crearServicio(servicioId, true);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerOcupacionPorServicioEnRango(servicioId, desde, hasta))
+                .thenReturn(List.of());
+
+        List<ServicioReservaOcupacionDto> resultado =
+                servicioService.getFechasOcupadas(servicioId, desde, hasta);
+
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+    }
+
+    @Test
+    void deberiaPermitirRangoDeUnSoloDiaEnFechasOcupadas() {
+        Long servicioId = 1L;
+        LocalDate dia = LocalDate.of(2026, 6, 16);
+
+        Servicio servicio = crearServicio(servicioId, true);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerOcupacionPorServicioEnRango(servicioId, dia, dia))
+                .thenReturn(List.of());
+
+        List<ServicioReservaOcupacionDto> resultado =
+                servicioService.getFechasOcupadas(servicioId, dia, dia);
+
+        assertNotNull(resultado);
+        verify(reservaService).obtenerOcupacionPorServicioEnRango(servicioId, dia, dia);
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoElRangoDeFechasEsInvalido() {
+        Long servicioId = 1L;
+        LocalDate desde = LocalDate.of(2026, 6, 20);
+        LocalDate hasta = LocalDate.of(2026, 6, 16);
+
+        ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
+                () -> servicioService.getFechasOcupadas(servicioId, desde, hasta));
+
+        assertEquals(ServicioCodigoError.RANGO_FECHAS_INVALIDO.name(), exception.getCodigo());
+        verify(servicioRepository, never()).findById(any());
+        verify(reservaService, never()).obtenerOcupacionPorServicioEnRango(any(), any(), any());
+    }
+
+    @Test
+    void deberiaLanzarServicioNotFoundEnFechasOcupadas() {
+        Long servicioId = 99L;
+        LocalDate desde = LocalDate.of(2026, 6, 16);
+        LocalDate hasta = LocalDate.of(2026, 6, 20);
+
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.empty());
+
+        assertThrows(ServicioNotFoundException.class,
+                () -> servicioService.getFechasOcupadas(servicioId, desde, hasta));
+
+        verify(reservaService, never()).obtenerOcupacionPorServicioEnRango(any(), any(), any());
     }
 }

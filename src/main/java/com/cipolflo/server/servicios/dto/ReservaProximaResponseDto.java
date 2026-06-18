@@ -3,15 +3,15 @@ package com.cipolflo.server.servicios.dto;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import lombok.Getter;
 
-import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 public class ReservaProximaResponseDto {
     private final Long id;
     private final Long clienteId;
     private final String nombreCliente;
-    private final Instant fechaEntrada;
-    private final Instant fechaSalida;
+    private final LocalDate fechaEntrada;
+    private final LocalDate fechaSalida;
     private final Boolean pago;
     private final EstadoReserva estado;
 
@@ -19,8 +19,8 @@ public class ReservaProximaResponseDto {
          Long id,
          Long clienteId,
          String nombreCliente,
-         Instant fechaEntrada,
-         Instant fechaSalida,
+         LocalDate fechaEntrada,
+         LocalDate fechaSalida,
          Boolean pago,
          EstadoReserva estado
     ) {
