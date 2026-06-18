@@ -67,7 +67,14 @@ class ClienteControllerTest {
 
     private PageResponse<ListadoClientesResponseDto> paginaConResultados() {
         ListadoClientesResponseDto dto = new ListadoClientesResponseDto(
-                1L, "Juan Pérez", "12345678", "juan@mail.com", TipoCliente.SOCIO, 1, EstadoSocio.ACTIVO
+                1L,
+                "Juan Pérez",
+                "12345678",
+                "juan@mail.com",
+                TipoCliente.SOCIO,
+                1,
+                EstadoSocio.ACTIVO,
+                null
         );
         return new PageResponse<>(List.of(dto), 0, 10, 1, 1, true, true);
     }
