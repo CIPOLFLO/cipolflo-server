@@ -14,7 +14,9 @@
 4. [Servicios — DTOs](#servicios--dtos)
 5. [Clientes — Endpoints](#clientes--endpoints)
 6. [Clientes — DTOs](#clientes--dtos)
-7. [Manejo de errores](#manejo-de-errores)
+7.  [Finanzas — Endpoints](#finanzas--endpoints)
+8. [Finanzas — DTOs](#finanzas--dtos)
+9. [Manejo de errores](#manejo-de-errores)
 
 
 ---
@@ -56,6 +58,15 @@ ACTIVO | INACTIVO | DE_BAJA
 COBRADORA | DESCUENTO_SALARIAL | TRANSFERENCIA | EN_SEDE | EFECTIVO
 ```
 
+### `TipoMovimiento`
+```
+INGRESO | EGRESO
+```
+
+### `Concepto`
+```
+PAGO_RESERVA | PAGO_CUOTA | UTE | OSE | ANTEL | SUELDOS | BARRACA | OTROS
+```
 ---
 
 ## DTOs Compartidos
@@ -808,6 +819,104 @@ Registra un nuevo cliente de tipo particular.
   estado: EstadoSocio | null   // null para Particulares
 }
 ```
+
+---
+## Finanzas — Endpoints
+
+### `POST /api/v1/finanzas`
+
+Registra manualmente un ingreso o egreso.
+
+**Body** (`application/json`):
+
+```json
+{
+  "tipoMovimiento": "INGRESO",
+  "fecha": "2026-06-20",
+  "importe": 1500.00,
+  "concepto": "PAGO_RESERVA",
+  "procedencia": "SEDE",
+  "formaPago": "EFECTIVO",
+  "notas": "Pago realizado en administración"
+}
+```
+
+| Campo             | Tipo              | Obligatorio | Validación |
+|-------------------|-------------------|-------------|------------|
+| `tipoMovimiento`  | `TipoMovimiento`  | Sí          | — |
+| `fecha`           | string (date)     | No          | `yyyy-MM-dd` |
+| `importe`         | number (decimal)  | Sí          | > 0 |
+| `concepto`        | `Concepto`        | Sí          | — |
+| `procedencia`     | `Procedencia`     | Sí          | — |
+| `formaPago`       | `FormaPago`       | Sí          | — |
+| `notas`           | string            | No          | — |
+
+> Si no se envía `fecha`, se utilizará la fecha actual del sistema.
+
+**Respuesta 201:**
+
+```json
+{
+  "id": 1,
+  "tipoMovimiento": "INGRESO",
+  "fecha": "2026-06-20",
+  "importe": 1500.00,
+  "concepto": "PAGO_RESERVA",
+  "procedencia": "SEDE",
+  "formaPago": "EFECTIVO",
+  "notas": "Pago realizado en administración",
+  "reservaId": null,
+  "pagoCuotaId": null
+}
+```
+
+**Errores:**
+
+| HTTP Status | Código | Cuándo ocurre |
+|-------------|---------|---------------|
+| 400 | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o valor inválido |
+| 401 | — | Token ausente, inválido o expirado |
+
+---
+
+## Finanzas — DTOs
+
+### Request DTOs
+
+#### `FinanzaCrearRequestDto` — body en `POST /api/v1/finanzas`
+
+```typescript
+{
+  tipoMovimiento: TipoMovimiento
+  fecha?: string
+  importe: number
+  concepto: Concepto
+  procedencia: Procedencia
+  formaPago: FormaPago
+  notas?: string
+}
+```
+
+### Response DTOs
+
+#### `FinanzaResponseDto`
+
+```typescript
+{
+  id: number
+  tipoMovimiento: TipoMovimiento
+  fecha: string
+  importe: number
+  concepto: Concepto
+  procedencia: Procedencia
+  formaPago: FormaPago
+  notas: string | null
+  reservaId: number | null
+  pagoCuotaId: number | null
+}
+```
+
+
 
 ---
 
