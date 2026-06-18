@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset cipolflo:002-finanza-registro-manual
+--changeset cipolflo:DEV-114-alter-finanza-registro-manual
 ALTER TABLE public.finanza
     ADD COLUMN pago_cuota_id bigint;
 
