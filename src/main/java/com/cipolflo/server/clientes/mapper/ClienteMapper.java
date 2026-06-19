@@ -9,7 +9,7 @@ public class ClienteMapper {
 
     private ClienteMapper() {}
 
-    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente) {
+    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto) {
         Socio socio = cliente instanceof Socio s ? s : null;
         return new ClienteResponseDto(
                 cliente.getId(),
@@ -27,6 +27,7 @@ public class ClienteMapper {
                 socio != null ? TipoCliente.SOCIO : TipoCliente.PARTICULAR,
                 socio != null ? socio.getEstado() : null,
                 cliente.getNotas(),
+                ultimaCuotaDto,
                 cliente.getCreatedAt(),
                 cliente.getUpdatedAt(),
                 cliente.getCreatedBy(),
@@ -34,7 +35,7 @@ public class ClienteMapper {
         );
     }
 
-    public static ListadoClientesResponseDto toListadoResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaPaga) {
+    public static ListadoClientesResponseDto toListadoResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto) {
         Socio socio = cliente instanceof Socio s ? s : null;
         return new ListadoClientesResponseDto(
                 cliente.getId(),
@@ -44,7 +45,7 @@ public class ClienteMapper {
                 socio != null ? TipoCliente.SOCIO : TipoCliente.PARTICULAR,
                 socio != null ? socio.getNumeroSocio() : null,
                 socio != null ? socio.getEstado() : null,
-                socio != null ? ultimaCuotaPaga : null
+                socio != null ? ultimaCuotaDto : null
         );
     }
     public static BusquedaCedulaResponseDto toBusquedaCedulaResponseDto(Cliente cliente) {

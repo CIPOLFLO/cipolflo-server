@@ -61,7 +61,7 @@ class ClienteControllerTest {
                 "099111111", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. 18 de Julio 100",
                 5, TipoCliente.SOCIO, EstadoSocio.ACTIVO, null,
-                null, null, null, null
+                null, null, null, null, null
         );
     }
 
@@ -724,7 +724,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 "099123456", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. Italia 1234",
                 7, TipoCliente.SOCIO, EstadoSocio.ACTIVO, "Sin observaciones",
-                null, null, null, null
+                null, null, null, null, null
         );
 
         when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
@@ -890,6 +890,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 null,
                 null,
                 TipoCliente.PARTICULAR,
+                null,
                 null,
                 null,
                 null,

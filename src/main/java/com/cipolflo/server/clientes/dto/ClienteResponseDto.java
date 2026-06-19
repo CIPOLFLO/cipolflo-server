@@ -6,7 +6,7 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.shared.dto.AuditInfoDto;
 import com.cipolflo.server.shared.dto.ResponseDto;
 import lombok.Getter;
-
+import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -28,12 +28,13 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
     private final TipoCliente tipoCliente;
     private final EstadoSocio estado;
     private final String observaciones;
+    private final UltimaCuotaDto ultimaCuotaDto;
 
     public ClienteResponseDto(
             Long id, String nombre, String cedula, LocalDate fechaNacimiento,
             String telefono, String email, MetodoCobro metodoCobro,
             String pais, String departamento, String ciudad, String direccion,
-            Integer numeroSocio, TipoCliente tipoCliente, EstadoSocio estado, String observaciones,
+            Integer numeroSocio, TipoCliente tipoCliente, EstadoSocio estado, String observaciones,UltimaCuotaDto ultimaCuotaDto,
             Instant createdAt, Instant updatedAt, String createdBy, String updatedBy) {
         super(createdAt, updatedAt, createdBy, updatedBy);
         this.id = id;
@@ -51,5 +52,6 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
         this.tipoCliente = tipoCliente;
         this.estado = estado;
         this.observaciones = observaciones;
+        this.ultimaCuotaDto = ultimaCuotaDto;
     }
 }
