@@ -119,7 +119,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTodosLosCamposDeUnSocioEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio());
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
 
         assertEquals(1L, dto.getId());
         assertEquals("Juan Pérez", dto.getNombre());
@@ -144,7 +144,7 @@ class ClienteMapperTest {
         ReflectionTestUtils.setField(socio, "createdAt", ahora);
         ReflectionTestUtils.setField(socio, "createdBy", "admin@test.com");
 
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio, null);
 
         assertEquals(ahora, dto.getCreatedAt());
         assertEquals("admin@test.com", dto.getCreatedBy());
@@ -152,14 +152,14 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTipoComoSocioEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio());
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
 
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
     }
 
     @Test
     void deberiaMapearParticularConCamposSocioNulosEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular());
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null);
 
         assertNull(dto.getFechaNacimiento());
         assertNull(dto.getMetodoCobro());
@@ -173,7 +173,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearCamposBaseDeParticularEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular());
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null);
 
         assertEquals(2L, dto.getId());
         assertEquals("Laura Fernández", dto.getNombre());
