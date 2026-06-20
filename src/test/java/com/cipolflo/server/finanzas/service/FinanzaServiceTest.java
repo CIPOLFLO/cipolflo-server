@@ -6,7 +6,9 @@ import com.cipolflo.server.finanzas.domain.Ingreso;
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
+import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
 import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
+import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -164,4 +167,62 @@ class FinanzaServiceTest {
         dto.setNotas("Alta manual");
         return dto;
     }
+    @Test
+    void deberiaRetornarDetalleDeIngreso() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+
+        ingreso.setId(1L);
+
+        when(finanzaRepository.findById(1L))
+                .thenReturn(Optional.of(ingreso));
+
+        FinanzaDetalleResponseDto response =
+                finanzaService.getDetalleFinanza(1L);
+
+        assertEquals(1L, response.getId());
+        assertEquals(TipoMovimiento.INGRESO, response.getTipoMovimiento());
+        assertEquals(Procedencia.SEDE, response.getProcedencia());
+        assertEquals(Concepto.PAGO_RESERVA, response.getConcepto());
+    }
+    @Test
+    void deberiaRetornarDetalleDeEgreso() {
+        Egreso egreso = Egreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(2000),
+                Concepto.UTE,
+                FormaPago.TRANSFERENCIA,
+                Procedencia.CAMPING,
+                "Pago UTE"
+        );
+
+        egreso.setId(2L);
+
+        when(finanzaRepository.findById(2L))
+                .thenReturn(Optional.of(egreso));
+
+        FinanzaDetalleResponseDto response =
+                finanzaService.getDetalleFinanza(2L);
+
+        assertEquals(TipoMovimiento.EGRESO, response.getTipoMovimiento());
+        assertEquals(Procedencia.CAMPING, response.getProcedencia());
+    }
+    @Test
+    void deberiaLanzarFinanzaNotFoundException() {
+        when(finanzaRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                FinanzaNotFoundException.class,
+                () -> finanzaService.getDetalleFinanza(99L)
+        );
+    }
+
+
 }
