@@ -61,13 +61,20 @@ class ClienteControllerTest {
                 "099111111", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. 18 de Julio 100",
                 5, TipoCliente.SOCIO, EstadoSocio.ACTIVO, null,
-                null, null, null, null
+                null, null, null, null, null
         );
     }
 
     private PageResponse<ListadoClientesResponseDto> paginaConResultados() {
         ListadoClientesResponseDto dto = new ListadoClientesResponseDto(
-                1L, "Juan Pérez", "12345678", "juan@mail.com", TipoCliente.SOCIO, 1, EstadoSocio.ACTIVO
+                1L,
+                "Juan Pérez",
+                "12345678",
+                "juan@mail.com",
+                TipoCliente.SOCIO,
+                1,
+                EstadoSocio.ACTIVO,
+                null
         );
         return new PageResponse<>(List.of(dto), 0, 10, 1, 1, true, true);
     }
@@ -717,7 +724,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 "099123456", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. Italia 1234",
                 7, TipoCliente.SOCIO, EstadoSocio.ACTIVO, "Sin observaciones",
-                null, null, null, null
+                null, null, null, null, null
         );
 
         when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
@@ -883,6 +890,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 null,
                 null,
                 TipoCliente.PARTICULAR,
+                null,
                 null,
                 null,
                 null,
