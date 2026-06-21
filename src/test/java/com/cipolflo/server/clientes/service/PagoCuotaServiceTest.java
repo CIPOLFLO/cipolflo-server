@@ -1,6 +1,5 @@
 package com.cipolflo.server.clientes.service;
 
-import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.PagoCuota;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
@@ -22,7 +21,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
-import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -109,7 +107,7 @@ class PagoCuotaServiceTest {
         socio.setFechaIngreso(LocalDate.of(2026, Month.JANUARY, 1));
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findBySocioId(1L)).thenReturn(List.of());
+        when(pagoCuotaRepository.findTopBySocioIdOrderByAnioDescMesDesc(1L)).thenReturn(Optional.empty());
 
         List<PeriodoCuotaDto> periodos =
                 pagoCuotaService.calcularPeriodosCubiertos(1L, 3);
@@ -132,7 +130,7 @@ class PagoCuotaServiceTest {
         assertEquals("Marzo 2026", periodos.get(2).descripcion());
 
         verify(clienteRepository).findById(1L);
-        verify(pagoCuotaRepository).findBySocioId(1L);
+        verify(pagoCuotaRepository).findTopBySocioIdOrderByAnioDescMesDesc(1L);
     }
 
     @Test
@@ -141,12 +139,8 @@ class PagoCuotaServiceTest {
         socio.setFechaIngreso(LocalDate.of(2026, Month.JANUARY, 1));
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findBySocioId(1L))
-                .thenReturn(List.of(
-                        pago(2026, 1),
-                        pago(2026, 2),
-                        pago(2026, 3)
-                ));
+        when(pagoCuotaRepository.findTopBySocioIdOrderByAnioDescMesDesc(1L))
+                .thenReturn(Optional.of(pago(2026, 3)));
 
         List<PeriodoCuotaDto> periodos =
                 pagoCuotaService.calcularPeriodosCubiertos(1L, 2);
@@ -164,31 +158,7 @@ class PagoCuotaServiceTest {
         assertEquals("Mayo 2026", periodos.get(1).descripcion());
 
         verify(clienteRepository).findById(1L);
-        verify(pagoCuotaRepository).findBySocioId(1L);
-    }
-    @Test
-    void deberiaCalcularMesesPendientes() {
-        Socio socio = crearSocio();
-
-        YearMonth mesActual = YearMonth.now();
-        YearMonth tresMesesAntes = mesActual.minusMonths(3);
-
-        socio.setFechaIngreso(tresMesesAntes.atDay(1));
-
-        when(clienteRepository.findById(1L))
-                .thenReturn(Optional.of(socio));
-
-        when(pagoCuotaRepository.findBySocioId(1L))
-                .thenReturn(List.of(
-                        pago(tresMesesAntes.getYear(), tresMesesAntes.getMonthValue())
-                ));
-
-        int pendientes = pagoCuotaService.calcularMesesPendientes(1L);
-
-        assertEquals(3, pendientes);
-
-        verify(clienteRepository).findById(1L);
-        verify(pagoCuotaRepository).findBySocioId(1L);
+        verify(pagoCuotaRepository).findTopBySocioIdOrderByAnioDescMesDesc(1L);
     }
     @Test
     void deberiaLanzarSocioNotFoundExceptionCuandoSocioNoExiste() {
@@ -217,8 +187,7 @@ class PagoCuotaServiceTest {
         );
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findBySocioId(1L)).thenReturn(List.of());
-
+        when(pagoCuotaRepository.findTopBySocioIdOrderByAnioDescMesDesc(1L)).thenReturn(Optional.empty());
         when(pagoCuotaRepository.saveAll(anyList()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -240,7 +209,7 @@ class PagoCuotaServiceTest {
         assertEquals("Marzo 2026", response.get(2).descripcion());
 
         verify(clienteRepository).findById(1L);
-        verify(pagoCuotaRepository).findBySocioId(1L);
+        verify(pagoCuotaRepository).findTopBySocioIdOrderByAnioDescMesDesc(1L);
         verify(pagoCuotaRepository).saveAll(anyList());
     }
 

@@ -13,7 +13,5 @@ public interface IPagoCuotaService {
 
     List<PeriodoCuotaDto> calcularPeriodosCubiertos(Long socioId, Integer cantidadCuotas);
 
-    int calcularMesesPendientes(Long socioId);
-
-   List<PagoCuotaResponseDto> registrarPago(Long socioId, RegistroPagoCuotaRequestDto request);
+    List<PagoCuotaResponseDto> registrarPago(Long socioId, RegistroPagoCuotaRequestDto request);
 }
