@@ -14,7 +14,7 @@
 4. [Servicios — DTOs](#servicios--dtos)
 5. [Clientes — Endpoints](#clientes--endpoints)
 6. [Clientes — DTOs](#clientes--dtos)
-7.  [Finanzas — Endpoints](#finanzas--endpoints)
+7. [Finanzas — Endpoints](#finanzas--endpoints)
 8. [Finanzas — DTOs](#finanzas--dtos)
 9. [Manejo de errores](#manejo-de-errores)
 
@@ -61,6 +61,11 @@ COBRADORA | DESCUENTO_SALARIAL | TRANSFERENCIA | EN_SEDE | EFECTIVO
 ### `TipoMovimiento`
 ```
 INGRESO | EGRESO
+```
+
+### `FormaPago`
+```
+EFECTIVO | TRANSFERENCIA | DEBITO | CREDITO
 ```
 
 ### `Concepto`
@@ -522,6 +527,43 @@ Retorna el detalle completo de un cliente.
 
 ---
 
+### `GET /api/v1/clientes/cedula/{cedula}`
+Busca un cliente por cédula exacta. Devuelve un subconjunto de datos del cliente (sin auditoría ni campos exclusivos de socios).
+
+**Path param:** `cedula` — string en cualquier formato de cédula uruguaya (con o sin puntos y guión)
+
+**Respuesta 200:**
+```json
+{
+  "id": 1,
+  "nombre": "Juan Pérez",
+  "cedula": "12345678",
+  "telefono": "099111111",
+  "mail": "juan@mail.com",
+  "observaciones": null,
+  "tipoCliente": "SOCIO"
+}
+```
+
+| Campo          | Tipo          | Descripción                                    |
+|----------------|---------------|------------------------------------------------|
+| `id`           | integer       | ID del cliente                                 |
+| `nombre`       | string        | Nombre completo                                |
+| `cedula`       | string        | Cédula normalizada (sin puntos ni guión)       |
+| `telefono`     | string        | Teléfono de contacto                           |
+| `mail`         | string \| null | Email, puede ser null                         |
+| `observaciones`| string \| null | Notas del cliente, puede ser null             |
+| `tipoCliente`  | `TipoCliente` | `SOCIO` o `PARTICULAR`                         |
+
+**Errores:**
+
+| HTTP Status | Código                  | Cuándo ocurre                                     |
+|-------------|-------------------------|---------------------------------------------------|
+| 400         | `CEDULA_INVALIDA`       | La cédula no cumple el formato válido             |
+| 404         | `CLIENTE_NO_ENCONTRADO` | No existe un cliente con esa cédula               |
+
+---
+
 ### `PATCH /api/v1/clientes/socios/{id}/baja`
 Da de baja a un socio y cancela automáticamente todas sus reservas futuras en estado `PENDIENTE` o `CONFIRMADA` (incluso las pagas).
 
@@ -820,6 +862,19 @@ Registra un nuevo cliente de tipo particular.
 }
 ```
 
+#### `BusquedaCedulaResponseDto` — respuesta de `GET /api/v1/clientes/cedula/{cedula}`
+```typescript
+{
+  id: number
+  nombre: string
+  cedula: string
+  telefono: string
+  mail: string | null
+  observaciones: string | null
+  tipoCliente: TipoCliente
+}
+```
+
 ---
 ## Finanzas — Endpoints
 
@@ -859,10 +914,10 @@ Registra manualmente un ingreso o egreso.
 {
   "id": 1,
   "tipoMovimiento": "INGRESO",
+  "procedencia": "SEDE",
+  "concepto": "PAGO_RESERVA",
   "fecha": "2026-06-20",
   "importe": 1500.00,
-  "concepto": "PAGO_RESERVA",
-  "procedencia": "SEDE",
   "formaPago": "EFECTIVO",
   "notas": "Pago realizado en administración",
   "reservaId": null,
