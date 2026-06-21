@@ -3,19 +3,24 @@ package com.cipolflo.server.finanzas.controller;
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
+import com.cipolflo.server.finanzas.dto.FinanzaExportRequestDto;
 import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.service.IFinanzaService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
+import com.cipolflo.server.shared.export.ArchivoExportado;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -432,4 +437,55 @@ class FinanzaControllerTest {
                 "admin"
         );
     }
+    @Test
+    void deberiaExportarFinanzas() throws Exception {
+        when(finanzaService.exportarFinanzas(any(FinanzaExportRequestDto.class)))
+                .thenReturn(new ArchivoExportado(
+                        "finanzas_2026-06-20_1200.xlsx",
+                        new byte[]{1, 2, 3}
+                ));
+
+        mockMvc.perform(get("/api/v1/finanzas/exportar")
+                        .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        containsString("finanzas_2026-06-20_1200.xlsx")
+                ))
+                .andExpect(content().contentType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ))
+                .andExpect(content().bytes(new byte[]{1, 2, 3}));
+
+        verify(finanzaService).exportarFinanzas(any(FinanzaExportRequestDto.class));
+    }
+
+    @Test
+    void deberiaExportarFinanzasConFiltros() throws Exception {
+        when(finanzaService.exportarFinanzas(any(FinanzaExportRequestDto.class)))
+                .thenReturn(new ArchivoExportado(
+                        "finanzas_2026-06-20_1200.xlsx",
+                        new byte[]{1, 2, 3}
+                ));
+
+        mockMvc.perform(get("/api/v1/finanzas/exportar")
+                        .param("tipoMovimiento", "INGRESO")
+                        .param("concepto", "PAGO_RESERVA")
+                        .param("fechaDesde", "2026-06-01")
+                        .param("fechaHasta", "2026-06-30")
+                        .with(jwt()))
+                .andExpect(status().isOk());
+
+        verify(finanzaService).exportarFinanzas(any(FinanzaExportRequestDto.class));
+    }
+
+    @Test
+    void deberiaRetornar401AlExportarSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/finanzas/exportar"))
+                .andExpect(status().isUnauthorized());
+
+        verify(finanzaService, never()).exportarFinanzas(any());
+    }
+
+
 }

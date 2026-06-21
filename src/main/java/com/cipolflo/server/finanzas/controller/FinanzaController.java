@@ -11,6 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.cipolflo.server.finanzas.dto.FinanzaExportRequestDto;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 @RestController
 @Validated
@@ -41,5 +45,23 @@ public class FinanzaController {
             @PathVariable @Positive(message = "El id de la finanza debe ser un número positivo") Long id
     ) {
         return ResponseEntity.ok(finanzaService.getDetalleFinanza(id));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/exportar")
+    public ResponseEntity<byte[]> exportarFinanzas(
+            @Valid @ModelAttribute FinanzaExportRequestDto filtros
+    ) {
+        ArchivoExportado archivo = finanzaService.exportarFinanzas(filtros);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + archivo.nombre() + "\""
+                )
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ))
+                .body(archivo.contenido());
     }
 }

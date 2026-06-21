@@ -7,20 +7,25 @@ import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
 import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
+import com.cipolflo.server.finanzas.dto.FinanzaExportRequestDto;
 import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.IExportService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +36,8 @@ class FinanzaServiceTest {
 
     @Mock
     private FinanzaRepository finanzaRepository;
+    @Mock
+    private IExportService exportService;
 
     @InjectMocks
     private FinanzaService finanzaService;
@@ -223,6 +230,105 @@ class FinanzaServiceTest {
                 () -> finanzaService.getDetalleFinanza(99L)
         );
     }
+    @Test
+    void deberiaExportarFinanzasSinFiltros() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+        ingreso.setId(1L);
 
+        when(finanzaRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(ingreso));
+        when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+                .thenReturn(new byte[]{1, 2, 3});
 
+        ArchivoExportado archivo = finanzaService.exportarFinanzas(new FinanzaExportRequestDto());
+
+        assertNotNull(archivo);
+        assertTrue(archivo.nombre().startsWith("finanzas_"));
+        assertTrue(archivo.nombre().endsWith(".xlsx"));
+        assertArrayEquals(new byte[]{1, 2, 3}, archivo.contenido());
+
+        verify(finanzaRepository).findAll(any(Specification.class));
+        verify(exportService).generarExcel(eq("Finanzas"), anyList(), anyList(), any(int[].class));
+    }
+    @Test
+    void deberiaExportarFilaDeIngresoConDatosCorrectos() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+
+        when(finanzaRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(ingreso));
+        when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+                .thenReturn(new byte[]{1});
+
+        finanzaService.exportarFinanzas(new FinanzaExportRequestDto());
+
+        ArgumentCaptor<List<List<String>>> filasCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(exportService).generarExcel(
+                eq("Finanzas"),
+                anyList(),
+                filasCaptor.capture(),
+                any(int[].class)
+        );
+
+        List<String> fila = filasCaptor.getValue().get(0);
+
+        assertEquals("INGRESO", fila.get(0));
+        assertEquals("SEDE", fila.get(1));
+        assertEquals("PAGO_RESERVA", fila.get(2));
+        assertEquals("2026-06-15", fila.get(3));
+        assertEquals("1500", fila.get(4));
+        assertEquals("EFECTIVO", fila.get(5));
+        assertEquals("Alta manual", fila.get(6));
+    }
+    @Test
+    void deberiaExportarFilaDeEgresoConDatosCorrectos() {
+        Egreso egreso = Egreso.crearManual(
+                LocalDate.of(2026, 6, 20),
+                BigDecimal.valueOf(2000),
+                Concepto.UTE,
+                FormaPago.TRANSFERENCIA,
+                Procedencia.CAMPING,
+                null
+        );
+
+        when(finanzaRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(egreso));
+        when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+                .thenReturn(new byte[]{1});
+
+        finanzaService.exportarFinanzas(new FinanzaExportRequestDto());
+
+        ArgumentCaptor<List<List<String>>> filasCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(exportService).generarExcel(
+                eq("Finanzas"),
+                anyList(),
+                filasCaptor.capture(),
+                any(int[].class)
+        );
+
+        List<String> fila = filasCaptor.getValue().get(0);
+
+        assertEquals("EGRESO", fila.get(0));
+        assertEquals("CAMPING", fila.get(1));
+        assertEquals("UTE", fila.get(2));
+        assertEquals("2026-06-20", fila.get(3));
+        assertEquals("2000", fila.get(4));
+        assertEquals("TRANSFERENCIA", fila.get(5));
+        assertEquals("", fila.get(6));
+    }
 }
