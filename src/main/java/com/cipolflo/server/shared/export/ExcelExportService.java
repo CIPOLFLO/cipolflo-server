@@ -27,16 +27,16 @@ public class ExcelExportService implements IExportService {
             List<List<String>> filas,
             int[] anchosColumnas
     ) {
-        SXSSFWorkbook workbook = new SXSSFWorkbook();
-
-        try {
+        try (
+                SXSSFWorkbook workbook = new SXSSFWorkbook();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream()
+        ) {
             SXSSFSheet sheet = workbook.createSheet(nombreHoja);
 
             escribirEncabezados(sheet, encabezados);
             escribirFilas(sheet, filas);
             aplicarAnchos(sheet, anchosColumnas);
 
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             workbook.write(outputStream);
 
             byte[] archivo = outputStream.toByteArray();
@@ -47,16 +47,11 @@ public class ExcelExportService implements IExportService {
                 );
             }
 
+            workbook.dispose();
+
             return archivo;
         } catch (IOException e) {
             throw new UncheckedIOException("Error al generar archivo Excel", e);
-        } finally {
-            workbook.dispose();
-            try {
-                workbook.close();
-            } catch (IOException e) {
-                throw new UncheckedIOException("Error al cerrar archivo Excel", e);
-            }
         }
     }
 

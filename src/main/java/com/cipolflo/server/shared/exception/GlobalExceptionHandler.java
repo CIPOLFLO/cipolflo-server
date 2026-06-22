@@ -10,7 +10,6 @@ import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
-import com.cipolflo.server.shared.exception.ServicioCodigoError;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import jakarta.validation.ConstraintViolation;
@@ -36,9 +35,12 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String RECURSO_NO_ENCONTRADO =
+            "Recurso no encontrado: {}";
+
     @ExceptionHandler(ClienteNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleClienteNotFoundException(ClienteNotFoundException ex) {
-        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ClienteCodigoError.CLIENTE_NO_ENCONTRADO.name(), ex.getMessage()));
@@ -54,7 +56,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ServicioNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleServicioNotFoundException(ServicioNotFoundException ex) {
-        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ServicioCodigoError.SERVICIO_NO_ENCONTRADO.name(), ex.getMessage()));
@@ -208,7 +210,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(FinanzaNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleFinanzaNotFoundException(FinanzaNotFoundException ex) {
-        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), ex.getMessage()));
