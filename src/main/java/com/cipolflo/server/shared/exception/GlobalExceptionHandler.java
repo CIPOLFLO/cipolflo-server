@@ -8,7 +8,10 @@ import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
-import com.cipolflo.server.shared.exception.ServicioCodigoError;
+import com.cipolflo.server.shared.export.exception.ExportacionCodigoError;
+import com.cipolflo.server.shared.export.exception.ExportacionSinResultadosException;
+import com.cipolflo.server.shared.export.exception.LimiteFilasExportacionException;
+import com.cipolflo.server.shared.export.exception.LimiteTamanioExportacionException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import jakarta.validation.ConstraintViolation;
@@ -203,6 +206,28 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ClienteCodigoError.SOCIO_NO_ENCONTRADO.name(), ex.getMessage()));
     }
+@ExceptionHandler(ExportacionSinResultadosException.class)
+    public ResponseEntity<ErrorResponse> handleExportacionSinResultadosException(ExportacionSinResultadosException ex) {
+        log.warn("Exportación sin resultados: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("SIN_RESULTADOS_EXPORTACION", ex.getMessage()));
+    }
 
+    @ExceptionHandler(LimiteFilasExportacionException.class)
+    public ResponseEntity<ErrorResponse> handleLimiteFilasExportacionException(LimiteFilasExportacionException ex) {
+        log.warn("Límite de filas excedido en exportación: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("LIMITE_FILAS_EXCEDIDO", ex.getMessage()));
+    }
+
+    @ExceptionHandler(LimiteTamanioExportacionException.class)
+public ResponseEntity<ErrorResponse> handleLimiteTamanioExportacionException(LimiteTamanioExportacionException ex) {
+    log.warn("Límite de tamaño excedido en exportación: {}", ex.getMessage());
+    return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ExportacionCodigoError.LIMITE_TAMANIO_EXCEDIDO.name(), ex.getMessage()));
+}
 
 }

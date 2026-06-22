@@ -15,12 +15,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.exception.ExportacionSinResultadosException;
+import com.cipolflo.server.shared.export.exception.LimiteFilasExportacionException;
+import com.cipolflo.server.shared.export.exception.LimiteTamanioExportacionException;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
@@ -1010,4 +1016,58 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 }
                 """.formatted(mailJson);
     }
+
+    // --- exportarClientes ---
+
+@Test
+@WithMockUser
+void deberiaExportarClientesExitosamente() throws Exception {
+    byte[] contenido = "contenido-excel".getBytes();
+    ArchivoExportado archivo = new ArchivoExportado("clientes_2026-06-20_1530.xlsx", contenido);
+    when(clienteService.exportarClientes(any(ListadoClientesRequestDto.class))).thenReturn(archivo);
+
+    mockMvc.perform(get("/api/v1/clientes/exportar"))
+            .andExpect(status().isOk())
+            .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"clientes_2026-06-20_1530.xlsx\""))
+            .andExpect(content().contentType(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .andExpect(content().bytes(contenido));
+}
+
+@Test
+@WithMockUser
+void deberiaRetornarBadRequestCuandoNoHayResultadosParaExportar() throws Exception {
+    when(clienteService.exportarClientes(any(ListadoClientesRequestDto.class)))
+            .thenThrow(new ExportacionSinResultadosException());
+
+    mockMvc.perform(get("/api/v1/clientes/exportar"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.codigo").value("SIN_RESULTADOS_EXPORTACION"));
+}
+
+@Test
+@WithMockUser
+void deberiaRetornarBadRequestCuandoSeSuperaLimiteDeFilas() throws Exception {
+    when(clienteService.exportarClientes(any(ListadoClientesRequestDto.class)))
+            .thenThrow(new LimiteFilasExportacionException(50000));
+
+    mockMvc.perform(get("/api/v1/clientes/exportar"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.codigo").value("LIMITE_FILAS_EXCEDIDO"));
+}
+
+@Test
+@WithMockUser
+void deberiaRetornarBadRequestCuandoNombreSuperaLimiteEnExportar() throws Exception {
+    mockMvc.perform(get("/api/v1/clientes/exportar")
+                    .param("nombre", "a".repeat(101)))
+            .andExpect(status().isBadRequest());
+}
+
+@Test
+void deberiaRetornarUnauthorizedAlExportarSinAutenticacion() throws Exception {
+    mockMvc.perform(get("/api/v1/clientes/exportar"))
+            .andExpect(status().isUnauthorized());
+}
 }

@@ -33,6 +33,7 @@ dependencies {
 	implementation ("org.springframework.boot:spring-boot-starter-web")
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	implementation ("org.springframework.boot:spring-boot-starter-actuator")
+	implementation ("org.apache.poi:poi-ooxml:5.4.0")
 	compileOnly ("org.projectlombok:lombok")
 	runtimeOnly ("org.postgresql:postgresql")
 	implementation ("org.liquibase:liquibase-core")

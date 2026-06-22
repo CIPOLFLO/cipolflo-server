@@ -13,21 +13,29 @@ import com.cipolflo.server.clientes.repository.ClienteSpecification;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.validator.*;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportProperties;
+import com.cipolflo.server.shared.export.IExportService;
+import com.cipolflo.server.shared.export.NombreArchivoExport;
+import com.cipolflo.server.shared.export.exception.ExportacionSinResultadosException;
+import com.cipolflo.server.shared.export.exception.LimiteFilasExportacionException;
+import com.cipolflo.server.shared.export.exception.LimiteTamanioExportacionException;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
-import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -40,14 +48,17 @@ public class ClienteService implements IClienteService {
     private final RegistroSocioValidator registroSocioValidator;
     private final CedulaFormatoValidator cedulaFormatoValidator;
     private final RegistroParticularValidator registroParticularValidator;
-
+    private final ExportProperties exportProperties;
+    private final IExportService exportService;
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
                           CedulaFormatoValidator cedulaFormatoValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
                           RegistroSocioValidator registroSocioValidator,
-                          RegistroParticularValidator registroParticularValidator) {
+                          RegistroParticularValidator registroParticularValidator,
+                          ExportProperties exportProperties,
+                          IExportService exportService) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
@@ -55,6 +66,8 @@ public class ClienteService implements IClienteService {
         this.registroSocioValidator = registroSocioValidator;
         this.cedulaFormatoValidator = cedulaFormatoValidator;
         this.registroParticularValidator = registroParticularValidator;
+        this.exportProperties = exportProperties;
+        this.exportService = exportService;
     }
 
     @Override
@@ -247,4 +260,39 @@ public class ClienteService implements IClienteService {
             );
         }
     }
+
+    @Override
+    public ArchivoExportado exportarClientes(ListadoClientesRequestDto filtros){
+        Specification<Cliente> spec = ClienteSpecification
+                .conEstado(filtros.estado())
+                .and(ClienteSpecification.conNombre(filtros.nombre()))
+                .and(ClienteSpecification.conTipoCliente(filtros.tipoCliente()))
+                .and(ClienteSpecification.conIdentificador(filtros.identificador()));
+
+        List<Cliente> clientes = clienteRepository.findAll(spec,
+            Sort.by(Sort.Direction.ASC, "nombreCompleto"));
+        
+        if(clientes.isEmpty()){
+            throw new ExportacionSinResultadosException();
+        }
+
+        if(clientes.size() > exportProperties.maxFilas()){
+            throw new LimiteFilasExportacionException(exportProperties.maxFilas());
+        }
+
+List<String> encabezados = List.of("Nombre", "Número de socio", "Cédula", "Email", "Estado","Telefono");        List<List<String>> filas = clientes.stream()
+        .map(ClienteMapper::toExportFila)
+        .toList();
+
+        int[] anchos ={8000,5000,5000,10000,5000};
+        byte[] contenido = exportService.generarExcel("Clientes",encabezados, filas, anchos);
+
+        if(contenido.length > exportProperties.maxBytes()){
+            throw new LimiteTamanioExportacionException(exportProperties.maxBytes());
+        }
+        String nombre = NombreArchivoExport.generar("clientes");
+        return new ArchivoExportado(nombre,contenido);
+        
+    }
+    
 }

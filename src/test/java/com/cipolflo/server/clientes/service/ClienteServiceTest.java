@@ -14,6 +14,12 @@ import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.validator.*;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportProperties;
+import com.cipolflo.server.shared.export.IExportService;
+import com.cipolflo.server.shared.export.exception.ExportacionSinResultadosException;
+import com.cipolflo.server.shared.export.exception.LimiteFilasExportacionException;
+import com.cipolflo.server.shared.export.exception.LimiteTamanioExportacionException;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
@@ -25,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 import java.time.LocalDate;
@@ -54,6 +61,11 @@ class ClienteServiceTest {
     private CedulaFormatoValidator cedulaFormatoValidator;
     @Mock
     private RegistroParticularValidator registroParticularValidator;
+    @Mock
+private IExportService exportService;
+
+@Mock
+private ExportProperties exportProperties;
     @InjectMocks
     private ClienteService clienteService;
 
@@ -765,4 +777,110 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
         verify(registroParticularValidator).validar(dto, "12345678");
     }
+
+    // --- exportarClientes ---
+
+@Test
+void deberiaExportarClientesExitosamente() {
+    when(exportProperties.maxFilas()).thenReturn(50000);
+    when(exportProperties.maxBytes()).thenReturn(10485760L);
+    Socio socio = crearSocio(1L, "Ana García", "12345678", 1, EstadoSocio.ACTIVO);
+    when(clienteRepository.findAll(any(Specification.class), any(Sort.class)))
+            .thenReturn(List.of(socio));
+    when(exportService.generarExcel(any(), any(), any(), any()))
+            .thenReturn("contenido".getBytes());
+
+    ArchivoExportado resultado = clienteService.exportarClientes(sinFiltros());
+
+    assertNotNull(resultado);
+    assertTrue(resultado.nombre().startsWith("clientes_"));
+    assertTrue(resultado.nombre().endsWith(".xlsx"));
+    assertNotNull(resultado.contenido());
+}
+
+@Test
+void deberiaMapearSocioYParticularEnExportacion() {
+    when(exportProperties.maxFilas()).thenReturn(50000);
+    when(exportProperties.maxBytes()).thenReturn(10485760L);
+    Socio socio = crearSocio(1L, "Ana García", "12345678", 5, EstadoSocio.ACTIVO);
+    Particular particular = crearParticular(2L, "Beto Pérez", "23456789");
+    when(clienteRepository.findAll(any(Specification.class), any(Sort.class)))
+            .thenReturn(List.of(socio, particular));
+    when(exportService.generarExcel(any(), any(), any(), any()))
+            .thenReturn("contenido".getBytes());
+
+    clienteService.exportarClientes(sinFiltros());
+
+    verify(exportService).generarExcel(
+            eq("Clientes"),
+            eq(List.of("Nombre", "Número de socio", "Cédula", "Email", "Estado")),
+            argThat(filas ->
+                filas.get(0).get(1).equals("5")
+                && filas.get(0).get(4).equals("ACTIVO")
+                && filas.get(1).get(1).equals("-")
+                && filas.get(1).get(4).equals("-")
+            ),
+            any()
+    );
+}
+
+@Test
+void deberiaLanzarExportacionSinResultadosCuandoListaEstaVacia() {
+    when(clienteRepository.findAll(any(Specification.class), any(Sort.class)))
+            .thenReturn(List.of());
+
+    assertThrows(ExportacionSinResultadosException.class,
+            () -> clienteService.exportarClientes(sinFiltros()));
+
+    verify(exportService, never()).generarExcel(any(), any(), any(), any());
+}
+
+@Test
+void deberiaLanzarLimiteFilasExcedidoAntesDeGenerarExcel() {
+    when(exportProperties.maxFilas()).thenReturn(2);
+    List<Cliente> clientes = List.of(
+            crearSocio(1L, "Ana", "11111111", 1, EstadoSocio.ACTIVO),
+            crearSocio(2L, "Beto", "22222222", 2, EstadoSocio.ACTIVO),
+            crearSocio(3L, "Carlos", "33333333", 3, EstadoSocio.ACTIVO)
+    );
+    when(clienteRepository.findAll(any(Specification.class), any(Sort.class)))
+            .thenReturn(clientes);
+
+    assertThrows(LimiteFilasExportacionException.class,
+            () -> clienteService.exportarClientes(sinFiltros()));
+
+    verify(exportService, never()).generarExcel(any(), any(), any(), any());
+}
+
+@Test
+void deberiaLanzarLimiteTamanioExcedidoDespuesDeGenerarExcel() {
+    when(exportProperties.maxFilas()).thenReturn(50000);
+    when(exportProperties.maxBytes()).thenReturn(5L);
+    Socio socio = crearSocio(1L, "Ana García", "12345678", 1, EstadoSocio.ACTIVO);
+    when(clienteRepository.findAll(any(Specification.class), any(Sort.class)))
+            .thenReturn(List.of(socio));
+    when(exportService.generarExcel(any(), any(), any(), any()))
+            .thenReturn("contenido-que-supera-limite".getBytes());
+
+    assertThrows(LimiteTamanioExportacionException.class,
+            () -> clienteService.exportarClientes(sinFiltros()));
+}
+
+@Test
+void deberiaExportarSinFiltrarPorTipoCuandoTipoClienteEsNulo() {
+    when(exportProperties.maxFilas()).thenReturn(50000);
+    when(exportProperties.maxBytes()).thenReturn(10485760L);
+    Socio socio = crearSocio(1L, "Ana García", "12345678", 1, EstadoSocio.ACTIVO);
+    Particular particular = crearParticular(2L, "Beto Pérez", "23456789");
+    when(clienteRepository.findAll(any(Specification.class), any(Sort.class)))
+            .thenReturn(List.of(socio, particular));
+    when(exportService.generarExcel(any(), any(), any(), any()))
+            .thenReturn("contenido".getBytes());
+
+    ListadoClientesRequestDto filtrosSinTipo = new ListadoClientesRequestDto(null, null, null, null);
+    ArchivoExportado resultado = clienteService.exportarClientes(filtrosSinTipo);
+
+    assertNotNull(resultado);
+    verify(clienteRepository).findAll(any(Specification.class), any(Sort.class));
+}
 }

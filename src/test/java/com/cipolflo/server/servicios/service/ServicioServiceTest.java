@@ -20,7 +20,14 @@ import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
-
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportProperties;
+import com.cipolflo.server.shared.export.IExportService;
+import com.cipolflo.server.shared.export.exception.ExportacionSinResultadosException;
+import com.cipolflo.server.shared.export.exception.LimiteFilasExportacionException;
+import com.cipolflo.server.shared.export.exception.LimiteTamanioExportacionException;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.data.domain.Sort;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,7 +73,6 @@ class ServicioServiceTest {
     private ModificacionServicioValidator modificacionServicioValidator;
     @Mock
     private ServicioRegistroValidator servicioRegistroValidator;
-
     @InjectMocks
     private ServicioService servicioService;
 
@@ -107,6 +113,8 @@ class ServicioServiceTest {
         assertEquals(ModalidadPrecio.POR_DIA, resultado.getModalidadPrecio());
         verify(servicioRepository).findById(servicioId);
     }
+
+    
 
     @Test
     void deberiaLanzarErrorCuandoElServicioNoExiste() {
@@ -1042,4 +1050,6 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         verify(reservaService, never()).obtenerOcupacionPorServicioEnRango(any(), any(), any());
     }
+
+    
 }
