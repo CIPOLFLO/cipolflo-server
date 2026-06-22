@@ -1,6 +1,7 @@
 package com.cipolflo.server.finanzas.domain;
 
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
+import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import jakarta.persistence.DiscriminatorValue;
@@ -36,5 +37,9 @@ public class Ingreso extends Finanza {
         ingreso.setReservaId(null);
         ingreso.setPagoCuotaId(null);
         return ingreso;
+    }
+    @Override
+    public TipoMovimiento getTipoMovimiento() {
+        return TipoMovimiento.INGRESO;
     }
 }

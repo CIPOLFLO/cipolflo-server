@@ -3,6 +3,8 @@ package com.cipolflo.server.shared.exception;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.finanzas.exception.FinanzaCodigoError;
+import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -11,7 +13,6 @@ import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
-import com.cipolflo.server.shared.exception.ServicioCodigoError;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import jakarta.validation.ConstraintViolation;
@@ -205,6 +206,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ClienteCodigoError.SOCIO_NO_ENCONTRADO.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(FinanzaNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleFinanzaNotFoundException(FinanzaNotFoundException ex) {
+        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), ex.getMessage()));
     }
 
     @ExceptionHandler(ReservaValidacionException.class)

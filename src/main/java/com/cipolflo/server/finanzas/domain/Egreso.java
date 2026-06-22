@@ -1,6 +1,7 @@
 package com.cipolflo.server.finanzas.domain;
 
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
+import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import jakarta.persistence.DiscriminatorValue;
@@ -30,5 +31,9 @@ public class Egreso extends Finanza {
         Egreso egreso = new Egreso();
         egreso.inicializar(fecha, importe, concepto, formaPago, procedencia, notas);
         return egreso;
+    }
+    @Override
+    public TipoMovimiento getTipoMovimiento() {
+        return TipoMovimiento.EGRESO;
     }
 }
