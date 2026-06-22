@@ -5,7 +5,9 @@ import com.cipolflo.server.finanzas.domain.Finanza;
 import com.cipolflo.server.finanzas.domain.Ingreso;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
+import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
 import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
+import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.mapper.FinanzaMapper;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import org.springframework.stereotype.Service;
@@ -48,5 +50,12 @@ public class FinanzaService implements IFinanzaService {
         );
 
         return FinanzaMapper.toResponseDto(finanzaRepository.save(finanza));
+    }
+    @Override
+    public FinanzaDetalleResponseDto getDetalleFinanza(Long id) {
+        Finanza finanza = finanzaRepository.findById(id)
+                .orElseThrow(() -> new FinanzaNotFoundException(id));
+
+        return FinanzaMapper.toDetalleResponseDto(finanza);
     }
 }

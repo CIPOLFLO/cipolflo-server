@@ -1,9 +1,8 @@
 package com.cipolflo.server.finanzas.mapper;
 
-import com.cipolflo.server.finanzas.domain.Egreso;
 import com.cipolflo.server.finanzas.domain.Finanza;
 import com.cipolflo.server.finanzas.domain.Ingreso;
-import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
+import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
 import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
 
 public class FinanzaMapper {
@@ -15,7 +14,7 @@ public class FinanzaMapper {
 
         return new FinanzaResponseDto(
                 finanza.getId(),
-                finanza instanceof Egreso ? TipoMovimiento.EGRESO : TipoMovimiento.INGRESO,
+                finanza.getTipoMovimiento(),
                 finanza.getProcedencia(),
                 finanza.getConcepto(),
                 finanza.getFecha(),
@@ -24,6 +23,22 @@ public class FinanzaMapper {
                 finanza.getNotas(),
                 ingreso != null ? ingreso.getReservaId() : null,
                 ingreso != null ? ingreso.getPagoCuotaId() : null
+        );
+    }
+    public static FinanzaDetalleResponseDto toDetalleResponseDto(Finanza finanza) {
+        return new FinanzaDetalleResponseDto(
+                finanza.getId(),
+                finanza.getTipoMovimiento(),
+                finanza.getProcedencia(),
+                finanza.getConcepto(),
+                finanza.getFecha(),
+                finanza.getImporte(),
+                finanza.getFormaPago(),
+                finanza.getNotas(),
+                finanza.getCreatedAt(),
+                finanza.getUpdatedAt(),
+                finanza.getCreatedBy(),
+                finanza.getUpdatedBy()
         );
     }
 }

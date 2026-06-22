@@ -4,6 +4,7 @@ import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
 import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
+import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.service.IFinanzaService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -15,10 +16,12 @@ import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
+import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
+import java.time.Instant;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -375,6 +378,71 @@ class FinanzaControllerTest {
                 "Alta manual",
                 null,
                 null
+        );    }
+    @Test
+    void deberiaRetornarDetalleFinanza() throws Exception {
+        when(finanzaService.getDetalleFinanza(1L))
+                .thenReturn(detalleResponse());
+
+        mockMvc.perform(get("/api/v1/finanzas/1")
+                        .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.tipoMovimiento").value("INGRESO"))
+                .andExpect(jsonPath("$.procedencia").value("SEDE"))
+                .andExpect(jsonPath("$.concepto").value("PAGO_RESERVA"))
+                .andExpect(jsonPath("$.fecha").value("2026-06-15"))
+                .andExpect(jsonPath("$.importe").value(1500))
+                .andExpect(jsonPath("$.formaPago").value("EFECTIVO"))
+                .andExpect(jsonPath("$.notas").value("Alta manual"))
+                .andExpect(jsonPath("$.createdBy").value("admin"))
+                .andExpect(jsonPath("$.updatedBy").value("admin"))
+                .andExpect(jsonPath("$.createdAt").value(notNullValue()))
+                .andExpect(jsonPath("$.updatedAt").value(notNullValue()));
+    }
+    @Test
+    void deberiaRetornar404CuandoNoExisteFinanza() throws Exception {
+
+        when(finanzaService.getDetalleFinanza(99L))
+                .thenThrow(new FinanzaNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/finanzas/99")
+                        .with(jwt()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.codigo")
+                        .value("FINANZA_NO_ENCONTRADA"));
+    }
+    @Test
+    void deberiaRetornar400CuandoIdEsNegativo() throws Exception {
+
+        mockMvc.perform(get("/api/v1/finanzas/-1")
+                        .with(jwt()))
+                .andExpect(status().isBadRequest());
+    }
+    @Test
+    void deberiaRetornar401SinAutenticacion() throws Exception {
+
+        mockMvc.perform(get("/api/v1/finanzas/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private static final Instant CREATED_AT = Instant.parse("2026-01-01T10:00:00Z");
+    private static final Instant UPDATED_AT = Instant.parse("2026-06-15T10:00:00Z");
+
+    private FinanzaDetalleResponseDto detalleResponse() {
+        return new FinanzaDetalleResponseDto(
+                1L,
+                TipoMovimiento.INGRESO,
+                Procedencia.SEDE,
+                Concepto.PAGO_RESERVA,
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                FormaPago.EFECTIVO,
+                "Alta manual",
+                CREATED_AT,
+                UPDATED_AT,
+                "admin",
+                "admin"
         );
     }
 }
