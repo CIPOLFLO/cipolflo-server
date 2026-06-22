@@ -5,22 +5,23 @@ import com.cipolflo.server.finanzas.domain.Finanza;
 import com.cipolflo.server.finanzas.domain.Ingreso;
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
-import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
-import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
-import com.cipolflo.server.finanzas.dto.FinanzaExportRequestDto;
-import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
+import com.cipolflo.server.finanzas.dto.*;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.export.IExportService;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -331,4 +332,80 @@ class FinanzaServiceTest {
         assertEquals("TRANSFERENCIA", fila.get(5));
         assertEquals("", fila.get(6));
     }
+
+    @Test
+    void deberiaRetornarListadoFinanzas() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+        ingreso.setId(1L);
+
+        when(finanzaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(ingreso)));
+
+        PageRequestDto pageRequest = new PageRequestDto(0, 10, null, null);
+        ListadoFinanzasRequestDto filtros = new ListadoFinanzasRequestDto(
+                null,
+                null,
+                null,
+                null
+        );
+
+        PageResponse<ListadoFinanzasResponseDto> response =
+                finanzaService.getListadoFinanzas(filtros, pageRequest);
+
+        assertEquals(1, response.totalElements());
+        assertEquals(1, response.content().size());
+        assertEquals(1L, response.content().get(0).getId());
+        assertEquals(Concepto.PAGO_RESERVA, response.content().get(0).getConcepto());
+        assertEquals(TipoMovimiento.INGRESO, response.content().get(0).getTipoMovimiento());
+
+        verify(finanzaRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaMapearTipoMovimientoIngresoYEgresoEnListado() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Ingreso"
+        );
+        ingreso.setId(1L);
+
+        Egreso egreso = Egreso.crearManual(
+                LocalDate.of(2026, 6, 16),
+                BigDecimal.valueOf(2000),
+                Concepto.UTE,
+                FormaPago.TRANSFERENCIA,
+                Procedencia.CAMPING,
+                "Egreso"
+        );
+        egreso.setId(2L);
+
+        when(finanzaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(ingreso, egreso)));
+
+        PageRequestDto pageRequest = new PageRequestDto(0, 10, null, null);
+        ListadoFinanzasRequestDto filtros = new ListadoFinanzasRequestDto(
+                null,
+                null,
+                null,
+                null
+        );
+
+        PageResponse<ListadoFinanzasResponseDto> response =
+                finanzaService.getListadoFinanzas(filtros, pageRequest);
+
+        assertEquals(TipoMovimiento.INGRESO, response.content().get(0).getTipoMovimiento());
+        assertEquals(TipoMovimiento.EGRESO, response.content().get(1).getTipoMovimiento());
+    }
+
 }

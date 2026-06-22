@@ -4,10 +4,7 @@ import com.cipolflo.server.finanzas.domain.Egreso;
 import com.cipolflo.server.finanzas.domain.Finanza;
 import com.cipolflo.server.finanzas.domain.Ingreso;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
-import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
-import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
-import com.cipolflo.server.finanzas.dto.FinanzaExportRequestDto;
-import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
+import com.cipolflo.server.finanzas.dto.*;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.mapper.FinanzaMapper;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
@@ -15,6 +12,11 @@ import com.cipolflo.server.finanzas.repository.FinanzaSpecification;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.export.IExportService;
 import com.cipolflo.server.shared.export.NombreArchivoExport;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
+import com.cipolflo.server.shared.pagination.PaginationMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,5 +123,24 @@ public class FinanzaService implements IFinanzaService {
                 NombreArchivoExport.generar("finanzas"),
                 contenido
         );
+    }
+
+    @Override
+    public PageResponse<ListadoFinanzasResponseDto> getListadoFinanzas(
+            ListadoFinanzasRequestDto filtros,
+            PageRequestDto pageRequest
+    ) {
+        Specification<Finanza> spec = FinanzaSpecification.desdeFiltros(
+                filtros.fechaDesde(),
+                filtros.fechaHasta(),
+                filtros.concepto(),
+                filtros.tipoMovimiento()
+        );
+
+        Page<ListadoFinanzasResponseDto> page = finanzaRepository
+                .findAll(spec, pageRequest.toPageable())
+                .map(FinanzaMapper::toListadoResponseDto);
+
+        return PaginationMapper.toPageResponse(page);
     }
 }

@@ -6,6 +6,7 @@ import com.cipolflo.server.finanzas.domain.Ingreso;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
 import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
+import com.cipolflo.server.finanzas.dto.ListadoFinanzasResponseDto;
 
 public class FinanzaMapper {
 
@@ -41,6 +42,16 @@ public class FinanzaMapper {
                 finanza.getUpdatedAt(),
                 finanza.getCreatedBy(),
                 finanza.getUpdatedBy()
+        );
+    }
+    public static ListadoFinanzasResponseDto toListadoResponseDto(Finanza finanza) {
+        return new ListadoFinanzasResponseDto(
+                finanza.getId(),
+                finanza.getConcepto(),
+                finanza.getFecha(),
+                finanza.getImporte(),
+                finanza.getNotas(),
+                finanza.getTipoMovimiento()
         );
     }
 }
