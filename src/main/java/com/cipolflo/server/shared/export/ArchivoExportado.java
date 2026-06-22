@@ -1,4 +1,12 @@
 package com.cipolflo.server.shared.export;
 
-public record ArchivoExportado(String nombre, byte[] contenido) {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public class ArchivoExportado {
+
+    private final String nombre;
+    private final byte[] contenido;
 }

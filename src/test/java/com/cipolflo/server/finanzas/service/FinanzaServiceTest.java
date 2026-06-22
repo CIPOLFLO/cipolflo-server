@@ -250,9 +250,9 @@ class FinanzaServiceTest {
         ArchivoExportado archivo = finanzaService.exportarFinanzas(new FinanzaExportRequestDto());
 
         assertNotNull(archivo);
-        assertTrue(archivo.nombre().startsWith("finanzas_"));
-        assertTrue(archivo.nombre().endsWith(".xlsx"));
-        assertArrayEquals(new byte[]{1, 2, 3}, archivo.contenido());
+        assertTrue(archivo.getNombre().startsWith("finanzas_"));
+        assertTrue(archivo.getNombre().endsWith(".xlsx"));
+        assertArrayEquals(new byte[]{1, 2, 3}, archivo.getContenido());
 
         verify(finanzaRepository).findAll(any(Specification.class));
         verify(exportService).generarExcel(eq("Finanzas"), anyList(), anyList(), any(int[].class));

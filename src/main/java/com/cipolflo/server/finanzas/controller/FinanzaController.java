@@ -57,11 +57,11 @@ public class FinanzaController {
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + archivo.nombre() + "\""
+                        "attachment; filename=\"" + archivo.getNombre() + "\""
                 )
                 .contentType(MediaType.parseMediaType(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 ))
-                .body(archivo.contenido());
+                .body(archivo.getContenido());
     }
 }
