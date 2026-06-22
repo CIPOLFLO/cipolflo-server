@@ -125,6 +125,7 @@ public class ReservaService implements IReservaService {
                 requiereDocumentacion
         );
 
+        // TODO: calcular y asignar importe llamando a ServicioCalculoImporte antes de guardar (ticket pendiente)
         Reserva guardada = reservaRepository.save(reserva);
 
         return new ReservaCreacionResponseDto(guardada.getId());
