@@ -22,7 +22,9 @@ public class ServicioMapper {
                 servicio.getPrecioParticular(),
                 servicio.getPrecioSocio(),
                 servicio.getModalidadPrecio(),
-                estado
+                estado,
+                servicio.getCapacidad(),
+                servicio.getCantidad()
         );
     }
 }

@@ -18,6 +18,8 @@ public class ListadoServiciosResponseDto implements ResponseDto {
     private final BigDecimal precioSocio;
     private final ModalidadPrecio modalidadPrecio;
     private final EstadoServicio estado;
+    private final Integer capacidad;
+    private final Integer cantidad;
 
     public ListadoServiciosResponseDto(
             Long id,
@@ -26,7 +28,9 @@ public class ListadoServiciosResponseDto implements ResponseDto {
             BigDecimal precioParticular,
             BigDecimal precioSocio,
             ModalidadPrecio modalidadPrecio,
-            EstadoServicio estado) {
+            EstadoServicio estado,
+            Integer capacidad,
+            Integer cantidad) {
         this.id = id;
         this.nombre = nombre;
         this.procedencia = procedencia;
@@ -34,5 +38,7 @@ public class ListadoServiciosResponseDto implements ResponseDto {
         this.precioSocio = precioSocio;
         this.modalidadPrecio = modalidadPrecio;
         this.estado = estado;
+        this.capacidad = capacidad;
+        this.cantidad = cantidad;
     }
 }
