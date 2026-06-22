@@ -51,11 +51,11 @@ public class FinanzaController {
     }
 
     @PreAuthorize("isAuthenticated()")
-    @PostMapping("/exportar")
+    @PostMapping("/export")
     public ResponseEntity<byte[]> exportarFinanzas(
-            @Valid @ModelAttribute FinanzaExportRequestDto filtros
+            @RequestBody FinanzaExportRequestDto filters
     ) {
-        ArchivoExportado archivo = finanzaService.exportarFinanzas(filtros);
+        ArchivoExportado archivo = finanzaService.exportarFinanzas(filters);
 
         return ResponseEntity.ok()
                 .header(
@@ -71,7 +71,7 @@ public class FinanzaController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping
     public ResponseEntity<PageResponse<ListadoFinanzasResponseDto>> getListadoFinanzas(
-            @Valid @ModelAttribute ListadoFinanzasRequestDto filtros,
+            @Valid @ModelAttribute ListadoFinanzasRequestDto filters,
             @Valid @ModelAttribute PageRequestDto pageRequest
     ) {
         if (pageRequest.sortField() != null
@@ -81,6 +81,6 @@ public class FinanzaController {
             );
         }
 
-        return ResponseEntity.ok(finanzaService.getListadoFinanzas(filtros, pageRequest));
+        return ResponseEntity.ok(finanzaService.getListadoFinanzas(filters, pageRequest));
     }
 }
