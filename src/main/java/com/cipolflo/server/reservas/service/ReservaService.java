@@ -12,7 +12,7 @@ import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.shared.ZonaHoraria;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -93,6 +93,7 @@ public class ReservaService implements IReservaService {
     public ReservaCreacionResponseDto registrar(ReservaCreacionRequestDto dto) {
         reservaCreacionValidator.validar(dto);
 
+        // TODO: usar dto.getTipoCliente() para diferenciar el cálculo de costo según tipo de cliente (ticket pendiente)
         Long clienteId;
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
             RegistroParticularRequestDto nuevoCliente = new RegistroParticularRequestDto();

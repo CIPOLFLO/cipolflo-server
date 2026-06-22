@@ -355,7 +355,7 @@ Catálogo de servicios que el club ofrece (actividades, instalaciones, etc.).
 
 | Clase | Rol |
 |---|---|
-| `Servicio` | Entidad: nombre, procedencia, precio por tipo de cliente, modalidad, capacidad, habilitado |
+| `Servicio` | Entidad: nombre, procedencia, precio por tipo de cliente, modalidad, capacidad, habilitado, requiereDocumentacion |
 | `ModalidadPrecio` | Enum: `POR_DIA`, `POR_PERSONA`, `POR_DIA_POR_PERSONA`, `POR_UNIDAD`, `POR_HORA` |
 | `ServicioRepository` | `JpaRepository<Servicio, Long>` |
 | `IServicioService` / `ServicioService` | Interfaz + implementación del servicio |
@@ -368,21 +368,35 @@ Catálogo de servicios que el club ofrece (actividades, instalaciones, etc.).
 
 Gestión del ciclo de vida de las reservas con máquina de estados.
 
+**Tipos de reserva (`TipoReserva`):**
+
+- `COMUN` — reserva estándar. Inicia en `PENDIENTE`.
+- `COLABORACION_SIN_FINES_DE_LUCRO` — no requiere pago (importe = 0) y se identifica por RUT de organización en lugar de cliente del sistema. Inicia directamente en `CONFIRMADA`.
+
 **Flujo de estados:**
 
 ```
 PENDIENTE → CONFIRMADA → EN_CURSO → FINALIZADA
+     └──────────────────────────────→ CANCELADA
 ```
 
-La reserva pasa a `CONFIRMADA` automáticamente cuando se registran tanto el pago como la documentación. La entidad usa un **factory method estático** `Reserva.crear(...)` en lugar de constructor público.
+La transición `PENDIENTE → CONFIRMADA` se dispara automáticamente cuando se cumplen **ambas** condiciones: pago registrado (`pago = true`) y documentación recibida (`tieneDocumentacion = true`). Para reservas que no requieren documentación, este flujo se resolverá cuando se implemente el método de confirmación manual (ver TODO en `Reserva.java`).
+
+Las reservas de tipo `COLABORACION_SIN_FINES_DE_LUCRO` no tienen `clienteId`; en su lugar llevan un campo `rut` con el identificador de la organización.
+
+La entidad usa un **factory method estático** `Reserva.crear(...)` en lugar de constructor público.
 
 | Clase | Rol |
 |---|---|
-| `Reserva` | Entidad central: cliente, servicio, fechas, importe, estado, pago, documentación |
+| `Reserva` | Entidad central: tipoReserva, clienteId (nullable), servicio, fechas, cantidades, rut, importe, estado, pago, documentación |
 | `EstadoReserva` | Enum: `PENDIENTE`, `CONFIRMADA`, `EN_CURSO`, `FINALIZADA`, `CANCELADA` |
+| `TipoReserva` | Enum: `COMUN`, `COLABORACION_SIN_FINES_DE_LUCRO` |
 | `ReservaRepository` | `JpaRepository<Reserva, Long>` |
 | `IReservaService` / `ReservaService` | Interfaz + implementación del servicio |
-| `ReservaRequestDto` / `ReservaResponseDto` | DTOs de entrada y salida |
+| `IRegistroParticularService` / `RegistroParticularService` | Servicio dedicado para registrar clientes particulares (usado durante la creación de reserva) |
+| `ReservaCreacionValidator` | Valida fechas, disponibilidad del servicio, solapamiento y datos de cliente antes de crear la reserva |
+| `IServicioRequiereDocumentacion` / `ServicioRequiereDocumentacion` | Consulta si un servicio requiere documentación previa |
+| `ReservaCreacionRequestDto` / `ReservaCreacionResponseDto` | DTOs de entrada y salida para creación |
 | `ReservaController` | `@RestController` — base: `/api/v1/reservas` |
 
 ---
@@ -495,7 +509,7 @@ Los archivos `code_review_*.md` son locales y no deben pushearse. Agregar al `.g
 | Método | Ruta | Módulo | Estado |
 |---|---|---|---|
 | GET | `/api/health` | shared | Activo |
-| * | `/api/v1/clientes/**` | clientes | Por implementar |
-| * | `/api/v1/servicios/**` | servicios | Por implementar |
-| * | `/api/v1/reservas/**` | reservas | Por implementar |
-| * | `/api/v1/finanzas/**` | finanzas | Por implementar |
+| GET, POST, PUT, PATCH | `/api/v1/clientes/**` | clientes | Activo |
+| GET, POST, PUT, PATCH | `/api/v1/servicios/**` | servicios | Activo |
+| POST | `POST /api/v1/reservas` | reservas | Activo — crear reserva |
+| POST | `/api/v1/finanzas` | finanzas | Activo |

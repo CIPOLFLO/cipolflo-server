@@ -47,7 +47,6 @@ public class Servicio extends AuditableEntity {
     @Column(nullable = false)
     private Boolean habilitado = true;
 
-    @Column(nullable = true)
     private Boolean requiereDocumentacion;
 
     public void cambiarHabilitacion() {

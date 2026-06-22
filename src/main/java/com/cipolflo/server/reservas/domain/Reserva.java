@@ -61,6 +61,7 @@ public class Reserva extends AuditableEntity {
 
     private Integer cantidad;
 
+    // TODO: definir manejo del RUT (validación de formato, tabla de organizaciones, etc.)
     private String rut;
 
     @Column(nullable = false)
@@ -154,6 +155,8 @@ public class Reserva extends AuditableEntity {
     public void cancelar() {
         cambiarEstado(EstadoReserva.CANCELADA);
     }
+
+    // TODO: agregar método confirmar() cuando se implemente el ticket de confirmación manual de reserva
 
     private static EstadoReserva resolverEstado(TipoReserva tipoReserva) {
         if(tipoReserva.equals(TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO)){
