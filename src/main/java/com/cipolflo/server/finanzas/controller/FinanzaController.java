@@ -53,18 +53,12 @@ public class FinanzaController {
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/export")
     public ResponseEntity<byte[]> exportarFinanzas(
-            @RequestBody FinanzaExportRequestDto filters
-    ) {
-        ArchivoExportado archivo = finanzaService.exportarFinanzas(filters);
-
-        return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + archivo.getNombre() + "\""
-                )
-                .contentType(MediaType.parseMediaType(
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                ))
+            @RequestBody FinanzaExportRequestDto filters )
+    { ArchivoExportado archivo = finanzaService.exportarFinanzas(filters);
+        return ResponseEntity.ok() .
+                header( HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + archivo.getNombre() + "\"" )
+                .contentType(MediaType.parseMediaType( "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ))
                 .body(archivo.getContenido());
     }
 
@@ -84,3 +78,4 @@ public class FinanzaController {
         return ResponseEntity.ok(finanzaService.getListadoFinanzas(filters, pageRequest));
     }
 }
+

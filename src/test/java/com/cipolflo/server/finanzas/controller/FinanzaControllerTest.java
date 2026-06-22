@@ -442,16 +442,19 @@ class FinanzaControllerTest {
     void deberiaExportarFinanzas() throws Exception {
         when(finanzaService.exportarFinanzas(any(FinanzaExportRequestDto.class)))
                 .thenReturn(new ArchivoExportado(
-                        "finanzas_2026-06-20_1200.xlsx",
+                        "finanzas_2026-06-22_1427.xlsx",
                         new byte[]{1, 2, 3}
                 ));
 
-        mockMvc.perform(post("/api/v1/finanzas/exportar")
-                        .with(jwt()))
+        mockMvc.perform(post("/api/v1/finanzas/export")
+                        .with(jwt())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        containsString("finanzas_2026-06-20_1200.xlsx")
+                        containsString("finanzas_2026-06-22_1427.xlsx")
                 ))
                 .andExpect(content().contentType(
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -465,16 +468,22 @@ class FinanzaControllerTest {
     void deberiaExportarFinanzasConFiltros() throws Exception {
         when(finanzaService.exportarFinanzas(any(FinanzaExportRequestDto.class)))
                 .thenReturn(new ArchivoExportado(
-                        "finanzas_2026-06-20_1200.xlsx",
+                        "finanzas_2026-06-22_1427.xlsx",
                         new byte[]{1, 2, 3}
                 ));
 
-        mockMvc.perform(post("/api/v1/finanzas/exportar")
-                        .param("tipoMovimiento", "INGRESO")
-                        .param("concepto", "PAGO_RESERVA")
-                        .param("fechaDesde", "2026-06-01")
-                        .param("fechaHasta", "2026-06-30")
-                        .with(jwt()))
+        mockMvc.perform(post("/api/v1/finanzas/export")
+                        .with(jwt())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "fechaDesde": "2026-06-01",
+                              "fechaHasta": "2026-06-30",
+                              "concepto": "PAGO_RESERVA",
+                              "tipoMovimiento": "INGRESO"
+                            }
+                            """))
                 .andExpect(status().isOk());
 
         verify(finanzaService).exportarFinanzas(any(FinanzaExportRequestDto.class));

@@ -5,6 +5,7 @@ import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 
+
 public interface IFinanzaService {
 
     FinanzaResponseDto registrarFinanza(FinanzaCrearRequestDto dto);
@@ -17,5 +18,4 @@ public interface IFinanzaService {
             ListadoFinanzasRequestDto filtros,
             PageRequestDto pageRequest
     );
-
 }
