@@ -51,7 +51,7 @@ public class FinanzaController {
     }
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/exportar")
+    @PostMapping("/exportar")
     public ResponseEntity<byte[]> exportarFinanzas(
             @Valid @ModelAttribute FinanzaExportRequestDto filtros
     ) {
