@@ -2,14 +2,16 @@ package com.cipolflo.server.reservas.service;
 
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.RegistroParticularRequestDto;
+import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
+import com.cipolflo.server.reservas.ReservaMapper;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
-import com.cipolflo.server.reservas.domain.enums.TipoReserva;
-import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
-import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
+import com.cipolflo.server.reservas.dto.*;
+import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
+import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.shared.ZonaHoraria;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,17 +34,23 @@ public class ReservaService implements IReservaService {
     private final IRegistroParticularService registroParticularService;
     private final ReservaCreacionValidator reservaCreacionValidator;
     private final IServicioRequiereDocumentacion servicioRequiereDocumentacion;
+    private final IConsultaClienteDetalle consultaClienteDetalle;
+    private final IConsultaServicioSimple consultaServicioSimple;
 
     public ReservaService(
             ReservaRepository reservaRepository,
             IRegistroParticularService registroParticularService,
             ReservaCreacionValidator reservaCreacionValidator,
-            IServicioRequiereDocumentacion servicioRequiereDocumentacion
+            IServicioRequiereDocumentacion servicioRequiereDocumentacion,
+            IConsultaServicioSimple consultaServicioSimple,
+            IConsultaClienteDetalle consultaClienteDetalle
     ) {
         this.reservaRepository = reservaRepository;
         this.registroParticularService = registroParticularService;
         this.reservaCreacionValidator = reservaCreacionValidator;
         this.servicioRequiereDocumentacion = servicioRequiereDocumentacion;
+        this.consultaClienteDetalle = consultaClienteDetalle;
+        this.consultaServicioSimple = consultaServicioSimple;
     }
 
     @Override
@@ -129,5 +137,17 @@ public class ReservaService implements IReservaService {
         Reserva guardada = reservaRepository.save(reserva);
 
         return new ReservaCreacionResponseDto(guardada.getId());
+    }
+
+    @Override
+    public ReservaDetalleResponseDto getDetalle(Long id) {
+        Reserva reserva = reservaRepository.findById(id)
+                .orElseThrow(() -> new ReservaNotFoundException(id));
+        ClienteDetalleReservaDto cliente = reserva.getClienteId() != null
+                ? consultaClienteDetalle.getDetallClienteSimple(reserva.getClienteId())
+                : null;
+        ServicioDetalleReservaDto servicio =
+                consultaServicioSimple.getDetalleServicioSimple(reserva.getServicioId());
+        return ReservaMapper.toDetalleResponseDto(reserva, cliente, servicio);
     }
 }
