@@ -7,81 +7,135 @@ import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
+
 import org.junit.jupiter.api.Test;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@DataJpaTest
 class FinanzaSpecificationTest {
 
-    @Test
-    void deberiaCrearSpecificationConFechaDesde() {
-        Specification<Finanza> spec = FinanzaSpecification.conFechaDesde(
-                LocalDate.of(2026, 6, 1)
-        );
+    @Autowired
+    private FinanzaRepository finanzaRepository;
 
-        assertNotNull(spec);
-    }
+    private Ingreso ingresoReserva;
+    private Egreso egresoUte;
 
-    @Test
-    void deberiaCrearSpecificationConFechaHasta() {
-        Specification<Finanza> spec = FinanzaSpecification.conFechaHasta(
-                LocalDate.of(2026, 6, 30)
-        );
+    @BeforeEach
+    void setUp() {
+        finanzaRepository.deleteAll();
 
-        assertNotNull(spec);
-    }
-
-    @Test
-    void deberiaCrearSpecificationConConcepto() {
-        Specification<Finanza> spec = FinanzaSpecification.conConcepto(
-                Concepto.PAGO_RESERVA
-        );
-
-        assertNotNull(spec);
-    }
-
-    @Test
-    void deberiaCrearSpecificationConTipoMovimientoIngreso() {
-        Specification<Finanza> spec = FinanzaSpecification.conTipoMovimiento(
-                TipoMovimiento.INGRESO
-        );
-
-        assertNotNull(spec);
-    }
-
-    @Test
-    void deberiaCrearSpecificationConTipoMovimientoEgreso() {
-        Specification<Finanza> spec = FinanzaSpecification.conTipoMovimiento(
-                TipoMovimiento.EGRESO
-        );
-
-        assertNotNull(spec);
-    }
-
-    @Test
-    void deberiaCrearSpecificationCombinadaDesdeFiltros() {
-        Specification<Finanza> spec = FinanzaSpecification.desdeFiltros(
-                LocalDate.of(2026, 6, 1),
-                LocalDate.of(2026, 6, 30),
+        ingresoReserva = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
                 Concepto.PAGO_RESERVA,
-                TipoMovimiento.INGRESO
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Ingreso reserva"
         );
 
-        assertNotNull(spec);
+        egresoUte = Egreso.crearManual(
+                LocalDate.of(2026, 6, 20),
+                BigDecimal.valueOf(2000),
+                Concepto.UTE,
+                FormaPago.TRANSFERENCIA,
+                Procedencia.CAMPING,
+                "Egreso UTE"
+        );
+
+        ingresoReserva = (Ingreso) finanzaRepository.save(ingresoReserva);
+        egresoUte = (Egreso) finanzaRepository.save(egresoUte);
     }
 
     @Test
-    void deberiaCrearSpecificationConFiltrosNulos() {
-        Specification<Finanza> spec = FinanzaSpecification.desdeFiltros(
-                null,
-                null,
-                null,
-                null
+    void deberiaFiltrarPorFechaDesdeInclusive() {
+        List<Finanza> resultado = finanzaRepository.findAll(
+                FinanzaSpecification.conFechaDesde(LocalDate.of(2026, 6, 20))
         );
 
-        assertNotNull(spec);
+        assertEquals(1, resultado.size());
+        assertEquals(egresoUte.getId(), resultado.get(0).getId());
+    }
+
+    @Test
+    void deberiaFiltrarPorFechaHastaInclusive() {
+        List<Finanza> resultado = finanzaRepository.findAll(
+                FinanzaSpecification.conFechaHasta(LocalDate.of(2026, 6, 15))
+        );
+
+        assertEquals(1, resultado.size());
+        assertEquals(ingresoReserva.getId(), resultado.get(0).getId());
+    }
+
+    @Test
+    void deberiaFiltrarPorConcepto() {
+        List<Finanza> resultado = finanzaRepository.findAll(
+                FinanzaSpecification.conConcepto(Concepto.UTE)
+        );
+
+        assertEquals(1, resultado.size());
+        assertEquals(egresoUte.getId(), resultado.get(0).getId());
+    }
+
+    @Test
+    void deberiaFiltrarPorTipoMovimientoIngreso() {
+        List<Finanza> resultado = finanzaRepository.findAll(
+                FinanzaSpecification.conTipoMovimiento(TipoMovimiento.INGRESO)
+        );
+
+        assertEquals(1, resultado.size());
+        assertEquals(ingresoReserva.getId(), resultado.get(0).getId());
+    }
+
+    @Test
+    void deberiaFiltrarPorTipoMovimientoEgreso() {
+        List<Finanza> resultado = finanzaRepository.findAll(
+                FinanzaSpecification.conTipoMovimiento(TipoMovimiento.EGRESO)
+        );
+
+        assertEquals(1, resultado.size());
+        assertEquals(egresoUte.getId(), resultado.get(0).getId());
+    }
+
+    @Test
+    void deberiaFiltrarCombinandoFiltros() {
+        List<Finanza> resultado = finanzaRepository.findAll(
+                FinanzaSpecification.desdeFiltros(
+                        LocalDate.of(2026, 6, 1),
+                        LocalDate.of(2026, 6, 30),
+                        Concepto.UTE,
+                        TipoMovimiento.EGRESO
+                )
+        );
+
+        assertEquals(1, resultado.size());
+        assertEquals(egresoUte.getId(), resultado.get(0).getId());
+    }
+
+    @Test
+    void deberiaDevolverVacioCuandoFechaDesdeEsMayorQueFechaHasta() {
+        List<Finanza> resultado = finanzaRepository.findAll(
+                FinanzaSpecification.desdeFiltros(
+                        LocalDate.of(2026, 6, 30),
+                        LocalDate.of(2026, 6, 1),
+                        null,
+                        null
+                )
+        );
+
+        assertEquals(0, resultado.size());
     }
 }

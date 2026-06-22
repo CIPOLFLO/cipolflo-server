@@ -463,7 +463,6 @@ class FinanzaControllerTest {
 
         verify(finanzaService).exportarFinanzas(any(FinanzaExportRequestDto.class));
     }
-
     @Test
     void deberiaExportarFinanzasConFiltros() throws Exception {
         when(finanzaService.exportarFinanzas(any(FinanzaExportRequestDto.class)))
@@ -488,7 +487,6 @@ class FinanzaControllerTest {
 
         verify(finanzaService).exportarFinanzas(any(FinanzaExportRequestDto.class));
     }
-
     @Test
     void deberiaRetornar401AlExportarSinAutenticacion() throws Exception {
         mockMvc.perform(get("/api/v1/finanzas/exportar"))

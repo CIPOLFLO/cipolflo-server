@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ExcelExportServiceTest {
 
@@ -51,5 +50,25 @@ class ExcelExportServiceTest {
 
             assertEquals("'=SUMA(A1:A2)", sheet.getRow(1).getCell(0).getStringCellValue());
         }
+    }
+    @Test
+    void deberiaLanzarExceptionCuandoArchivoSuperaTamanioMaximo() {
+        ExcelExportService serviceConLimiteBajo =
+                new ExcelExportService(new ExportProperties(50000, 1));
+
+        ExportacionException exception = assertThrows(
+                ExportacionException.class,
+                () -> serviceConLimiteBajo.generarExcel(
+                        "Finanzas",
+                        List.of("Concepto"),
+                        List.of(List.of("PAGO_RESERVA")),
+                        new int[]{6000}
+                )
+        );
+
+        assertEquals(
+                "El archivo generado supera el tamaño máximo permitido",
+                exception.getMessage()
+        );
     }
 }
