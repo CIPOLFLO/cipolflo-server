@@ -835,6 +835,61 @@ Registra un nuevo cliente de tipo particular.
 ---
 ## Reservas — Endpoints
 
+### `GET /api/v1/reservas`
+Retorna el listado paginado de reservas con filtros opcionales.
+
+**Query params** (todos opcionales):
+
+| Param           | Tipo            | Validación                                              |
+|-----------------|-----------------|---------------------------------------------------------|
+| `procedencia`   | `Procedencia`   | —                                                       |
+| `servicioId`    | integer         | >= 0                                                    |
+| `nombreCliente` | string          | máx 100 caracteres                                      |
+| `estadoReserva` | `EstadoReserva` | —                                                       |
+| `fechaDesde`    | string (date)   | `yyyy-MM-dd`                                            |
+| `fechaHasta`    | string (date)   | `yyyy-MM-dd`                                            |
+| `page`          | integer         | >= 0, default 0                                         |
+| `size`          | integer         | 1–100, default 1                                        |
+| `sortField`     | string          | `fechaEntrada`, `fechaSalida`, `nombreCliente`          |
+| `sortOrder`     | string          | `ASC` o `DESC`, default `ASC`                           |
+
+> `fechaDesde` filtra reservas cuya `fechaEntrada` sea igual o posterior a esa fecha. `fechaHasta` filtra reservas cuya `fechaSalida` sea igual o anterior. El filtro `nombreCliente` busca por coincidencia parcial (case-insensitive) en el nombre completo del cliente; si varios clientes comparten el nombre, se incluyen las reservas de todos ellos.
+
+**Respuesta 200:**
+```json
+{
+  "content": [
+    {
+      "id": 42,
+      "clienteId": 12,
+      "nombreCliente": "Juan Pérez",
+      "servicioId": 3,
+      "servicioNombre": "Cabaña del río",
+      "fechaEntrada": "2026-08-10",
+      "fechaSalida": "2026-08-15",
+      "estadoReserva": "CONFIRMADA"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+> `clienteId` y `nombreCliente` son `null` cuando la reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO` sin cliente asociado.
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                                      |
+|-------------|----------------------|----------------------------------------------------|
+| 400         | `SOLICITUD_INVALIDA` | `sortField` inválido o parámetro con valor inválido |
+| 401         | —                    | Token ausente, inválido o expirado                 |
+
+---
+
 ### `POST /api/v1/reservas`
 Crea una nueva reserva. Soporta tres variantes de cliente:
 - **Cliente existente**: enviar `clienteId`.
@@ -980,6 +1035,18 @@ Retorna el detalle completo de una reserva.
 
 ### Request DTOs
 
+#### `ListadoReservasRequestDto` — query params en `GET /api/v1/reservas`
+```typescript
+{
+  procedencia?: Procedencia     // opcional
+  servicioId?: number           // opcional, >= 0
+  nombreCliente?: string        // opcional, máx 100 chars
+  estadoReserva?: EstadoReserva // opcional
+  fechaDesde?: string           // opcional, LocalDate yyyy-MM-dd
+  fechaHasta?: string           // opcional, LocalDate yyyy-MM-dd
+}
+```
+
 #### `ReservaCreacionRequestDto` — body en `POST /api/v1/reservas`
 ```typescript
 {
@@ -1004,6 +1071,20 @@ Retorna el detalle completo de una reserva.
 ```
 
 ### Response DTOs
+
+#### `ListadoReservasResponseDto` — ítem dentro del listado paginado
+```typescript
+{
+  id: number
+  clienteId: number | null      // null para reservas de colaboración sin cliente
+  nombreCliente: string | null  // null para reservas de colaboración sin cliente
+  servicioId: number
+  servicioNombre: string
+  fechaEntrada: string          // LocalDate yyyy-MM-dd
+  fechaSalida: string           // LocalDate yyyy-MM-dd
+  estadoReserva: EstadoReserva
+}
+```
 
 #### `ReservaCreacionResponseDto` — respuesta de `POST /api/v1/reservas`
 ```typescript

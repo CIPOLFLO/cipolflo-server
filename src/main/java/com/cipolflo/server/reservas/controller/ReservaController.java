@@ -1,9 +1,9 @@
 package com.cipolflo.server.reservas.controller;
 
-import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
-import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
-import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
+import com.cipolflo.server.reservas.dto.*;
 import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
@@ -12,10 +12,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Set;
+
 @RestController
 @Validated
 @RequestMapping("/api/v1/reservas")
 public class ReservaController {
+
+
+    private static final Set<String> CAMPOS_ORDEN_PERMITIDOS = Set.of(
+            "fechaEntrada", "fechaSalida", "nombreCliente"
+    );
 
     private final IReservaService reservaService;
 
@@ -41,5 +48,18 @@ public class ReservaController {
             @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id
     ) {
         return ResponseEntity.ok(reservaService.getDetalle(id));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping
+    public ResponseEntity<PageResponse<ListadoReservasResponseDto>> getListadoReservas(
+            @Valid @ModelAttribute ListadoReservasRequestDto filtros,
+            @Valid @ModelAttribute PageRequestDto pageRequest) {
+        if (pageRequest.sortField() != null
+                && !CAMPOS_ORDEN_PERMITIDOS.contains(pageRequest.sortField())) {
+            throw new IllegalArgumentException(
+                    "sortField inválido. Valores permitidos: " + CAMPOS_ORDEN_PERMITIDOS);
+        }
+        return ResponseEntity.ok(reservaService.getListadoReservas(filtros, pageRequest));
     }
 }

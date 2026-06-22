@@ -10,15 +10,28 @@ import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.dto.*;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
+import com.cipolflo.server.reservas.repository.ReservaSpecification;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.shared.ZonaHoraria;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
+import com.cipolflo.server.shared.pagination.PaginationMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ReservaService implements IReservaService {
@@ -149,5 +162,56 @@ public class ReservaService implements IReservaService {
         ServicioDetalleReservaDto servicio =
                 consultaServicioSimple.getDetalleServicioSimple(reserva.getServicioId());
         return ReservaMapper.toDetalleResponseDto(reserva, cliente, servicio);
+    }
+
+    @Override
+    public PageResponse<ListadoReservasResponseDto> getListadoReservas(ListadoReservasRequestDto filtros, PageRequestDto pageRequest) {
+        List<Long> clienteIds = null;
+        if (filtros.nombreCliente() != null && !filtros.nombreCliente().isBlank()) {
+            clienteIds = consultaClienteDetalle.getIdsByNombre(filtros.nombreCliente());
+            if (clienteIds.isEmpty()) {
+                return new PageResponse<>(List.of(), pageRequest.page(), pageRequest.size(), 0, 0, true, true);
+            }
+        }
+
+        Specification<Reserva> spec = ReservaSpecification.conProcedencia(filtros.procedencia())
+                .and(ReservaSpecification.conServicioId(filtros.servicioId()))
+                .and(ReservaSpecification.conEstado(filtros.estadoReserva()))
+                .and(ReservaSpecification.conFechaEntradaDesde(filtros.fechaDesde()))
+                .and(ReservaSpecification.conFechaSalidaHasta(filtros.fechaHasta()))
+                .and(ReservaSpecification.conClienteIds(clienteIds));
+
+        Pageable pageable;
+        if ("nombreCliente".equals(pageRequest.sortField())) {
+            Sort.Direction direction = "DESC".equalsIgnoreCase(pageRequest.sortOrder())
+                    ? Sort.Direction.DESC : Sort.Direction.ASC;
+            spec = spec.and(ReservaSpecification.ordenadoPorNombreCliente(direction));
+            pageable = PageRequest.of(pageRequest.page(), pageRequest.size());
+        } else {
+            pageable = pageRequest.toPageable();
+        }
+
+        Page<Reserva> page = reservaRepository.findAll(spec, pageable);
+
+        Set<Long> clienteIdsPage = page.getContent().stream()
+                .map(Reserva::getClienteId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> nombresClientes = consultaClienteDetalle.getNombresByIds(clienteIdsPage);
+
+        Set<Long> servicioIdsPage = page.getContent().stream()
+                .map(Reserva::getServicioId).collect(Collectors.toSet());
+        Map<Long, String> nombresServicios = consultaServicioSimple.getNombresByIds(servicioIdsPage);
+
+        Page<ListadoReservasResponseDto> dtoPage = page.map(r -> new ListadoReservasResponseDto(
+                r.getId(),
+                r.getClienteId(),
+                r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : null,
+                r.getServicioId(),
+                nombresServicios.get(r.getServicioId()),
+                r.getFechaEntrada(),
+                r.getFechaSalida(),
+                r.getEstado()
+        ));
+
+        return PaginationMapper.toPageResponse(dtoPage);
     }
 }
