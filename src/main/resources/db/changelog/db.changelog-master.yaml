@@ -6,3 +6,5 @@ databaseChangeLog:
 
   - include:
       file: db/changelog/migrations/DEV-114/db.changelog-DEV-114.yaml
+  - include:
+      file: db/changelog/migrations/DEV-96/db.changelog-DEV-96.yaml
