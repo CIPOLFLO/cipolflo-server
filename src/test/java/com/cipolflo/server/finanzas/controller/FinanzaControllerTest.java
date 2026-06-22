@@ -445,7 +445,7 @@ class FinanzaControllerTest {
                         new byte[]{1, 2, 3}
                 ));
 
-        mockMvc.perform(get("/api/v1/finanzas/exportar")
+        mockMvc.perform(post("/api/v1/finanzas/exportar")
                         .with(jwt()))
                 .andExpect(status().isOk())
                 .andExpect(header().string(
@@ -468,7 +468,7 @@ class FinanzaControllerTest {
                         new byte[]{1, 2, 3}
                 ));
 
-        mockMvc.perform(get("/api/v1/finanzas/exportar")
+        mockMvc.perform(post("/api/v1/finanzas/exportar")
                         .param("tipoMovimiento", "INGRESO")
                         .param("concepto", "PAGO_RESERVA")
                         .param("fechaDesde", "2026-06-01")
