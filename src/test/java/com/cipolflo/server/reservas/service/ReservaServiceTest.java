@@ -2,6 +2,7 @@ package com.cipolflo.server.reservas.service;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -33,11 +34,13 @@ class ReservaServiceTest {
         Long clienteId = 1L;
 
         Reserva reservaFutura = Reserva.crear(
+                TipoReserva.COMUN,
                 clienteId,
                 10L,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null,
                 false
         );
 
@@ -86,11 +89,13 @@ class ReservaServiceTest {
         Long clienteId = 1L;
 
         Reserva reservaPaga = Reserva.crear(
+                TipoReserva.COMUN,
                 clienteId,
                 10L,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null,
                 false
         );
 
@@ -122,11 +127,13 @@ class ReservaServiceTest {
         LocalDate hasta = LocalDate.of(2026, 6, 20);
 
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 1L,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 6, 18),
                 LocalDate.of(2026, 6, 19),
+                null, null, null, null, null,
                 false
         );
 

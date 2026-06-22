@@ -16,13 +16,15 @@ public class Particular extends Cliente {
             String cedula,
             String nombre,
             String celular,
-            String mail
+            String mail,
+            String notas
     ) {
         Particular particular = new Particular();
         particular.setCedula(cedula);
         particular.setNombreCompleto(nombre);
         particular.setTelefono(celular);
         particular.setMail(mail);
+        particular.setNotas(notas);
         return particular;
     }
 

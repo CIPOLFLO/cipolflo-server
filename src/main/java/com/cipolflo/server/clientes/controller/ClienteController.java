@@ -2,6 +2,7 @@ package com.cipolflo.server.clientes.controller;
 
 import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.service.IClienteService;
+import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
@@ -24,9 +25,13 @@ public class ClienteController {
     );
 
     private final IClienteService clienteService;
+    private final IRegistroParticularService registroParticularService;
 
-    public ClienteController(IClienteService clienteService) {
+    public ClienteController(
+            IClienteService clienteService,
+            IRegistroParticularService registroParticularService) {
         this.clienteService = clienteService;
+        this.registroParticularService = registroParticularService;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -110,7 +115,7 @@ public class ClienteController {
     public ResponseEntity<ClienteResponseDto> registrarParticular(
             @Valid @RequestBody RegistroParticularRequestDto dto) {
 
-        ClienteResponseDto response = clienteService.registrarParticular(dto);
+        ClienteResponseDto response = registroParticularService.registrarParticular(dto);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

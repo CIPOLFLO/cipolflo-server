@@ -29,6 +29,4 @@ public interface IClienteService {
 
     EstadoSocioResponseDto consultarEstadoSocio(Long id);
 
-    ClienteResponseDto registrarParticular(RegistroParticularRequestDto dto);
-
 }

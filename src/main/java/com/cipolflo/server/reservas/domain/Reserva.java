@@ -1,6 +1,7 @@
 package com.cipolflo.server.reservas.domain;
 
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.shared.AuditableEntity;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -25,7 +26,12 @@ public class Reserva extends AuditableEntity {
     @Setter(AccessLevel.NONE)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Setter(AccessLevel.NONE)
+    private TipoReserva tipoReserva;
+
+    @Column
     @Setter(AccessLevel.NONE)
     private Long clienteId;
 
@@ -49,9 +55,13 @@ public class Reserva extends AuditableEntity {
 
     private BigDecimal importe;
 
-    private Integer cantidadPersonas;
+    private Integer cantidadTotal;
 
     private Integer cantidadMenores;
+
+    private Integer cantidad;
+
+    private String rut;
 
     @Column(nullable = false)
     @Setter(AccessLevel.NONE)
@@ -63,20 +73,35 @@ public class Reserva extends AuditableEntity {
 
     @Column(nullable = false)
     @Setter(AccessLevel.NONE)
-    private Boolean documentacion = false;
+    private Boolean requiereDocumentacion = false;
+
+    @Column(nullable = false)
+    @Setter(AccessLevel.NONE)
+    private Boolean tieneDocumentacion = false;
 
     private String notas;
 
-    public static Reserva crear(Long clienteId, Long servicioId, Procedencia procedencia,
-                                LocalDate fechaEntrada, LocalDate fechaSalida,
+    public static Reserva crear(TipoReserva tipoReserva, Long clienteId, Long servicioId, Procedencia procedencia,
+                                LocalDate fechaEntrada, LocalDate fechaSalida, Integer cantidadTotal, Integer cantidadMenores,
+                                Integer cantidad, String rut, String notas,
                                 boolean requiereDocumentacionPrevia) {
         Reserva r = new Reserva();
+        r.tipoReserva = tipoReserva;
         r.clienteId = clienteId;
         r.servicioId = servicioId;
         r.procedencia = procedencia;
         r.fechaEntrada = fechaEntrada;
         r.fechaSalida = fechaSalida;
-        r.estado = requiereDocumentacionPrevia ? EstadoReserva.PENDIENTE : EstadoReserva.CONFIRMADA;
+        r.cantidadTotal = cantidadTotal;
+        r.cantidadMenores = cantidadMenores;
+        r.cantidad = cantidad;
+        r.rut = rut;
+        r.notas = notas;
+        r.requiereDocumentacion = requiereDocumentacionPrevia;
+        r.estado = resolverEstado(r.tipoReserva);
+        if (tipoReserva == TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO) {
+            r.importe = BigDecimal.ZERO;
+        }
         return r;
     }
 
@@ -96,13 +121,13 @@ public class Reserva extends AuditableEntity {
         this.importe = importe;
         this.formaPago = formaPago;
         this.pago = true;
-        if (this.estado == EstadoReserva.PENDIENTE && this.documentacion) {
+        if (this.estado == EstadoReserva.PENDIENTE && this.tieneDocumentacion) {
             cambiarEstado(EstadoReserva.CONFIRMADA);
         }
     }
 
     public void recibirDocumentacion() {
-        this.documentacion = true;
+        this.tieneDocumentacion = true;
         if (this.estado == EstadoReserva.PENDIENTE && this.pago) {
             cambiarEstado(EstadoReserva.CONFIRMADA);
         }
@@ -128,5 +153,13 @@ public class Reserva extends AuditableEntity {
 
     public void cancelar() {
         cambiarEstado(EstadoReserva.CANCELADA);
+    }
+
+    private static EstadoReserva resolverEstado(TipoReserva tipoReserva) {
+        if(tipoReserva.equals(TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO)){
+            return EstadoReserva.CONFIRMADA;
+        }else{
+            return EstadoReserva.PENDIENTE;
+        }
     }
 }
