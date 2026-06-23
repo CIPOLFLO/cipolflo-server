@@ -2,17 +2,22 @@ package com.cipolflo.server.clientes.controller;
 
 import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.service.IClienteService;
+import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
-import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+
+//import org.apache.tomcat.util.http.parser.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.Set;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 @RestController
 @Validated
@@ -116,5 +121,17 @@ public class ClienteController {
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/exportar")
+    public ResponseEntity<byte[]> exportarClientes(
+        @Valid @RequestBody ListadoClientesRequestDto filtros){
+            ArchivoExportado archivo = clienteService.exportarClientes(filtros);
+            return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(archivo.getContenido());
+        }
+    
 
 }

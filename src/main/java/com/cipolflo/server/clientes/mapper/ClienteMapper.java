@@ -1,5 +1,7 @@
 package com.cipolflo.server.clientes.mapper;
 
+import java.util.List;
+
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
@@ -67,6 +69,19 @@ public class ClienteMapper {
                 socio.getId(),
                 socio.getEstado(),
                 socio.getNumeroSocio()
+        );
+    }
+
+    public static List<String> toExportFila(Cliente cliente){
+
+        Socio socio = cliente instanceof Socio s ? s : null;
+        return List.of(
+                cliente.getNombreCompleto(),
+                socio != null ? String.valueOf(socio.getNumeroSocio()) : "-",
+                cliente.getCedula(),
+                cliente.getMail() != null ? cliente.getMail() : "",
+                socio != null ? socio.getEstado().name() : "-",
+                cliente.getTelefono() != null ? cliente.getTelefono() : ""
         );
     }
 }
