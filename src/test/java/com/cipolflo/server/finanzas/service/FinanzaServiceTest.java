@@ -24,9 +24,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -197,6 +199,10 @@ class FinanzaServiceTest {
         assertEquals(TipoMovimiento.INGRESO, response.getTipoMovimiento());
         assertEquals(Procedencia.SEDE, response.getProcedencia());
         assertEquals(Concepto.PAGO_RESERVA, response.getConcepto());
+        assertEquals(LocalDate.of(2026, 6, 15), response.getFecha());
+        assertEquals(BigDecimal.valueOf(1500), response.getImporte());
+        assertEquals(FormaPago.EFECTIVO, response.getFormaPago());
+        assertEquals("Alta manual", response.getNotas());
     }
     @Test
     void deberiaRetornarDetalleDeEgreso() {
@@ -217,9 +223,65 @@ class FinanzaServiceTest {
         FinanzaDetalleResponseDto response =
                 finanzaService.getDetalleFinanza(2L);
 
+        assertEquals(2L, response.getId());
         assertEquals(TipoMovimiento.EGRESO, response.getTipoMovimiento());
         assertEquals(Procedencia.CAMPING, response.getProcedencia());
+        assertEquals(Concepto.UTE, response.getConcepto());
+        assertEquals(LocalDate.of(2026, 6, 15), response.getFecha());
+        assertEquals(BigDecimal.valueOf(2000), response.getImporte());
+        assertEquals(FormaPago.TRANSFERENCIA, response.getFormaPago());
+        assertEquals("Pago UTE", response.getNotas());
     }
+    @Test
+    void deberiaRetornarDetalleConNotasNulas() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                null
+        );
+        ingreso.setId(1L);
+
+        when(finanzaRepository.findById(1L))
+                .thenReturn(Optional.of(ingreso));
+
+        FinanzaDetalleResponseDto response = finanzaService.getDetalleFinanza(1L);
+
+        assertNull(response.getNotas());
+    }
+
+    @Test
+    void deberiaMapearCamposDeAuditoriaEnDetalle() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+        ingreso.setId(1L);
+
+        Instant createdAt = Instant.parse("2026-01-01T10:00:00Z");
+        Instant updatedAt = Instant.parse("2026-06-15T10:00:00Z");
+        ReflectionTestUtils.setField(ingreso, "createdAt", createdAt);
+        ReflectionTestUtils.setField(ingreso, "updatedAt", updatedAt);
+        ReflectionTestUtils.setField(ingreso, "createdBy", "admin");
+        ReflectionTestUtils.setField(ingreso, "updatedBy", "editor");
+
+        when(finanzaRepository.findById(1L))
+                .thenReturn(Optional.of(ingreso));
+
+        FinanzaDetalleResponseDto response = finanzaService.getDetalleFinanza(1L);
+
+        assertEquals(createdAt, response.getCreatedAt());
+        assertEquals(updatedAt, response.getUpdatedAt());
+        assertEquals("admin", response.getCreatedBy());
+        assertEquals("editor", response.getUpdatedBy());
+    }
+
     @Test
     void deberiaLanzarFinanzaNotFoundException() {
         when(finanzaRepository.findById(99L))

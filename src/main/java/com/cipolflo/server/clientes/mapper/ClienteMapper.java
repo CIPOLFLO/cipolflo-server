@@ -5,16 +5,13 @@ import java.util.List;
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
-import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
-import com.cipolflo.server.clientes.dto.EstadoSocioResponseDto;
+import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 public class ClienteMapper {
 
     private ClienteMapper() {}
 
-    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente) {
+    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto) {
         Socio socio = cliente instanceof Socio s ? s : null;
         return new ClienteResponseDto(
                 cliente.getId(),
@@ -32,6 +29,7 @@ public class ClienteMapper {
                 socio != null ? TipoCliente.SOCIO : TipoCliente.PARTICULAR,
                 socio != null ? socio.getEstado() : null,
                 cliente.getNotas(),
+                ultimaCuotaDto,
                 cliente.getCreatedAt(),
                 cliente.getUpdatedAt(),
                 cliente.getCreatedBy(),
@@ -39,7 +37,7 @@ public class ClienteMapper {
         );
     }
 
-    public static ListadoClientesResponseDto toListadoResponseDto(Cliente cliente) {
+    public static ListadoClientesResponseDto toListadoResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto) {
         Socio socio = cliente instanceof Socio s ? s : null;
         return new ListadoClientesResponseDto(
                 cliente.getId(),
@@ -48,7 +46,8 @@ public class ClienteMapper {
                 cliente.getMail(),
                 socio != null ? TipoCliente.SOCIO : TipoCliente.PARTICULAR,
                 socio != null ? socio.getNumeroSocio() : null,
-                socio != null ? socio.getEstado() : null
+                socio != null ? socio.getEstado() : null,
+                socio != null ? ultimaCuotaDto : null
         );
     }
     public static BusquedaCedulaResponseDto toBusquedaCedulaResponseDto(Cliente cliente) {

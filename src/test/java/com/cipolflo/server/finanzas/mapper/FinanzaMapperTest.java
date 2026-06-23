@@ -10,9 +10,12 @@ import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class FinanzaMapperTest {
 
@@ -64,5 +67,49 @@ class FinanzaMapperTest {
         assertEquals(BigDecimal.valueOf(2000), dto.getImporte());
         assertEquals(FormaPago.TRANSFERENCIA, dto.getFormaPago());
         assertEquals("Pago UTE", dto.getNotas());
+    }
+
+    @Test
+    void deberiaMapearDetalleConNotasNulas() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                null
+        );
+        ingreso.setId(1L);
+
+        FinanzaDetalleResponseDto dto = FinanzaMapper.toDetalleResponseDto(ingreso);
+
+        assertNull(dto.getNotas());
+    }
+
+    @Test
+    void deberiaMapearCamposDeAuditoria() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+        ingreso.setId(1L);
+
+        Instant createdAt = Instant.parse("2026-01-01T10:00:00Z");
+        Instant updatedAt = Instant.parse("2026-06-15T10:00:00Z");
+        ReflectionTestUtils.setField(ingreso, "createdAt", createdAt);
+        ReflectionTestUtils.setField(ingreso, "updatedAt", updatedAt);
+        ReflectionTestUtils.setField(ingreso, "createdBy", "admin");
+        ReflectionTestUtils.setField(ingreso, "updatedBy", "editor");
+
+        FinanzaDetalleResponseDto dto = FinanzaMapper.toDetalleResponseDto(ingreso);
+
+        assertEquals(createdAt, dto.getCreatedAt());
+        assertEquals(updatedAt, dto.getUpdatedAt());
+        assertEquals("admin", dto.getCreatedBy());
+        assertEquals("editor", dto.getUpdatedBy());
     }
 }

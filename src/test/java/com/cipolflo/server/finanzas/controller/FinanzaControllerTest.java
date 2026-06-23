@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
 import java.time.Instant;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -393,7 +394,16 @@ class FinanzaControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.tipoMovimiento").value("INGRESO"))
-                .andExpect(jsonPath("$.procedencia").value("SEDE"));
+                .andExpect(jsonPath("$.procedencia").value("SEDE"))
+                .andExpect(jsonPath("$.concepto").value("PAGO_RESERVA"))
+                .andExpect(jsonPath("$.fecha").value("2026-06-15"))
+                .andExpect(jsonPath("$.importe").value(1500))
+                .andExpect(jsonPath("$.formaPago").value("EFECTIVO"))
+                .andExpect(jsonPath("$.notas").value("Alta manual"))
+                .andExpect(jsonPath("$.createdBy").value("admin"))
+                .andExpect(jsonPath("$.updatedBy").value("admin"))
+                .andExpect(jsonPath("$.createdAt").value(notNullValue()))
+                .andExpect(jsonPath("$.updatedAt").value(notNullValue()));
     }
     @Test
     void deberiaRetornar404CuandoNoExisteFinanza() throws Exception {
@@ -421,6 +431,9 @@ class FinanzaControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    private static final Instant CREATED_AT = Instant.parse("2026-01-01T10:00:00Z");
+    private static final Instant UPDATED_AT = Instant.parse("2026-06-15T10:00:00Z");
+
     private FinanzaDetalleResponseDto detalleResponse() {
         return new FinanzaDetalleResponseDto(
                 1L,
@@ -431,8 +444,8 @@ class FinanzaControllerTest {
                 BigDecimal.valueOf(1500),
                 FormaPago.EFECTIVO,
                 "Alta manual",
-                Instant.now(),
-                Instant.now(),
+                CREATED_AT,
+                UPDATED_AT,
                 "admin",
                 "admin"
         );

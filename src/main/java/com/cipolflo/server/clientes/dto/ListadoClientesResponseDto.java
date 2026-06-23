@@ -15,8 +15,9 @@ public class ListadoClientesResponseDto implements ResponseDto {
     private final TipoCliente tipoCliente;
     private final Integer numeroSocio;
     private final EstadoSocio estado;
+    private final UltimaCuotaDto ultimaCuotaDto;
 
-    public ListadoClientesResponseDto(Long id, String nombreCompleto, String cedula, String email, TipoCliente tipoCliente, Integer numeroSocio, EstadoSocio estado) {
+    public ListadoClientesResponseDto(Long id, String nombreCompleto, String cedula, String email, TipoCliente tipoCliente, Integer numeroSocio, EstadoSocio estado, UltimaCuotaDto ultimaCuotaDto) {
         this.id = id;
         this.nombreCompleto = nombreCompleto;
         this.cedula = cedula;
@@ -24,5 +25,6 @@ public class ListadoClientesResponseDto implements ResponseDto {
         this.tipoCliente = tipoCliente;
         this.numeroSocio = numeroSocio;
         this.estado = estado;
+        this.ultimaCuotaDto = ultimaCuotaDto;
     }
 }
