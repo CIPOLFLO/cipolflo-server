@@ -53,7 +53,7 @@ public class FinanzaController {
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/export")
     public ResponseEntity<byte[]> exportarFinanzas(
-            @RequestBody FinanzaExportRequestDto filters )
+            @Valid @RequestBody ListadoFinanzasRequestDto filters )
     { ArchivoExportado archivo = finanzaService.exportarFinanzas(filters);
         return ResponseEntity.ok() .
                 header( HttpHeaders.CONTENT_DISPOSITION,

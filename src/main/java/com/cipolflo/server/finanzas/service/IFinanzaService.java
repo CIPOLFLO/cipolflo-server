@@ -12,7 +12,7 @@ public interface IFinanzaService {
 
     FinanzaDetalleResponseDto getDetalleFinanza(Long id);
 
-    ArchivoExportado exportarFinanzas(FinanzaExportRequestDto filters);
+    ArchivoExportado exportarFinanzas(ListadoFinanzasRequestDto filters);
 
     PageResponse<ListadoFinanzasResponseDto> getListadoFinanzas(
             ListadoFinanzasRequestDto filtros,

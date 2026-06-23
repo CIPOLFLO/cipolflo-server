@@ -9,9 +9,7 @@ import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.mapper.FinanzaMapper;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import com.cipolflo.server.finanzas.repository.FinanzaSpecification;
-import com.cipolflo.server.shared.export.ArchivoExportado;
-import com.cipolflo.server.shared.export.IExportService;
-import com.cipolflo.server.shared.export.NombreArchivoExport;
+import com.cipolflo.server.shared.export.*;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
@@ -28,11 +26,14 @@ public class FinanzaService implements IFinanzaService {
 
     private final FinanzaRepository finanzaRepository;
     private final IExportService exportService;
+    private final ExportProperties exportProperties;
 
     public FinanzaService(FinanzaRepository finanzaRepository,
-                          IExportService exportService) {
+                          IExportService exportService,
+                          ExportProperties exportProperties) {
         this.finanzaRepository = finanzaRepository;
         this.exportService = exportService;
+        this.exportProperties = exportProperties;
     }
 
     @Override
@@ -71,16 +72,25 @@ public class FinanzaService implements IFinanzaService {
     }
 
     @Override
-    public ArchivoExportado exportarFinanzas(FinanzaExportRequestDto filtros) {
+    public ArchivoExportado exportarFinanzas(ListadoFinanzasRequestDto filtros) {
 
         List<Finanza> finanzas = finanzaRepository.findAll(
                 FinanzaSpecification.desdeFiltros(
-                        filtros.getFechaDesde(),
-                        filtros.getFechaHasta(),
-                        filtros.getConcepto(),
-                        filtros.getTipoMovimiento()
+                        filtros.fechaDesde(),
+                        filtros.fechaHasta(),
+                        filtros.concepto(),
+                        filtros.tipoMovimiento()
                 )
         );
+        if (finanzas.isEmpty()) {
+            throw new ExportacionException("No hay registros que coincidan con los filtros aplicados");
+        }
+
+        if (finanzas.size() > exportProperties.maxFilas()) {
+            throw new ExportacionException(
+                    "La exportación supera el límite de " + exportProperties.maxFilas() + " filas"
+            );
+        }
 
         List<String> encabezados = List.of(
                 "Tipo Movimiento",
