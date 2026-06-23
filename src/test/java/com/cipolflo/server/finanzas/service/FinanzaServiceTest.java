@@ -5,23 +5,30 @@ import com.cipolflo.server.finanzas.domain.Finanza;
 import com.cipolflo.server.finanzas.domain.Ingreso;
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
-import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
-import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
-import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
+import com.cipolflo.server.finanzas.dto.*;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportProperties;
+import com.cipolflo.server.shared.export.IExportService;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -33,7 +40,10 @@ class FinanzaServiceTest {
 
     @Mock
     private FinanzaRepository finanzaRepository;
-
+    @Mock
+    private IExportService exportService;
+    @Mock
+    private ExportProperties exportProperties;
     @InjectMocks
     private FinanzaService finanzaService;
 
@@ -285,6 +295,181 @@ class FinanzaServiceTest {
                 () -> finanzaService.getDetalleFinanza(99L)
         );
     }
+    @Test
+    void deberiaExportarFinanzasSinFiltros() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+        ingreso.setId(1L);
 
+        when(finanzaRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(ingreso));
+        when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+                .thenReturn(new byte[]{1, 2, 3});
+        when(exportProperties.maxFilas()).thenReturn(50000);
+        ArchivoExportado archivo = finanzaService.exportarFinanzas(new ListadoFinanzasRequestDto(null,null,null,null));
+
+        assertNotNull(archivo);
+        assertTrue(archivo.getNombre().startsWith("finanzas_"));
+        assertTrue(archivo.getNombre().endsWith(".xlsx"));
+        assertArrayEquals(new byte[]{1, 2, 3}, archivo.getContenido());
+
+        verify(finanzaRepository).findAll(any(Specification.class));
+        verify(exportService).generarExcel(eq("Finanzas"), anyList(), anyList(), any(int[].class));
+    }
+    @Test
+    void deberiaExportarFilaDeIngresoConDatosCorrectos() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+
+        when(finanzaRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(ingreso));
+        when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+                .thenReturn(new byte[]{1});
+        when(exportProperties.maxFilas()).thenReturn(50000);
+        finanzaService.exportarFinanzas(new ListadoFinanzasRequestDto(null,null,null,null));
+
+        ArgumentCaptor<List<List<String>>> filasCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(exportService).generarExcel(
+                eq("Finanzas"),
+                anyList(),
+                filasCaptor.capture(),
+                any(int[].class)
+        );
+
+        List<String> fila = filasCaptor.getValue().get(0);
+
+        assertEquals("INGRESO", fila.get(0));
+        assertEquals("SEDE", fila.get(1));
+        assertEquals("PAGO_RESERVA", fila.get(2));
+        assertEquals("2026-06-15", fila.get(3));
+        assertEquals("1500", fila.get(4));
+        assertEquals("EFECTIVO", fila.get(5));
+        assertEquals("Alta manual", fila.get(6));
+    }
+    @Test
+    void deberiaExportarFilaDeEgresoConDatosCorrectos() {
+        Egreso egreso = Egreso.crearManual(
+                LocalDate.of(2026, 6, 20),
+                BigDecimal.valueOf(2000),
+                Concepto.UTE,
+                FormaPago.TRANSFERENCIA,
+                Procedencia.CAMPING,
+                null
+        );
+
+        when(finanzaRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(egreso));
+        when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+                .thenReturn(new byte[]{1});
+        when(exportProperties.maxFilas()).thenReturn(50000);
+        finanzaService.exportarFinanzas(new ListadoFinanzasRequestDto(null,null,null,null));
+
+        ArgumentCaptor<List<List<String>>> filasCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(exportService).generarExcel(
+                eq("Finanzas"),
+                anyList(),
+                filasCaptor.capture(),
+                any(int[].class)
+        );
+
+        List<String> fila = filasCaptor.getValue().get(0);
+
+        assertEquals("EGRESO", fila.get(0));
+        assertEquals("CAMPING", fila.get(1));
+        assertEquals("UTE", fila.get(2));
+        assertEquals("2026-06-20", fila.get(3));
+        assertEquals("2000", fila.get(4));
+        assertEquals("TRANSFERENCIA", fila.get(5));
+        assertEquals("", fila.get(6));
+    }
+
+    @Test
+    void deberiaRetornarListadoFinanzas() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Alta manual"
+        );
+        ingreso.setId(1L);
+
+        when(finanzaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(ingreso)));
+
+        PageRequestDto pageRequest = new PageRequestDto(0, 10, null, null);
+        ListadoFinanzasRequestDto filtros = new ListadoFinanzasRequestDto(
+                null,
+                null,
+                null,
+                null
+        );
+
+        PageResponse<ListadoFinanzasResponseDto> response =
+                finanzaService.getListadoFinanzas(filtros, pageRequest);
+
+        assertEquals(1, response.totalElements());
+        assertEquals(1, response.content().size());
+        assertEquals(1L, response.content().get(0).getId());
+        assertEquals(Concepto.PAGO_RESERVA, response.content().get(0).getConcepto());
+        assertEquals(TipoMovimiento.INGRESO, response.content().get(0).getTipoMovimiento());
+
+        verify(finanzaRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaMapearTipoMovimientoIngresoYEgresoEnListado() {
+        Ingreso ingreso = Ingreso.crearManual(
+                LocalDate.of(2026, 6, 15),
+                BigDecimal.valueOf(1500),
+                Concepto.PAGO_RESERVA,
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Ingreso"
+        );
+        ingreso.setId(1L);
+
+        Egreso egreso = Egreso.crearManual(
+                LocalDate.of(2026, 6, 16),
+                BigDecimal.valueOf(2000),
+                Concepto.UTE,
+                FormaPago.TRANSFERENCIA,
+                Procedencia.CAMPING,
+                "Egreso"
+        );
+        egreso.setId(2L);
+
+        when(finanzaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(ingreso, egreso)));
+
+        PageRequestDto pageRequest = new PageRequestDto(0, 10, null, null);
+        ListadoFinanzasRequestDto filtros = new ListadoFinanzasRequestDto(
+                null,
+                null,
+                null,
+                null
+        );
+
+        PageResponse<ListadoFinanzasResponseDto> response =
+                finanzaService.getListadoFinanzas(filtros, pageRequest);
+
+        assertEquals(TipoMovimiento.INGRESO, response.content().get(0).getTipoMovimiento());
+        assertEquals(TipoMovimiento.EGRESO, response.content().get(1).getTipoMovimiento());
+    }
 
 }
