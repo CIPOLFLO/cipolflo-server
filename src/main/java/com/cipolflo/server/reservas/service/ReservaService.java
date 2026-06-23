@@ -11,7 +11,10 @@ import com.cipolflo.server.reservas.dto.*;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.repository.ReservaSpecification;
+import com.cipolflo.server.reservas.exception.ReservaCodigoError;
+import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
+import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.shared.ZonaHoraria;
@@ -46,6 +49,7 @@ public class ReservaService implements IReservaService {
     private final ReservaRepository reservaRepository;
     private final IRegistroParticularService registroParticularService;
     private final ReservaCreacionValidator reservaCreacionValidator;
+    private final ReservaModificacionValidator reservaModificacionValidator;
     private final IServicioRequiereDocumentacion servicioRequiereDocumentacion;
     private final IConsultaClienteDetalle consultaClienteDetalle;
     private final IConsultaServicioSimple consultaServicioSimple;
@@ -54,6 +58,7 @@ public class ReservaService implements IReservaService {
             ReservaRepository reservaRepository,
             IRegistroParticularService registroParticularService,
             ReservaCreacionValidator reservaCreacionValidator,
+            ReservaModificacionValidator reservaModificacionValidator,
             IServicioRequiereDocumentacion servicioRequiereDocumentacion,
             IConsultaServicioSimple consultaServicioSimple,
             IConsultaClienteDetalle consultaClienteDetalle
@@ -61,6 +66,7 @@ public class ReservaService implements IReservaService {
         this.reservaRepository = reservaRepository;
         this.registroParticularService = registroParticularService;
         this.reservaCreacionValidator = reservaCreacionValidator;
+        this.reservaModificacionValidator = reservaModificacionValidator;
         this.servicioRequiereDocumentacion = servicioRequiereDocumentacion;
         this.consultaClienteDetalle = consultaClienteDetalle;
         this.consultaServicioSimple = consultaServicioSimple;
@@ -213,5 +219,37 @@ public class ReservaService implements IReservaService {
         ));
 
         return PaginationMapper.toPageResponse(dtoPage);
+    }
+
+    @Override
+    @Transactional
+    public ReservaModificacionResponseDto modificar(Long id, ReservaModificacionRequestDto dto) {
+        Reserva reserva = reservaRepository.findById(id)
+                .orElseThrow(() -> new ReservaNotFoundException(id));
+
+        if (reserva.getEstado() != EstadoReserva.PENDIENTE && reserva.getEstado() != EstadoReserva.CONFIRMADA) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.RESERVA_NO_MODIFICABLE,
+                    "La reserva no puede ser modificada en su estado actual"
+            );
+        }
+
+        reservaModificacionValidator.validar(id, reserva.getTipoReserva(), dto);
+
+        reserva.modificar(
+                dto.getServicioId(),
+                dto.getProcedencia(),
+                dto.getFechaInicio(),
+                dto.getFechaFin(),
+                dto.getCantidadTotal(),
+                dto.getCantidadMenores(),
+                dto.getCantidad(),
+                dto.getRut(),
+                dto.getNotas()
+        );
+
+        reservaRepository.save(reserva);
+
+        return new ReservaModificacionResponseDto(reserva.getId());
     }
 }

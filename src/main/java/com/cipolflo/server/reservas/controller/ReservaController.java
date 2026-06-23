@@ -62,4 +62,12 @@ public class ReservaController {
         }
         return ResponseEntity.ok(reservaService.getListadoReservas(filtros, pageRequest));
     }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{id}")
+    public ResponseEntity<ReservaModificacionResponseDto> modificar(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id,
+            @Valid @RequestBody ReservaModificacionRequestDto dto) {
+        return ResponseEntity.ok(reservaService.modificar(id, dto));
+    }
 }

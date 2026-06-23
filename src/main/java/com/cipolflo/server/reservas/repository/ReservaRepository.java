@@ -35,4 +35,12 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
             LocalDate fechaFin,
             LocalDate fechaInicio
     );
+
+    boolean existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqualAndIdNot(
+            Long servicioId,
+            Collection<EstadoReserva> estados,
+            LocalDate fechaFin,
+            LocalDate fechaInicio,
+            Long idExcluir
+    );
 }
