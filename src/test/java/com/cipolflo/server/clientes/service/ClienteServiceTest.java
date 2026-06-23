@@ -62,10 +62,11 @@ class ClienteServiceTest {
     @Mock
     private RegistroParticularValidator registroParticularValidator;
     @Mock
-private IExportService exportService;
-
-@Mock
-private ExportProperties exportProperties;
+    private IPagoCuotaService pagoCuotaService;
+    @Mock
+    private IExportService exportService;
+    @Mock
+    private ExportProperties exportProperties;
     @InjectMocks
     private ClienteService clienteService;
 
@@ -776,6 +777,53 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
 
         assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
         verify(registroParticularValidator).validar(dto, "12345678");
+    }
+
+    @Test
+    void deberiaRetornarListadoDeSociosConUltimaCuotaPaga() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 5, EstadoSocio.ACTIVO);
+
+        Page<Cliente> page = new PageImpl<>(List.of(socio));
+
+        UltimaCuotaDto ultimaCuota = new UltimaCuotaDto(
+                2026,
+                6,
+                "junio",
+                "Junio 2026"
+        );
+
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        when(pagoCuotaService.calcularUltimaCuotaPaga(1L))
+                .thenReturn(ultimaCuota);
+
+        PageResponse<ListadoClientesResponseDto> response =
+                clienteService.getListadoClientes(sinFiltros(), pageRequest());
+
+        assertEquals(1, response.content().size());
+        assertNotNull(response.content().get(0).getUltimaCuotaDto());
+        assertEquals(2026, response.content().get(0).getUltimaCuotaDto().anio());
+        assertEquals(6, response.content().get(0).getUltimaCuotaDto().mes());
+
+        verify(pagoCuotaService).calcularUltimaCuotaPaga(1L);
+    }
+    @Test
+    void deberiaRetornarListadoDeParticularesConUltimaCuotaNula() {
+        Particular particular = crearParticular(2L, "Laura Fernández", "67890123");
+
+        Page<Cliente> page = new PageImpl<>(List.of(particular));
+
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(page);
+
+        PageResponse<ListadoClientesResponseDto> response =
+                clienteService.getListadoClientes(sinFiltros(), pageRequest());
+
+        assertEquals(1, response.content().size());
+        assertNull(response.content().get(0).getUltimaCuotaDto());
+
+        verify(pagoCuotaService, never()).calcularUltimaCuotaPaga(anyLong());
     }
 
     // --- exportarClientes ---

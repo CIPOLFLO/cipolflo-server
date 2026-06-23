@@ -1,21 +1,18 @@
 package com.cipolflo.server.shared.export;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
-class NombreArchivoExportTest {
-     @Test
-    void generar_conPrefijo_devuelveNombreConFormatoCorrecto() {
-        String resultado = NombreArchivoExport.generar("clientes");
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-        assertThat(resultado)
-                .matches("clientes_\\d{4}-\\d{2}-\\d{2}_\\d{4}\\.xlsx");
-    }
+class NombreArchivoExportTest {
 
     @Test
-    void generar_conPrefijo_empiezaConElPrefijo() {
-        String resultado = NombreArchivoExport.generar("clientes");
+    void deberiaGenerarNombreConFormatoEsperado() {
+        String nombre = NombreArchivoExport.generar("finanzas");
 
-        assertThat(resultado).startsWith("clientes_");
+        assertTrue(nombre.matches("finanzas_\\d{4}-\\d{2}-\\d{2}_\\d{4}\\.xlsx"));
     }
 
     @Test

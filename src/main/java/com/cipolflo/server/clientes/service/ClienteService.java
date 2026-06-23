@@ -48,6 +48,7 @@ public class ClienteService implements IClienteService {
     private final RegistroSocioValidator registroSocioValidator;
     private final CedulaFormatoValidator cedulaFormatoValidator;
     private final RegistroParticularValidator registroParticularValidator;
+    private final IPagoCuotaService pagoCuotaService;
     private final ExportProperties exportProperties;
     private final IExportService exportService;
     public ClienteService(ClienteRepository clienteRepository,
@@ -56,6 +57,8 @@ public class ClienteService implements IClienteService {
                           CedulaFormatoValidator cedulaFormatoValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
                           RegistroSocioValidator registroSocioValidator,
+                          RegistroParticularValidator registroParticularValidator,
+                          IPagoCuotaService pagoCuotaService) {
                           RegistroParticularValidator registroParticularValidator,
                           ExportProperties exportProperties,
                           IExportService exportService) {
@@ -66,22 +69,29 @@ public class ClienteService implements IClienteService {
         this.registroSocioValidator = registroSocioValidator;
         this.cedulaFormatoValidator = cedulaFormatoValidator;
         this.registroParticularValidator = registroParticularValidator;
+        this.pagoCuotaService = pagoCuotaService;
         this.exportProperties = exportProperties;
         this.exportService = exportService;
     }
 
     @Override
-    public PageResponse<ListadoClientesResponseDto> getListadoClientes(ListadoClientesRequestDto filtros, PageRequestDto pageRequest) {
+    public PageResponse<ListadoClientesResponseDto> getListadoClientes(
+            ListadoClientesRequestDto filtros,
+            PageRequestDto pageRequest
+    ) {
         Specification<Cliente> spec = ClienteSpecification
                 .conEstado(filtros.estado())
                 .and(ClienteSpecification.conNombre(filtros.nombre()))
                 .and(ClienteSpecification.conTipoCliente(filtros.tipoCliente()))
                 .and(ClienteSpecification.conIdentificador(filtros.identificador()));
-
         Page<ListadoClientesResponseDto> page = clienteRepository
                 .findAll(spec, pageRequest.toPageable())
-                .map(ClienteMapper::toListadoResponseDto);
-
+                .map(cliente -> {
+                    UltimaCuotaDto ultimaCuotaPaga = cliente instanceof Socio
+                            ? pagoCuotaService.calcularUltimaCuotaPaga(cliente.getId())
+                            : null;
+                    return ClienteMapper.toListadoResponseDto(cliente, ultimaCuotaPaga);
+                });
         return PaginationMapper.toPageResponse(page);
     }
 
@@ -89,7 +99,10 @@ public class ClienteService implements IClienteService {
     public ClienteResponseDto getDetalleCliente(Long id) {
         Cliente cliente = clienteRepository.findById(id)
                 .orElseThrow(() -> new ClienteNotFoundException(id));
-        return ClienteMapper.toDetalleResponseDto(cliente);
+        UltimaCuotaDto ultimaCuotaPagaDto = cliente instanceof Socio
+                ? pagoCuotaService.calcularUltimaCuotaPaga(cliente.getId())
+                : null;
+        return ClienteMapper.toDetalleResponseDto(cliente, ultimaCuotaPagaDto);
     }
 
     @Override
@@ -131,7 +144,7 @@ public class ClienteService implements IClienteService {
         particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), mailNormalizado, dto.getNotas());
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular));
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null);
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -169,7 +182,7 @@ public class ClienteService implements IClienteService {
         );
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio));
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null);
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -202,7 +215,7 @@ public class ClienteService implements IClienteService {
         socio.setEstado(EstadoSocio.ACTIVO);
         socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
         socio.setMesesSinPagar(0);
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio));
+        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio), null);
     }
 
     @Override
@@ -252,7 +265,7 @@ public class ClienteService implements IClienteService {
         );
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular));
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null);
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -271,7 +284,7 @@ public class ClienteService implements IClienteService {
 
         List<Cliente> clientes = clienteRepository.findAll(spec,
             Sort.by(Sort.Direction.ASC, "nombreCompleto"));
-        
+
         if(clientes.isEmpty()){
             throw new ExportacionSinResultadosException();
         }
@@ -292,7 +305,7 @@ List<String> encabezados = List.of("Nombre", "Número de socio", "Cédula", "Ema
         }
         String nombre = NombreArchivoExport.generar("clientes");
         return new ArchivoExportado(nombre,contenido);
-        
+
     }
-    
+
 }
