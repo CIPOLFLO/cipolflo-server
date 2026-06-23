@@ -14,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.cipolflo.server.shared.ZonaHoraria;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +63,7 @@ class ReservaModificacionValidatorTest {
     void deberiaLanzarExcepcionCuandoFechaInicioEsAnteriorAHoy() {
         ReservaModificacionRequestDto dto = mockDto(
                 1L,
-                LocalDate.now().minusDays(1), LocalDate.now().plusDays(2),
+                LocalDate.now(ZonaHoraria.URUGUAY).minusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(2),
                 null
         );
 
@@ -76,7 +78,7 @@ class ReservaModificacionValidatorTest {
     void deberiaLanzarExcepcionCuandoFechaFinEsAnteriorAFechaInicio() {
         ReservaModificacionRequestDto dto = mockDto(
                 1L,
-                LocalDate.now().plusDays(3), LocalDate.now().plusDays(1),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1),
                 null
         );
 
@@ -93,7 +95,7 @@ class ReservaModificacionValidatorTest {
     void deberiaLanzarExcepcionCuandoServicioNoExiste() {
         ReservaModificacionRequestDto dto = mockDto(
                 99L,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
                 null
         );
         when(servicioRepository.findById(99L)).thenReturn(Optional.empty());
@@ -112,7 +114,7 @@ class ReservaModificacionValidatorTest {
 
         ReservaModificacionRequestDto dto = mockDto(
                 1L,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
                 null
         );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(deshabilitado));
@@ -131,15 +133,15 @@ class ReservaModificacionValidatorTest {
         Long reservaId = 1L;
         ReservaModificacionRequestDto dto = mockDto(
                 1L,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(5),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(5),
                 null
         );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqualAndIdNot(
                 eq(1L),
                 eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA, EstadoReserva.EN_CURSO)),
-                eq(LocalDate.now().plusDays(5)),
-                eq(LocalDate.now().plusDays(1)),
+                eq(LocalDate.now(ZonaHoraria.URUGUAY).plusDays(5)),
+                eq(LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1)),
                 eq(reservaId)
         )).thenReturn(true);
 
@@ -155,7 +157,7 @@ class ReservaModificacionValidatorTest {
         Long reservaId = 1L;
         ReservaModificacionRequestDto dto = mockDto(
                 1L,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(5),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(5),
                 null
         );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
@@ -172,7 +174,7 @@ class ReservaModificacionValidatorTest {
     void deberiaLanzarExcepcionCuandoRutPresenteEnReservaNoColaboracion() {
         ReservaModificacionRequestDto dto = mockDto(
                 1L,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
                 "20123456-7"
         );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
@@ -191,7 +193,7 @@ class ReservaModificacionValidatorTest {
     void deberiaPasarValidacionColaboracionConRut() {
         ReservaModificacionRequestDto dto = mockDto(
                 1L,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
                 "20123456-7"
         );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
@@ -206,7 +208,7 @@ class ReservaModificacionValidatorTest {
     void deberiaPasarValidacionSinRut() {
         ReservaModificacionRequestDto dto = mockDto(
                 1L,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
                 null
         );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
