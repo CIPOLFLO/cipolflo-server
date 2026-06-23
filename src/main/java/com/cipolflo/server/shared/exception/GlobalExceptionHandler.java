@@ -12,6 +12,7 @@ import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.cipolflo.server.shared.export.exception.ExportacionCodigoError;
+import com.cipolflo.server.shared.export.exception.ExportacionSinResultadosException;
 import com.cipolflo.server.shared.export.exception.LimiteFilasExportacionException;
 import com.cipolflo.server.shared.export.exception.LimiteTamanioExportacionException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -226,6 +227,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("LIMITE_TAMANIO_EXCEDIDO", ex.getMessage()));
+    }
+
+    @ExceptionHandler(ExportacionSinResultadosException.class)
+    public ResponseEntity<ErrorResponse> handleExportacionSinResultadosException(ExportacionSinResultadosException ex) {
+        log.warn("Exportación sin resultados: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ExportacionCodigoError.SIN_RESULTADOS_EXPORTACION.name(), ex.getMessage()));
     }
 
     @ExceptionHandler(LimiteFilasExportacionException.class)

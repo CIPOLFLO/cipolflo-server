@@ -296,7 +296,7 @@ List<String> encabezados = List.of("Nombre", "Número de socio", "Cédula", "Ema
         .map(ClienteMapper::toExportFila)
         .toList();
 
-        int[] anchos ={8000,5000,5000,10000,5000};
+        int[] anchos ={8000,5000,5000,10000,5000,5000};
         byte[] contenido = exportService.generarExcel("Clientes",encabezados, filas, anchos);
 
         if(contenido.length > exportProperties.maxBytes()){

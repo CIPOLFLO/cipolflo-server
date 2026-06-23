@@ -841,9 +841,9 @@ void deberiaExportarClientesExitosamente() {
     ArchivoExportado resultado = clienteService.exportarClientes(sinFiltros());
 
     assertNotNull(resultado);
-    assertTrue(resultado.nombre().startsWith("clientes_"));
-    assertTrue(resultado.nombre().endsWith(".xlsx"));
-    assertNotNull(resultado.contenido());
+    assertTrue(resultado.getNombre().startsWith("clientes_"));
+    assertTrue(resultado.getNombre().endsWith(".xlsx"));
+    assertNotNull(resultado.getNombre());
 }
 
 @Test
@@ -861,7 +861,7 @@ void deberiaMapearSocioYParticularEnExportacion() {
 
     verify(exportService).generarExcel(
             eq("Clientes"),
-            eq(List.of("Nombre", "Número de socio", "Cédula", "Email", "Estado")),
+            eq(List.of("Nombre", "Número de socio", "Cédula", "Email", "Estado", "Telefono")),
             argThat(filas ->
                 filas.get(0).get(1).equals("5")
                 && filas.get(0).get(4).equals("ACTIVO")

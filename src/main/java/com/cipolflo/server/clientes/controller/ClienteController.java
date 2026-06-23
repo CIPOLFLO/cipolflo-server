@@ -125,14 +125,14 @@ public class ClienteController {
     }
 
     @PreAuthorize("isAuthenticated()")
-    @PostMapping("/exportar")
+    @GetMapping("/exportar")
     public ResponseEntity<byte[]> exportarClientes(
-        @Valid @RequestBody ListadoClientesRequestDto filtros){
+        @Valid @ModelAttribute ListadoClientesRequestDto filtros){
             ArchivoExportado archivo = clienteService.exportarClientes(filtros);
             return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.nombre() + "\"")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
             .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-            .body(archivo.contenido());
+            .body(archivo.getContenido());
         }
     
 
