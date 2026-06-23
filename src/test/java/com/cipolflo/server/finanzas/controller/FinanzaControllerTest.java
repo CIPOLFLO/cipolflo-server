@@ -452,7 +452,7 @@ class FinanzaControllerTest {
     }
     @Test
     void deberiaExportarFinanzas() throws Exception {
-        when(finanzaService.exportarFinanzas(any(FinanzaExportRequestDto.class)))
+        when(finanzaService.exportarFinanzas(any(ListadoFinanzasRequestDto.class)))
                 .thenReturn(new ArchivoExportado(
                         "finanzas_2026-06-22_1427.xlsx",
                         new byte[]{1, 2, 3}
@@ -473,11 +473,11 @@ class FinanzaControllerTest {
                 ))
                 .andExpect(content().bytes(new byte[]{1, 2, 3}));
 
-        verify(finanzaService).exportarFinanzas(any(FinanzaExportRequestDto.class));
+        verify(finanzaService).exportarFinanzas(any(ListadoFinanzasRequestDto.class));
     }
     @Test
     void deberiaExportarFinanzasConFiltros() throws Exception {
-        when(finanzaService.exportarFinanzas(any(FinanzaExportRequestDto.class)))
+        when(finanzaService.exportarFinanzas(any(ListadoFinanzasRequestDto.class)))
                 .thenReturn(new ArchivoExportado(
                         "finanzas_2026-06-22_1427.xlsx",
                         new byte[]{1, 2, 3}
@@ -497,11 +497,14 @@ class FinanzaControllerTest {
                             """))
                 .andExpect(status().isOk());
 
-        verify(finanzaService).exportarFinanzas(any(FinanzaExportRequestDto.class));
+        verify(finanzaService).exportarFinanzas(any(ListadoFinanzasRequestDto.class));
     }
     @Test
     void deberiaRetornar401AlExportarSinAutenticacion() throws Exception {
-        mockMvc.perform(get("/api/v1/finanzas/exportar"))
+        mockMvc.perform(post("/api/v1/finanzas/export")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
                 .andExpect(status().isUnauthorized());
 
         verify(finanzaService, never()).exportarFinanzas(any());

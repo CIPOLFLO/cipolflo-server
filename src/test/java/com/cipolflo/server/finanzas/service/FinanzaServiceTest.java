@@ -11,6 +11,7 @@ import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportProperties;
 import com.cipolflo.server.shared.export.IExportService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -41,7 +42,8 @@ class FinanzaServiceTest {
     private FinanzaRepository finanzaRepository;
     @Mock
     private IExportService exportService;
-
+    @Mock
+    private ExportProperties exportProperties;
     @InjectMocks
     private FinanzaService finanzaService;
 
@@ -309,8 +311,8 @@ class FinanzaServiceTest {
                 .thenReturn(List.of(ingreso));
         when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
                 .thenReturn(new byte[]{1, 2, 3});
-
-        ArchivoExportado archivo = finanzaService.exportarFinanzas(new FinanzaExportRequestDto());
+        when(exportProperties.maxFilas()).thenReturn(50000);
+        ArchivoExportado archivo = finanzaService.exportarFinanzas(new ListadoFinanzasRequestDto(null,null,null,null));
 
         assertNotNull(archivo);
         assertTrue(archivo.getNombre().startsWith("finanzas_"));
@@ -335,8 +337,8 @@ class FinanzaServiceTest {
                 .thenReturn(List.of(ingreso));
         when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
                 .thenReturn(new byte[]{1});
-
-        finanzaService.exportarFinanzas(new FinanzaExportRequestDto());
+        when(exportProperties.maxFilas()).thenReturn(50000);
+        finanzaService.exportarFinanzas(new ListadoFinanzasRequestDto(null,null,null,null));
 
         ArgumentCaptor<List<List<String>>> filasCaptor = ArgumentCaptor.forClass(List.class);
 
@@ -372,8 +374,8 @@ class FinanzaServiceTest {
                 .thenReturn(List.of(egreso));
         when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
                 .thenReturn(new byte[]{1});
-
-        finanzaService.exportarFinanzas(new FinanzaExportRequestDto());
+        when(exportProperties.maxFilas()).thenReturn(50000);
+        finanzaService.exportarFinanzas(new ListadoFinanzasRequestDto(null,null,null,null));
 
         ArgumentCaptor<List<List<String>>> filasCaptor = ArgumentCaptor.forClass(List.class);
 
