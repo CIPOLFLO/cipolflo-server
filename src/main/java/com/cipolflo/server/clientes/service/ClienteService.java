@@ -58,8 +58,7 @@ public class ClienteService implements IClienteService {
                           ModificacionSocioValidator modificacionSocioValidator,
                           RegistroSocioValidator registroSocioValidator,
                           RegistroParticularValidator registroParticularValidator,
-                          IPagoCuotaService pagoCuotaService) {
-                          RegistroParticularValidator registroParticularValidator,
+                          IPagoCuotaService pagoCuotaService,
                           ExportProperties exportProperties,
                           IExportService exportService) {
         this.clienteRepository = clienteRepository;
