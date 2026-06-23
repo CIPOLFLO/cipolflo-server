@@ -47,6 +47,7 @@ public class ClienteService implements IClienteService {
     private final RegistroParticularValidator registroParticularValidator;
     private final ExportProperties exportProperties;
     private final IExportService exportService;
+    private final IPagoCuotaService pagoCuotaService;
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
@@ -55,7 +56,8 @@ public class ClienteService implements IClienteService {
                           RegistroSocioValidator registroSocioValidator,
                           RegistroParticularValidator registroParticularValidator,
                           ExportProperties exportProperties,
-                          IExportService exportService) {
+                          IExportService exportService,
+                          IPagoCuotaService pagoCuotaService) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
@@ -65,6 +67,7 @@ public class ClienteService implements IClienteService {
         this.registroParticularValidator = registroParticularValidator;
         this.exportProperties = exportProperties;
         this.exportService = exportService;
+        this.pagoCuotaService = pagoCuotaService;
     }
 
     @Override
