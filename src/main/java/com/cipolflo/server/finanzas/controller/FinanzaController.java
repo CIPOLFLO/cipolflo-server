@@ -61,5 +61,21 @@ public class FinanzaController {
                 .contentType(MediaType.parseMediaType( "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ))
                 .body(archivo.getContenido());
     }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping
+    public ResponseEntity<PageResponse<ListadoFinanzasResponseDto>> getListadoFinanzas(
+            @Valid @ModelAttribute ListadoFinanzasRequestDto filters,
+            @Valid @ModelAttribute PageRequestDto pageRequest
+    ) {
+        if (pageRequest.sortField() != null
+                && !CAMPOS_ORDEN_PERMITIDOS.contains(pageRequest.sortField())) {
+            throw new IllegalArgumentException(
+                    "sortField inválido. Valores permitidos: " + CAMPOS_ORDEN_PERMITIDOS
+            );
+        }
+
+        return ResponseEntity.ok(finanzaService.getListadoFinanzas(filters, pageRequest));
+    }
 }
 
