@@ -19,6 +19,8 @@ public class ReservaMapper {
                 reserva.getProcedencia(),
                 reserva.getFechaEntrada(),
                 reserva.getFechaSalida(),
+                reserva.getHoraInicio(),
+                reserva.getHoraFin(),
                 reserva.getCantidadTotal(),
                 reserva.getCantidadMenores(),
                 reserva.getCantidad(),

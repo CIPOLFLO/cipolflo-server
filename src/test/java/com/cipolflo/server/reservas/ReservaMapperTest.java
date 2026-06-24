@@ -124,6 +124,38 @@ class ReservaMapperTest {
     }
 
     @Test
+    void deberiaMapearRequiereDocumentacionComoTrue() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
+                12L,
+                10L,
+                Procedencia.CAMPING,
+                LocalDate.of(2026, 8, 10),
+                LocalDate.of(2026, 8, 15),
+                null, null, 2, 0, null, null,
+                null,
+                true
+        );
+
+        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+
+        assertTrue(dto.getRequiereDocumentacion());
+    }
+
+    @Test
+    void deberiaMapearCamposDeAuditoriaUpdatedAtYUpdatedBy() {
+        Reserva reserva = crearReserva(12L);
+        Instant ahora = Instant.now();
+        ReflectionTestUtils.setField(reserva, "updatedAt", ahora);
+        ReflectionTestUtils.setField(reserva, "updatedBy", "editor@test.com");
+
+        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+
+        assertEquals(ahora, dto.getUpdatedAt());
+        assertEquals("editor@test.com", dto.getUpdatedBy());
+    }
+
+    @Test
     void deberiaMapearEstadoConfirmadoParaColaboracion() {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,

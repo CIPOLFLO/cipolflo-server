@@ -11,6 +11,7 @@ import lombok.Getter;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseDto {
@@ -21,6 +22,8 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
     private final Procedencia procedencia;
     private final LocalDate fechaEntrada;
     private final LocalDate fechaSalida;
+    private final LocalTime horaInicio;
+    private final LocalTime horaFin;
     private final Integer cantidadTotal;
     private final Integer cantidadMenores;
     private final Integer cantidad;
@@ -36,7 +39,7 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
 
     public ReservaDetalleResponseDto(
             Long id, TipoReserva tipoReserva, EstadoReserva estado, Procedencia procedencia,
-            LocalDate fechaEntrada, LocalDate fechaSalida,
+            LocalDate fechaEntrada, LocalDate fechaSalida, LocalTime horaInicio, LocalTime horaFin,
             Integer cantidadTotal, Integer cantidadMenores, Integer cantidad,
             BigDecimal importe, FormaPago formaPago, Boolean pago,
             Boolean requiereDocumentacion, Boolean tieneDocumentacion,
@@ -50,6 +53,8 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
         this.procedencia = procedencia;
         this.fechaEntrada = fechaEntrada;
         this.fechaSalida = fechaSalida;
+        this.horaInicio = horaInicio;
+        this.horaFin = horaFin;
         this.cantidadTotal = cantidadTotal;
         this.cantidadMenores = cantidadMenores;
         this.cantidad = cantidad;
