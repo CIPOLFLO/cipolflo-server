@@ -6,6 +6,7 @@ import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.*;
+import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
@@ -270,6 +271,15 @@ class ClienteMapperTest {
 
         ClienteDetalleReservaDto dto =
                 ClienteMapper.toClienteDetalleReservaDto(socio);
+
+        assertEquals(1L, dto.id());
+        assertEquals("Juan Pérez", dto.nombre());
+        assertEquals("12345678", dto.cedula());
+        assertEquals("099111111", dto.telefono());
+        assertEquals("juan@mail.com", dto.email());
+        assertEquals(TipoCliente.SOCIO, dto.tipoCliente());
+    }
+
     // ── toExportFila ──────────────────────────────────────────────────────────
 
     @Test
@@ -362,14 +372,6 @@ class ClienteMapperTest {
         assertEquals("", fila.get(10));      // direccion
         assertEquals("", fila.get(11));      // fechaIngreso
         assertEquals("", fila.get(12));      // fechaUltimoPago
-    }
-
-        assertEquals(1L, dto.id());
-        assertEquals("Juan Pérez", dto.nombre());
-        assertEquals("12345678", dto.cedula());
-        assertEquals("099111111", dto.telefono());
-        assertEquals("juan@mail.com", dto.email());
-        assertEquals(TipoCliente.SOCIO, dto.tipoCliente());
     }
 
     @Test
