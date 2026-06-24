@@ -225,6 +225,11 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("LIMITE_TAMANIO_EXCEDIDO", ex.getMessage()));
     }
 
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("LIMITE_TAMANIO_EXCEDIDO", ex.getMessage()));
+    }
+
 @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
 public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
         org.springframework.web.bind.MissingServletRequestParameterException ex) {
