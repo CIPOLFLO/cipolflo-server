@@ -8,6 +8,7 @@ import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
+import com.cipolflo.server.shared.export.ExportacionException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import jakarta.validation.ConstraintViolation;
@@ -25,12 +26,12 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.core.MethodParameter;
 import org.springframework.validation.method.ParameterValidationResult;
-
 import java.util.List;
 import java.util.Set;
 
@@ -240,4 +241,36 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("JSON malformado o campo con valor inválido", response.getBody().descripcion());
     }
+
+    @Test
+void handleMissingServletRequestParameterException_deberiaRetornar400() {
+    MissingServletRequestParameterException ex = new MissingServletRequestParameterException("hasta", "LocalDate");
+
+    ResponseEntity<ErrorResponse> response = handler.handleMissingServletRequestParameterException(ex);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertEquals(ServicioCodigoError.SOLICITUD_INVALIDA.name(), response.getBody().codigo());
+    assertEquals("El parámetro 'hasta' es requerido", response.getBody().descripcion());
+}
+
+@Test
+void handleExportacionException_deberiaRetornar400() {
+    ExportacionException ex = new ExportacionException("Se superó el límite de registros exportables");
+
+    ResponseEntity<ErrorResponse> response = handler.handleExportacionException(ex);
+
+    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    assertEquals("LIMITE_TAMANIO_EXCEDIDO", response.getBody().codigo());
+    assertEquals("Se superó el límite de registros exportables", response.getBody().descripcion());
+}
+
+@Test
+void handleException_deberiaRetornar500() {
+    Exception ex = new RuntimeException("Error inesperado");
+
+    ResponseEntity<ErrorResponse> response = handler.handleException(ex);
+
+    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+    assertEquals("ERROR_INTERNO", response.getBody().codigo());
+}
 }
