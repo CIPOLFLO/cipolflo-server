@@ -29,7 +29,7 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 8, 10),
                 LocalDate.of(2026, 8, 15),
-                4, 1, null, null,
+                null, null, 4, 1, null, null,
                 "Llegan a las 14hs",
                 false
         );
@@ -132,7 +132,7 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 9, 3),
-                null, null, null, "20123456-7", null,
+                null, null, null, null, null, "20123456-7", null,
                 false
         );
 

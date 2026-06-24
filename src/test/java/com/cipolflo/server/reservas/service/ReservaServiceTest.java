@@ -306,7 +306,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, clienteId, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, false
+                null, null, null, null, null, null, null, false
         );
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO
@@ -329,7 +329,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, "20123456-7", null, false
+                null, null, null, null, null, "20123456-7", null, false
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
@@ -350,7 +350,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, servicioId, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, false
+                null, null, null, null, null, null, null, false
         );
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 5L, "Juan", "12345678", "099", null, TipoCliente.SOCIO
@@ -373,7 +373,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                4, 1, null, null, "Nota", false
+                null, null, 4, 1, null, null, "Nota", false
         );
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 5L, "Juan", "12345678", "099", "j@mail.com", TipoCliente.SOCIO
