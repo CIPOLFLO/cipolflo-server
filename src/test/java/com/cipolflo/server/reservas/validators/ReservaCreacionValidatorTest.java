@@ -97,7 +97,7 @@ class ReservaCreacionValidatorTest {
     void deberiaLanzarExcepcionCuandoFechaInicioEsAnteriorAHoy() {
         ReservaCreacionRequestDto dto = mockDto(
                 TipoReserva.COMUN, 1L,
-                LocalDate.now().minusDays(1), LocalDate.now().plusDays(2),
+                LocalDate.now().minusDays(2), LocalDate.now().plusDays(2),
                 1L, false, null, null, null, null
         );
 
