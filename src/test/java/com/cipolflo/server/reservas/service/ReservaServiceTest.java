@@ -412,7 +412,7 @@ class ReservaServiceTest {
         return Reserva.crear(
                 TipoReserva.COMUN, clienteId, servicioId, Procedencia.CAMPING,
                 LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 5),
-                null, null, null, null, null, false
+                null, null, null, null, null, null, null, false
         );
     }
 
@@ -478,7 +478,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 5L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, "20123456-7", null, false
+                null, null, null, null, null, "20123456-7", null, false
         );
 
         when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
