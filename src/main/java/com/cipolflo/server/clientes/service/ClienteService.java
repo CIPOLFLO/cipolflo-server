@@ -280,18 +280,18 @@ public class ClienteService implements IClienteService {
 
         List<Cliente> clientes = clienteRepository.findAll(spec,
             Sort.by(Sort.Direction.ASC, "nombreCompleto"));
-        
-    
-List<String> encabezados = List.of("Nombre", "Número de socio", "Cédula", "Email", "Estado","Telefono");        List<List<String>> filas = clientes.stream()
-        .map(ClienteMapper::toExportFila)
-        .toList();
+
+
+        List<String> encabezados = List.of("Nombre", "Número de socio", "Cédula", "Email", "Estado","Telefono");        List<List<String>> filas = clientes.stream()
+            .map(ClienteMapper::toExportFila)
+            .toList();
 
         int[] anchos ={8000,5000,5000,10000,5000};
         byte[] contenido = exportService.generarExcel("Clientes",encabezados, filas, anchos);
 
         String nombre = NombreArchivoExport.generar("clientes");
         return new ArchivoExportado(nombre,contenido);
-        
+
     }
-    
+
 }

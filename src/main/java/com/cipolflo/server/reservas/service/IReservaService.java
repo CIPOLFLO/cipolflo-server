@@ -1,6 +1,8 @@
 package com.cipolflo.server.reservas.service;
 
 import com.cipolflo.server.reservas.domain.Reserva;
+import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
+import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -14,4 +16,6 @@ public interface IReservaService {
     void cancelarTodas(List<Reserva> reservas);
 
     void cancelarReservasFuturasPorCliente(Long clienteId);
+
+    ReservaCreacionResponseDto registrar(ReservaCreacionRequestDto dto);
 }

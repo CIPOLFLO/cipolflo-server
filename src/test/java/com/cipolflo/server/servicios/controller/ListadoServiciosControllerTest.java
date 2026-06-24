@@ -49,7 +49,7 @@ public class ListadoServiciosControllerTest {
         ListadoServiciosResponseDto dto = new ListadoServiciosResponseDto(
                 1L, "Cabaña", Procedencia.CAMPING,
                 BigDecimal.valueOf(2500), BigDecimal.valueOf(1500),
-                ModalidadPrecio.POR_DIA, EstadoServicio.HABILITADO
+                ModalidadPrecio.POR_DIA, EstadoServicio.HABILITADO, 4, 5
         );
         return new PageResponse<>(List.of(dto), 0, 10, 1, 1, true, true);
     }

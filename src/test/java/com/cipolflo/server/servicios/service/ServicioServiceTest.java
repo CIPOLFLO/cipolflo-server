@@ -19,6 +19,7 @@ import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
@@ -208,11 +209,13 @@ class ServicioServiceTest {
         servicio.setHabilitado(true);
 
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 1L,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -243,11 +246,13 @@ class ServicioServiceTest {
         servicio.setHabilitado(true);
 
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 1L,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -288,11 +293,13 @@ class ServicioServiceTest {
         servicio.setId(servicioId);
 
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 1L,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -559,11 +566,13 @@ class ServicioServiceTest {
         servicio.setHabilitado(true);
 
         Reserva reservaProxima = Reserva.crear(
+                TipoReserva.COMUN,
                 2L,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reservaProxima, "id", 2L);
@@ -785,11 +794,13 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         Servicio servicio = crearServicio(servicioId, true);
 
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 clienteId,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -845,11 +856,13 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         Servicio servicio = crearServicio(servicioId, true);
 
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 clienteId,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -872,11 +885,13 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         Servicio servicio = crearServicio(servicioId, true);
 
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 clienteId,
                 servicioId,
                 Procedencia.CAMPING,
                 fechaEntrada,
                 fechaSalida,
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 5L);
@@ -895,7 +910,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         assertEquals(fechaEntrada, dto.getFechaEntrada());
         assertEquals(fechaSalida, dto.getFechaSalida());
         assertFalse(dto.getPago());
-        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
+        assertEquals(EstadoReserva.PENDIENTE, dto.getEstado());
     }
 
     @Test
@@ -907,21 +922,25 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         Servicio servicio = crearServicio(servicioId, true);
 
         Reserva reserva1 = Reserva.crear(
+                TipoReserva.COMUN,
                 clienteId1,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva1, "id", 1L);
 
         Reserva reserva2 = Reserva.crear(
+                TipoReserva.COMUN,
                 clienteId2,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(3),
                 LocalDate.now().plusDays(4),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva2, "id", 2L);
@@ -953,11 +972,13 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         Servicio servicio = crearServicio(servicioId, true);
 
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 10L,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 6, 17),
                 LocalDate.of(2026, 6, 19),
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 5L);
@@ -972,7 +993,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         assertEquals(1, resultado.size());
         ServicioReservaOcupacionDto dto = resultado.get(0);
         assertEquals(5L, dto.reservaId());
-        assertEquals(EstadoReserva.CONFIRMADA, dto.estado());
+        assertEquals(EstadoReserva.PENDIENTE, dto.estado());
         assertEquals(LocalDate.of(2026, 6, 17), dto.fechaInicio());
         assertEquals(LocalDate.of(2026, 6, 19), dto.fechaFin());
         verify(reservaService).obtenerOcupacionPorServicioEnRango(servicioId, desde, hasta);

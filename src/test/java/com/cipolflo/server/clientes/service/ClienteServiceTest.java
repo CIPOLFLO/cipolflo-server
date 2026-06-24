@@ -652,83 +652,6 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         assertThrows(SocioNotFoundException.class, () -> clienteService.consultarEstadoSocio(1L));
         verify(clienteRepository).findById(1L);
     }
-    @Test
-    void deberiaRegistrarParticularCorrectamente() {
-        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
-        dto.setCedula("1.234.567-8");
-        dto.setNombre("Juan Pérez");
-        dto.setCelular("099123456");
-        dto.setMail("juan@mail.com");
-
-        Particular particularGuardado = Particular.registrar(
-                "12345678",
-                "Juan Pérez",
-                "099123456",
-                "juan@mail.com"
-        );
-        particularGuardado.setId(1L);
-
-        when(clienteRepository.saveAndFlush(any(Particular.class))).thenReturn(particularGuardado);
-
-        ClienteResponseDto response = clienteService.registrarParticular(dto);
-
-        assertNotNull(response);
-        assertEquals(1L, response.getId());
-        assertEquals("12345678", response.getCedula());
-        assertEquals("Juan Pérez", response.getNombre());
-        assertEquals("099123456", response.getTelefono());
-        assertEquals("juan@mail.com", response.getEmail());
-        assertEquals(TipoCliente.PARTICULAR, response.getTipoCliente());
-        assertNull(response.getNumeroSocio());
-        assertNull(response.getEstado());
-
-        verify(registroParticularValidator).validar(dto, "12345678");
-        verify(clienteRepository).saveAndFlush(any(Particular.class));
-    }
-
-    @Test
-    void deberiaLanzarErrorCuandoCedulaDuplicadaAlRegistrarParticular() {
-        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
-        dto.setCedula("1.234.567-8");
-        dto.setNombre("Juan Pérez");
-        dto.setCelular("099123456");
-
-        doThrow(new ClienteValidacionException(
-                ClienteCodigoError.CEDULA_DUPLICADA.name(),
-                "Ya existe un cliente con esa cédula"
-        )).when(registroParticularValidator).validar(dto, "12345678");
-
-        assertThrows(
-                ClienteValidacionException.class,
-                () -> clienteService.registrarParticular(dto)
-        );
-
-        verify(registroParticularValidator).validar(dto, "12345678");
-        verify(clienteRepository, never()).saveAndFlush(any());
-    }
-    @Test
-    void deberiaLanzarErrorCuandoCedulaTieneFormatoInvalido() {
-        RegistroParticularRequestDto dto =
-                new RegistroParticularRequestDto();
-
-        dto.setCedula("abc");
-        dto.setNombre("Juan");
-        dto.setCelular("099111111");
-
-        doThrow(new ClienteValidacionException(
-                ClienteCodigoError.CEDULA_INVALIDA.name(),
-                "La cédula ingresada no es válida"
-        )).when(registroParticularValidator).validar(any(), anyString());
-
-        assertThrows(
-                ClienteValidacionException.class,
-                () -> clienteService.registrarParticular(dto)
-        );
-        verify(registroParticularValidator).validar(dto, "");
-
-        verify(clienteRepository, never()).save(any());
-        verify(clienteRepository, never()).saveAndFlush(any());
-    }
 
     @Test
     void deberiaLanzarCedulaDuplicadaCuandoSaveAndFlushFallaAlModificarParticular() {
@@ -767,26 +690,6 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
 
         assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
     }
-    @Test
-    void deberiaLanzarCedulaDuplicadaCuandoSaveAndFlushFallaAlRegistrarParticular() {
-        RegistroParticularRequestDto dto = new RegistroParticularRequestDto();
-        dto.setCedula("1.234.567-8");
-        dto.setNombre("Juan Pérez");
-        dto.setCelular("099123456");
-        dto.setMail("juan@mail.com");
-
-        when(clienteRepository.saveAndFlush(any(Particular.class)))
-                .thenThrow(new DataIntegrityViolationException("duplicada"));
-
-        ClienteValidacionException ex = assertThrows(
-                ClienteValidacionException.class,
-                () -> clienteService.registrarParticular(dto)
-        );
-
-        assertEquals(ClienteCodigoError.CEDULA_DUPLICADA.name(), ex.getCodigo());
-        verify(registroParticularValidator).validar(dto, "12345678");
-    }
-
     @Test
     void deberiaRetornarListadoDeSociosConUltimaCuotaPaga() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 5, EstadoSocio.ACTIVO);

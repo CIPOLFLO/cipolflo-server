@@ -3,13 +3,13 @@ package com.cipolflo.server.clientes.controller;
 import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 
-//import org.apache.tomcat.util.http.parser.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,9 +29,13 @@ public class ClienteController {
     );
 
     private final IClienteService clienteService;
+    private final IRegistroParticularService registroParticularService;
 
-    public ClienteController(IClienteService clienteService) {
+    public ClienteController(
+            IClienteService clienteService,
+            IRegistroParticularService registroParticularService) {
         this.clienteService = clienteService;
+        this.registroParticularService = registroParticularService;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -115,7 +119,7 @@ public class ClienteController {
     public ResponseEntity<ClienteResponseDto> registrarParticular(
             @Valid @RequestBody RegistroParticularRequestDto dto) {
 
-        ClienteResponseDto response = clienteService.registrarParticular(dto);
+        ClienteResponseDto response = registroParticularService.registrarParticular(dto);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -132,6 +136,6 @@ public class ClienteController {
             .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
             .body(archivo.getContenido());
         }
-    
+
 
 }

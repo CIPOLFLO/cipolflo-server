@@ -8,4 +8,6 @@ public interface ServicioRepository extends JpaRepository<Servicio, Long>, JpaSp
     boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
 
     boolean existsByNombreIgnoreCase(String nombre);
+
+    boolean existsByIdAndRequiereDocumentacionTrue(Long id);
 }
