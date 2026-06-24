@@ -25,7 +25,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import java.util.Optional;
-
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -1017,5 +1017,73 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                   "metodoCobro": "EFECTIVO"
                 }
                 """.formatted(mailJson);
+    }
+       // --- exportarClientes ---
+
+    @Test
+    @WithMockUser
+    void deberiaExportarClientesCorrectamente() throws Exception {
+        com.cipolflo.server.shared.export.ArchivoExportado archivo = new com.cipolflo.server.shared.export.ArchivoExportado(
+                "clientes.xlsx",
+                "excel".getBytes()
+        );
+
+        when(clienteService.exportarClientes(any())).thenReturn(archivo);
+
+        mockMvc.perform(post("/api/v1/clientes/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\": null}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"clientes.xlsx\""
+                ));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaExportarAunqueNoHayaClientes() throws Exception {
+        com.cipolflo.server.shared.export.ArchivoExportado archivo = new com.cipolflo.server.shared.export.ArchivoExportado(
+                "clientes.xlsx",
+                new byte[0]
+        );
+
+        when(clienteService.exportarClientes(any())).thenReturn(archivo);
+
+        mockMvc.perform(post("/api/v1/clientes/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaLlamarAlService() throws Exception {
+        when(clienteService.exportarClientes(any()))
+                .thenReturn(new com.cipolflo.server.shared.export.ArchivoExportado("clientes.xlsx", new byte[0]));
+
+        mockMvc.perform(post("/api/v1/clientes/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
+
+        verify(clienteService).exportarClientes(any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaDevolverErrorSiFallaElService() throws Exception {
+        when(clienteService.exportarClientes(any()))
+                .thenThrow(new RuntimeException("Error exportando"));
+
+        mockMvc.perform(post("/api/v1/clientes/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().is5xxServerError());
     }
 }
