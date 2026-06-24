@@ -24,7 +24,7 @@ class ServicioReservaOcupacionMapperTest {
                 Procedencia.CAMPING,
                 fechaEntrada,
                 fechaSalida,
-                null, null, null, null, null,
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", id);
