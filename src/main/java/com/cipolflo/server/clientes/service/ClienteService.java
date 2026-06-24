@@ -257,7 +257,8 @@ public class ClienteService implements IClienteService {
                 cedulaNormalizada,
                 nombreNormalizado,
                 celularNormalizado,
-                mailNormalizado
+                mailNormalizado,
+                null
         );
 
         try {
