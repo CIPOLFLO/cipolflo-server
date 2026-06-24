@@ -38,4 +38,7 @@ public class ServicioRegistroRequestDto {
 
     @Positive(message = "La cantidad debe ser un número positivo")
     private Integer cantidad;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "El costo por persona extra debe ser mayor o igual a cero")
+    private BigDecimal costoPersonaExtra;
 }

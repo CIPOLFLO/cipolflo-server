@@ -53,6 +53,7 @@ public class ReservaService implements IReservaService {
     private final IServicioRequiereDocumentacion servicioRequiereDocumentacion;
     private final IConsultaClienteDetalle consultaClienteDetalle;
     private final IConsultaServicioSimple consultaServicioSimple;
+    private final ICalculoCostoService calculoCostoService;
 
     public ReservaService(
             ReservaRepository reservaRepository,
@@ -61,7 +62,8 @@ public class ReservaService implements IReservaService {
             ReservaModificacionValidator reservaModificacionValidator,
             IServicioRequiereDocumentacion servicioRequiereDocumentacion,
             IConsultaServicioSimple consultaServicioSimple,
-            IConsultaClienteDetalle consultaClienteDetalle
+            IConsultaClienteDetalle consultaClienteDetalle,
+            ICalculoCostoService calculoCostoService
     ) {
         this.reservaRepository = reservaRepository;
         this.registroParticularService = registroParticularService;
@@ -70,6 +72,7 @@ public class ReservaService implements IReservaService {
         this.servicioRequiereDocumentacion = servicioRequiereDocumentacion;
         this.consultaClienteDetalle = consultaClienteDetalle;
         this.consultaServicioSimple = consultaServicioSimple;
+        this.calculoCostoService = calculoCostoService;
     }
 
     @Override
@@ -251,5 +254,10 @@ public class ReservaService implements IReservaService {
         reservaRepository.save(reserva);
 
         return new ReservaModificacionResponseDto(reserva.getId());
+    }
+
+    @Override
+    public CalculoCostoResponseDto calcularCosto(CalculoCostoRequestDto request) {
+        return calculoCostoService.calcularCosto(request);
     }
 }

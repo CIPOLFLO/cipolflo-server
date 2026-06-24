@@ -7,6 +7,7 @@ import com.cipolflo.server.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -69,5 +70,12 @@ public class ReservaController {
             @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id,
             @Valid @RequestBody ReservaModificacionRequestDto dto) {
         return ResponseEntity.ok(reservaService.modificar(id, dto));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/calcular-costo")
+    public ResponseEntity<CalculoCostoResponseDto> calcularCosto(
+            @Valid @RequestBody CalculoCostoRequestDto dto) {
+        return ResponseEntity.ok(reservaService.calcularCosto(dto));
     }
 }

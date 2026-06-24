@@ -25,6 +25,7 @@ import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
+import com.cipolflo.server.reservas.service.ICalculoCostoService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -73,6 +74,9 @@ class ReservaServiceTest {
 
     @Mock
     private IConsultaServicioSimple consultaServicioSimple;
+
+    @Mock
+    private ICalculoCostoService calculoCostoService;
 
     @InjectMocks
     private ReservaService reservaService;

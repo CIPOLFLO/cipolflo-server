@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface IReservaService {
 
+    CalculoCostoResponseDto calcularCosto(CalculoCostoRequestDto request);
+
     List<Reserva> obtenerProximasPorServicioEnRango(Long servicioId);
 
     List<Reserva> obtenerOcupacionPorServicioEnRango(Long servicioId, LocalDate desde, LocalDate hasta);

@@ -35,4 +35,7 @@ public class ModificacionServicioDto {
 
     @PositiveOrZero(message = "La cantidad debe ser mayor o igual a 0")
     private Integer cantidad;
+
+    @PositiveOrZero(message = "El costo por persona extra debe ser mayor o igual a cero")
+    private BigDecimal costoPersonaExtra;
 }
