@@ -239,4 +239,12 @@ public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterExcepti
             .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(),
                     "El parámetro '" + ex.getParameterName() + "' es requerido"));
 }
+
+@ExceptionHandler(Exception.class)
+public ResponseEntity<ErrorResponse> handleException(Exception ex) {
+    log.error("Error inesperado: {}", ex.getMessage(), ex);
+    return ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(new ErrorResponse("ERROR_INTERNO", "Ocurrió un error inesperado"));
+}
 }
