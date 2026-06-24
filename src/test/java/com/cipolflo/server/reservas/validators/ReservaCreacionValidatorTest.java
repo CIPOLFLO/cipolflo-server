@@ -14,7 +14,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -65,6 +68,27 @@ class ReservaCreacionValidatorTest {
         s.setId(id);
         s.setHabilitado(true);
         return s;
+    }
+
+    private Servicio servicioHabilitado(Long id, ModalidadPrecio modalidadPrecio) {
+        Servicio s = servicioHabilitado(id);
+        s.setModalidadPrecio(modalidadPrecio);
+        return s;
+    }
+
+    private ReservaCreacionRequestDto mockDtoConHoras(
+            LocalDate fechaInicio, LocalDate fechaFin,
+            LocalTime horaInicio, LocalTime horaFin,
+            Long servicioId, Long clienteId
+    ) {
+        ReservaCreacionRequestDto dto = mockDto(
+                TipoReserva.COMUN, servicioId,
+                fechaInicio, fechaFin,
+                clienteId, false, null, null, null, null
+        );
+        lenient().when(dto.getHoraInicio()).thenReturn(horaInicio);
+        lenient().when(dto.getHoraFin()).thenReturn(horaFin);
+        return dto;
     }
 
     // ── validarFechas ──────────────────────────────────────────────────────────
@@ -282,6 +306,83 @@ class ReservaCreacionValidatorTest {
                 42L, false, null, null, null, null
         );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                any(), any(), any(), any()
+        )).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar(dto));
+    }
+
+    // ── validarHoras ───────────────────────────────────────────────────────────
+
+    @Test
+    void deberiaLanzarExcepcionCuandoServicioPorHoraSinHoraInicio() {
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, null, LocalTime.of(12, 0), 1L, 42L);
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoServicioPorHoraSinHoraFin() {
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(10, 0), null, 1L, 42L);
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoHoraFinIgualAHoraInicioEnMismoDia() {
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(10, 0), LocalTime.of(10, 0), 1L, 42L);
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.HORA_FIN_ANTERIOR_O_IGUAL_A_INICIO.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoHoraFinAnteriorAHoraInicioEnMismoDia() {
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(14, 0), LocalTime.of(10, 0), 1L, 42L);
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.HORA_FIN_ANTERIOR_O_IGUAL_A_INICIO.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoServicioNoPorHoraTieneHoras() {
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(10, 0), LocalTime.of(12, 0), 1L, 42L);
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_DIA)));
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.HORA_NO_PERMITIDA_PARA_MODALIDAD.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaPasarValidacionHorasConMismoDiaYHoraFinPosterior() {
+        LocalDate fecha = LocalDate.now().plusDays(1);
+        ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(10, 0), LocalTime.of(12, 0), 1L, 42L);
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                any(), any(), any(), any()
+        )).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar(dto));
+    }
+
+    @Test
+    void deberiaPasarValidacionHorasConDiasDistintosAunqueHoraFinSeaAnterior() {
+        LocalDate inicio = LocalDate.now().plusDays(1);
+        LocalDate fin = LocalDate.now().plusDays(3);
+        ReservaCreacionRequestDto dto = mockDtoConHoras(inicio, fin, LocalTime.of(14, 0), LocalTime.of(10, 0), 1L, 42L);
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                 any(), any(), any(), any()
         )).thenReturn(false);
