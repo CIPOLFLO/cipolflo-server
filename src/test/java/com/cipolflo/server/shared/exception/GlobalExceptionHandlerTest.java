@@ -3,6 +3,9 @@ package com.cipolflo.server.shared.exception;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
+import com.cipolflo.server.clientes.exception.SocioNotFoundException;
+import com.cipolflo.server.finanzas.exception.FinanzaCodigoError;
+import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -272,5 +275,25 @@ void handleException_deberiaRetornar500() {
 
     assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
     assertEquals("ERROR_INTERNO", response.getBody().codigo());
+}
+
+@Test
+void handleSocioNotFoundException_deberiaRetornar404() {
+    SocioNotFoundException ex = new SocioNotFoundException(1L);
+
+    ResponseEntity<ErrorResponse> response = handler.handleSocioNotFoundException(ex);
+
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(ClienteCodigoError.SOCIO_NO_ENCONTRADO.name(), response.getBody().codigo());
+}
+
+@Test
+void handleFinanzaNotFoundException_deberiaRetornar404() {
+    FinanzaNotFoundException ex = new FinanzaNotFoundException(1L);
+
+    ResponseEntity<ErrorResponse> response = handler.handleFinanzaNotFoundException(ex);
+
+    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    assertEquals(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), response.getBody().codigo());
 }
 }
