@@ -5,10 +5,7 @@ import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.EstadoSocioResponseDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
-import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
+import com.cipolflo.server.clientes.dto.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
@@ -227,6 +224,52 @@ class ClienteMapperTest {
         assertNull(dto.getUltimaCuotaDto());
     }
 
+    // ── toBusquedaCedulaResponseDto ─────────────────────────────────────────────
+
+    @Test
+    void deberiaMapearTodosLosCamposEnBusquedaCedulaParaSocio() {
+        Socio socio = crearSocio();
+        socio.setNotas("Observación de prueba");
+
+        BusquedaCedulaResponseDto dto =
+                ClienteMapper.toBusquedaCedulaResponseDto(socio);
+
+        assertEquals(1L, dto.getId());
+        assertEquals("Juan Pérez", dto.getNombre());
+        assertEquals("12345678", dto.getCedula());
+        assertEquals("099111111", dto.getTelefono());
+        assertEquals("juan@mail.com", dto.getMail());
+        assertEquals("Observación de prueba", dto.getObservaciones());
+        assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
+    }
+
+    @Test
+    void deberiaMapearTipoParticularEnBusquedaCedula() {
+        BusquedaCedulaResponseDto dto =
+                ClienteMapper.toBusquedaCedulaResponseDto(crearParticular());
+
+        assertEquals(TipoCliente.PARTICULAR, dto.getTipoCliente());
+        assertEquals(2L, dto.getId());
+        assertEquals("Laura Fernández", dto.getNombre());
+        assertEquals("67890123", dto.getCedula());
+    }
+
+    @Test
+    void deberiaMapearObservacionesNulaEnBusquedaCedulaCuandoClienteNoTieneNotas() {
+        BusquedaCedulaResponseDto dto =
+                ClienteMapper.toBusquedaCedulaResponseDto(crearParticular());
+
+        assertNull(dto.getObservaciones());
+    }
+
+    // ── toClienteDetalleReservaDto ──────────────────────────────────────────────
+
+    @Test
+    void deberiaMapearTodosLosCamposDeClienteDetalleReservaDtoParaSocio() {
+        Socio socio = crearSocio();
+
+        ClienteDetalleReservaDto dto =
+                ClienteMapper.toClienteDetalleReservaDto(socio);
     // ── toExportFila ──────────────────────────────────────────────────────────
 
     @Test
@@ -321,4 +364,32 @@ class ClienteMapperTest {
         assertEquals("", fila.get(12));      // fechaUltimoPago
     }
 
+        assertEquals(1L, dto.id());
+        assertEquals("Juan Pérez", dto.nombre());
+        assertEquals("12345678", dto.cedula());
+        assertEquals("099111111", dto.telefono());
+        assertEquals("juan@mail.com", dto.email());
+        assertEquals(TipoCliente.SOCIO, dto.tipoCliente());
+    }
+
+    @Test
+    void deberiaMapearTipoSocioEnClienteDetalleReservaDto() {
+        ClienteDetalleReservaDto dto =
+                ClienteMapper.toClienteDetalleReservaDto(crearSocio());
+
+        assertEquals(TipoCliente.SOCIO, dto.tipoCliente());
+    }
+
+    @Test
+    void deberiaMapearTipoParticularEnClienteDetalleReservaDto() {
+        ClienteDetalleReservaDto dto =
+                ClienteMapper.toClienteDetalleReservaDto(crearParticular());
+
+        assertEquals(TipoCliente.PARTICULAR, dto.tipoCliente());
+        assertEquals(2L, dto.id());
+        assertEquals("Laura Fernández", dto.nombre());
+        assertEquals("67890123", dto.cedula());
+        assertEquals("099666666", dto.telefono());
+        assertEquals("laura@mail.com", dto.email());
+    }
 }

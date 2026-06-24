@@ -6,7 +6,8 @@ import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.*;
-import com.cipolflo.server.clientes.utils.CedulaNormalizador;
+import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
+
 public class ClienteMapper {
 
     private ClienteMapper() {}
@@ -68,6 +69,17 @@ public class ClienteMapper {
                 socio.getId(),
                 socio.getEstado(),
                 socio.getNumeroSocio()
+        );
+    }
+
+    public static ClienteDetalleReservaDto toClienteDetalleReservaDto(Cliente cliente) {
+        return new ClienteDetalleReservaDto(
+                cliente.getId(),
+                cliente.getNombreCompleto(),
+                cliente.getCedula(),
+                cliente.getTelefono(),
+                cliente.getMail(),
+                cliente instanceof Socio ? TipoCliente.SOCIO : TipoCliente.PARTICULAR
         );
     }
 

@@ -1,14 +1,22 @@
 package com.cipolflo.server.reservas.service;
 
+import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
+import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
+import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
+import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
+import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
+import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
+import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -21,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -40,6 +49,12 @@ class ReservaServiceTest {
 
     @Mock
     private IServicioRequiereDocumentacion servicioRequiereDocumentacion;
+
+    @Mock
+    private IConsultaClienteDetalle consultaClienteDetalle;
+
+    @Mock
+    private IConsultaServicioSimple consultaServicioSimple;
 
     @InjectMocks
     private ReservaService reservaService;
@@ -271,6 +286,114 @@ class ReservaServiceTest {
                 r.getClienteId() == null &&
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(r.getTipoReserva())
         ));
+    }
+
+    // ── getDetalle ─────────────────────────────────────────────────────────────
+
+    @Test
+    void deberiaLanzarExcepcionCuandoReservaNoExiste() {
+        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ReservaNotFoundException.class, () -> reservaService.getDetalle(99L));
+
+        verify(consultaClienteDetalle, never()).getDetallClienteSimple(any());
+        verify(consultaServicioSimple, never()).getDetalleServicioSimple(any());
+    }
+
+    @Test
+    void deberiaLlamarConsultaClienteConClienteIdDeLaReserva() {
+        Long clienteId = 5L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, clienteId, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, false
+        );
+        ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
+                clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO
+        );
+        ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
+                10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
+        );
+
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(consultaClienteDetalle.getDetallClienteSimple(clienteId)).thenReturn(clienteDto);
+        when(consultaServicioSimple.getDetalleServicioSimple(10L)).thenReturn(servicioDto);
+
+        reservaService.getDetalle(1L);
+
+        verify(consultaClienteDetalle).getDetallClienteSimple(clienteId);
+    }
+
+    @Test
+    void deberiaRetornarClienteNullCuandoClienteIdEsNull() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, "20123456-7", null, false
+        );
+        ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
+                10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
+        );
+
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(consultaServicioSimple.getDetalleServicioSimple(10L)).thenReturn(servicioDto);
+
+        ReservaDetalleResponseDto resultado = reservaService.getDetalle(1L);
+
+        assertNull(resultado.getCliente());
+        verify(consultaClienteDetalle, never()).getDetallClienteSimple(any());
+    }
+
+    @Test
+    void deberiaLlamarConsultaServicioConServicioIdDeLaReserva() {
+        Long servicioId = 10L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, servicioId, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, false
+        );
+        ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
+                5L, "Juan", "12345678", "099", null, TipoCliente.SOCIO
+        );
+        ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
+                servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
+        );
+
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(consultaClienteDetalle.getDetallClienteSimple(5L)).thenReturn(clienteDto);
+        when(consultaServicioSimple.getDetalleServicioSimple(servicioId)).thenReturn(servicioDto);
+
+        reservaService.getDetalle(1L);
+
+        verify(consultaServicioSimple).getDetalleServicioSimple(servicioId);
+    }
+
+    @Test
+    void deberiaRetornarDtoConClienteYServicioMapeados() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, 4, 1, null, null, "Nota", false
+        );
+        ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
+                5L, "Juan", "12345678", "099", "j@mail.com", TipoCliente.SOCIO
+        );
+        ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
+                10L, "Cabaña", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
+        );
+
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(consultaClienteDetalle.getDetallClienteSimple(5L)).thenReturn(clienteDto);
+        when(consultaServicioSimple.getDetalleServicioSimple(10L)).thenReturn(servicioDto);
+
+        ReservaDetalleResponseDto resultado = reservaService.getDetalle(1L);
+
+        assertNotNull(resultado);
+        assertEquals(clienteDto, resultado.getCliente());
+        assertEquals(servicioDto, resultado.getServicio());
+        assertEquals(TipoReserva.COMUN, resultado.getTipoReserva());
+        assertEquals(EstadoReserva.PENDIENTE, resultado.getEstado());
+        assertEquals("Nota", resultado.getNotas());
     }
 
     @Test

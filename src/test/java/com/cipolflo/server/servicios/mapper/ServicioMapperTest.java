@@ -56,6 +56,28 @@ class ServicioMapperTest {
         assertEquals(Procedencia.CAMPING, dto.getProcedencia());
         assertEquals(BigDecimal.valueOf(2500), dto.getPrecioParticular());
         assertEquals(BigDecimal.valueOf(1500), dto.getPrecioSocio());
-        assertEquals(ModalidadPrecio.POR_DIA, dto.getModalidadPrecio()); 
+        assertEquals(ModalidadPrecio.POR_DIA, dto.getModalidadPrecio());
+    }
+
+    // ── toServicioDetalleSimple ─────────────────────────────────────────────────
+
+    @Test
+    void deberiaMapearTodosLosCamposEnServicioDetalleSimple() {
+        com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto dto =
+                ServicioMapper.toServicioDetalleSimple(crearServicio(true));
+
+        assertEquals(1L, dto.id());
+        assertEquals("Cabaña", dto.nombre());
+        assertEquals(Procedencia.CAMPING, dto.procedencia());
+        assertEquals(ModalidadPrecio.POR_DIA, dto.modalidadPrecio());
+    }
+
+    @Test
+    void deberiaMapearServicioDeshabilitadoEnServicioDetalleSimple() {
+        com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto dto =
+                ServicioMapper.toServicioDetalleSimple(crearServicio(false));
+
+        assertEquals(1L, dto.id());
+        assertEquals("Cabaña", dto.nombre());
     }
 }
