@@ -14,6 +14,9 @@ import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.validator.*;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportProperties;
+import com.cipolflo.server.shared.export.IExportService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
@@ -25,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 import java.time.LocalDate;
@@ -39,23 +43,38 @@ import static org.mockito.Mockito.*;
 class ClienteServiceTest {
 
     @Mock
-    private ClienteRepository clienteRepository;
-    @Mock
-    private IReservaService reservaService;
-    @Mock
-    private ModificacionParticularValidator modificacionParticularValidator;
-    @Mock
-    private ModificacionSocioValidator modificacionSocioValidator;
-    @Mock
-    private RegistroSocioValidator registroSocioValidator;
-    @Mock
-    private CedulaUnicaValidator cedulaUnicaValidator;
-    @Mock
-    private CedulaFormatoValidator cedulaFormatoValidator;
-    @Mock
-    private RegistroParticularValidator registroParticularValidator;
-    @Mock
-    private IPagoCuotaService pagoCuotaService;
+private ClienteRepository clienteRepository;
+
+@Mock
+private IReservaService reservaService;
+
+@Mock
+private ModificacionParticularValidator modificacionParticularValidator;
+
+@Mock
+private ModificacionSocioValidator modificacionSocioValidator;
+
+@Mock
+private RegistroSocioValidator registroSocioValidator;
+
+@Mock
+private CedulaUnicaValidator cedulaUnicaValidator;
+
+@Mock
+private CedulaFormatoValidator cedulaFormatoValidator;
+
+@Mock
+private RegistroParticularValidator registroParticularValidator;
+
+@Mock
+private IPagoCuotaService pagoCuotaService;
+
+@Mock
+private ExportProperties exportProperties;
+
+@Mock
+private IExportService exportService;
+
     @InjectMocks
     private ClienteService clienteService;
 
@@ -814,4 +833,82 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
 
         verify(pagoCuotaService, never()).calcularUltimaCuotaPaga(anyLong());
     }
+
+    @Test
+void deberiaExportarArchivoAunqueNoHayaClientes() {
+
+    ListadoClientesRequestDto filtros = sinFiltros();
+
+    when(clienteRepository.findAll(
+            any(Specification.class),
+            any(Sort.class)
+    )).thenReturn(List.of());
+
+    byte[] excelGenerado = new byte[0];
+
+    when(exportService.generarExcel(
+            anyString(),
+            anyList(),
+            anyList(),
+            any(int[].class)
+    )).thenReturn(excelGenerado);
+
+    ArchivoExportado resultado = clienteService.exportarClientes(filtros);
+
+    assertNotNull(resultado);
+    assertNotNull(resultado.getContenido());
+    assertEquals(0, resultado.getContenido().length);
+
+    verify(clienteRepository).findAll(any(Specification.class), any(Sort.class));
+
+    verify(exportService).generarExcel(
+            anyString(),
+            anyList(),
+            anyList(),
+            any(int[].class)
+    );
+}
+@Test
+void deberiaExportarClientesCorrectamente() {
+
+    ListadoClientesRequestDto filtros = sinFiltros();
+
+    Socio socio = crearSocio(
+            1L,
+            "Juan Pérez",
+            "12345678",
+            1,
+            EstadoSocio.ACTIVO
+    );
+
+    byte[] excel = "excel".getBytes();
+
+    when(clienteRepository.findAll(
+            any(Specification.class),
+            any(Sort.class)
+    )).thenReturn(List.of(socio));
+
+    when(exportService.generarExcel(
+            anyString(),
+            anyList(),
+            anyList(),
+            any(int[].class)
+    )).thenReturn(excel);
+
+    ArchivoExportado resultado = clienteService.exportarClientes(filtros);
+
+    assertNotNull(resultado);
+    assertNotNull(resultado.getContenido());
+    assertTrue(resultado.getContenido().length > 0);
+    assertTrue(resultado.getNombre().contains("clientes"));
+
+    verify(clienteRepository).findAll(any(Specification.class), any(Sort.class));
+
+    verify(exportService).generarExcel(
+            anyString(),
+            anyList(),
+            anyList(),
+            any(int[].class)
+    );
+}
 }
