@@ -2,6 +2,7 @@ package com.cipolflo.server.servicios.mapper;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.servicios.dto.ServicioReservaOcupacionDto;
 import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
@@ -17,11 +18,13 @@ class ServicioReservaOcupacionMapperTest {
 
     private Reserva crearReserva(Long id, LocalDate fechaEntrada, LocalDate fechaSalida) {
         Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
                 1L,
                 10L,
                 Procedencia.CAMPING,
                 fechaEntrada,
                 fechaSalida,
+                null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", id);
@@ -39,7 +42,7 @@ class ServicioReservaOcupacionMapperTest {
         ServicioReservaOcupacionDto dto = ServicioReservaOcupacionMapper.toOcupacionDto(reserva);
 
         assertEquals(5L, dto.reservaId());
-        assertEquals(EstadoReserva.CONFIRMADA, dto.estado());
+        assertEquals(EstadoReserva.PENDIENTE, dto.estado());
         assertEquals(LocalDate.of(2026, 6, 10), dto.fechaInicio());
         assertEquals(LocalDate.of(2026, 6, 12), dto.fechaFin());
     }

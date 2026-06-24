@@ -5,6 +5,9 @@ import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.finanzas.exception.FinanzaCodigoError;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
+import com.cipolflo.server.reservas.exception.ReservaCodigoError;
+import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
+import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -225,5 +228,20 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("LIMITE_TAMANIO_EXCEDIDO", ex.getMessage()));
     }
 
+    @ExceptionHandler(ReservaValidacionException.class)
+    public ResponseEntity<ErrorResponse> handleReservaValidacionException(ReservaValidacionException ex) {
+        log.warn("Validación de reserva fallida [{}]: {}", ex.getCodigo(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ReservaNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleReservaNotFoundException(ReservaNotFoundException ex) {
+        log.warn("Reserva no encontrada: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ReservaCodigoError.RESERVA_NO_ENCONTRADA.name(), ex.getMessage()));
+    }
 
 }

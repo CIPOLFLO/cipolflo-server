@@ -9,6 +9,7 @@ import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.service.IClienteService;
+import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,9 @@ class ClienteControllerTest {
 
     @MockitoBean
     private IClienteService clienteService;
+
+    @MockitoBean
+    private IRegistroParticularService registroParticularService;
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
@@ -899,7 +903,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 null
         );
 
-        when(clienteService.registrarParticular(any(RegistroParticularRequestDto.class)))
+        when(registroParticularService.registrarParticular(any(RegistroParticularRequestDto.class)))
                 .thenReturn(response);
 
         mockMvc.perform(
@@ -919,7 +923,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 .andExpect(jsonPath("$.tipoCliente").value("PARTICULAR"))
                 .andExpect(jsonPath("$.cedula").value("12345678"));
 
-        verify(clienteService).registrarParticular(any(RegistroParticularRequestDto.class));
+        verify(registroParticularService).registrarParticular(any(RegistroParticularRequestDto.class));
     }
 
     @Test
@@ -940,13 +944,13 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
 
-        verify(clienteService, never()).registrarParticular(any());
+        verify(registroParticularService, never()).registrarParticular(any());
     }
 
     @Test
     @WithMockUser
     void deberiaRetornarBadRequestCuandoCedulaDuplicadaEnRegistroParticular() throws Exception {
-        when(clienteService.registrarParticular(any(RegistroParticularRequestDto.class)))
+        when(registroParticularService.registrarParticular(any(RegistroParticularRequestDto.class)))
                 .thenThrow(new ClienteValidacionException(
                         ClienteCodigoError.CEDULA_DUPLICADA.name(),
                         "Ya existe un cliente con esa cédula"
@@ -971,7 +975,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
     @Test
     @WithMockUser
     void deberiaRetornarBadRequestCuandoCedulaEsInvalidaEnRegistroParticular() throws Exception {
-        when(clienteService.registrarParticular(any(RegistroParticularRequestDto.class)))
+        when(registroParticularService.registrarParticular(any(RegistroParticularRequestDto.class)))
                 .thenThrow(new ClienteValidacionException(
                         ClienteCodigoError.CEDULA_INVALIDA.name(),
                         "La cédula ingresada no es válida"

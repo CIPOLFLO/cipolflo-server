@@ -14,9 +14,11 @@
 4. [Servicios — DTOs](#servicios--dtos)
 5. [Clientes — Endpoints](#clientes--endpoints)
 6. [Clientes — DTOs](#clientes--dtos)
-7.  [Finanzas — Endpoints](#finanzas--endpoints)
-8. [Finanzas — DTOs](#finanzas--dtos)
-9. [Manejo de errores](#manejo-de-errores)
+7. [Reservas — Endpoints](#reservas--endpoints)
+8. [Reservas — DTOs](#reservas--dtos)
+9. [Finanzas — Endpoints](#finanzas--endpoints)
+10. [Finanzas — DTOs](#finanzas--dtos)
+11. [Manejo de errores](#manejo-de-errores)
 
 
 ---
@@ -61,6 +63,11 @@ COBRADORA | DESCUENTO_SALARIAL | TRANSFERENCIA | EN_SEDE | EFECTIVO
 ### `TipoMovimiento`
 ```
 INGRESO | EGRESO
+```
+
+### `TipoReserva`
+```
+COMUN | COLABORACION_SIN_FINES_DE_LUCRO
 ```
 
 ### `Concepto`
@@ -821,6 +828,129 @@ Registra un nuevo cliente de tipo particular.
 ```
 
 ---
+## Reservas — Endpoints
+
+### `POST /api/v1/reservas`
+Crea una nueva reserva. Soporta tres variantes de cliente:
+- **Cliente existente**: enviar `clienteId`.
+- **Crear cliente en el momento**: enviar `crearCliente: true` con los datos del cliente.
+- **Colaboración sin cliente del sistema**: enviar `rut` (solo válido para `tipoReserva: COLABORACION_SIN_FINES_DE_LUCRO`).
+
+**Body** (`application/json`):
+```json
+{
+  "tipoReserva": "COMUN",
+  "procedencia": "CAMPING",
+  "servicioId": 3,
+  "fechaInicio": "2026-08-10",
+  "fechaFin": "2026-08-15",
+  "cantidadTotal": 4,
+  "cantidadMenores": 1,
+  "cantidad": null,
+  "clienteId": 12,
+  "crearCliente": false,
+  "tipoCliente": null,
+  "cedula": null,
+  "nombre": null,
+  "celular": null,
+  "email": null,
+  "rut": null,
+  "notas": "Llegan a las 14hs"
+}
+```
+
+| Campo           | Tipo            | Obligatorio | Validación                                                                       |
+|-----------------|-----------------|-------------|----------------------------------------------------------------------------------|
+| `tipoReserva`   | `TipoReserva`   | Sí          | —                                                                                |
+| `procedencia`   | `Procedencia`   | Sí          | —                                                                                |
+| `servicioId`    | integer         | Sí          | > 0, el servicio debe existir y estar habilitado                                 |
+| `fechaInicio`   | string (date)   | Sí          | `yyyy-MM-dd`, no puede ser anterior a hoy                                        |
+| `fechaFin`      | string (date)   | Sí          | `yyyy-MM-dd`, no puede ser anterior a `fechaInicio`                              |
+| `cantidadTotal` | integer         | No          | >= 0                                                                             |
+| `cantidadMenores`| integer        | No          | >= 0                                                                             |
+| `cantidad`      | integer         | No          | >= 0                                                                             |
+| `clienteId`     | integer         | Condicional | Requerido si `crearCliente` no es `true` y no se envía `rut`                    |
+| `crearCliente`  | boolean         | No          | Si `true`, se crea un nuevo cliente particular con los campos siguientes         |
+| `tipoCliente`   | `TipoCliente`   | No          | Indica el tipo de cliente a crear (pendiente de uso en cálculo de costo)         |
+| `cedula`        | string          | Condicional | Requerido si `crearCliente: true`                                                |
+| `nombre`        | string          | Condicional | Requerido si `crearCliente: true`                                                |
+| `celular`       | string          | Condicional | Requerido si `crearCliente: true`                                                |
+| `email`         | string          | No          | Solo usado si `crearCliente: true`                                               |
+| `rut`           | string          | Condicional | Solo válido con `tipoReserva: COLABORACION_SIN_FINES_DE_LUCRO`; requerido si no hay `clienteId` ni `crearCliente` |
+| `notas`         | string          | No          | —                                                                                |
+
+**Estado inicial según tipo de reserva:**
+
+| `tipoReserva`                      | Estado inicial | Importe inicial |
+|------------------------------------|----------------|-----------------|
+| `COMUN`                            | `PENDIENTE`    | null (se asigna al registrar pago) |
+| `COLABORACION_SIN_FINES_DE_LUCRO`  | `CONFIRMADA`   | `0`             |
+
+**Respuesta 201:**
+```json
+{
+  "id": 42
+}
+```
+
+**Errores:**
+
+| HTTP Status | Código                                  | Cuándo ocurre                                                                  |
+|-------------|-----------------------------------------|--------------------------------------------------------------------------------|
+| 400         | `SOLICITUD_INVALIDA`                    | Campo obligatorio faltante o con formato inválido (validación Bean Validation) |
+| 400         | `FECHA_PASADA`                          | `fechaInicio` es anterior a hoy                                                |
+| 400         | `FECHA_FIN_ANTERIOR_A_INICIO`           | `fechaFin` < `fechaInicio`                                                     |
+| 400         | `SERVICIO_NO_DISPONIBLE`                | El servicio no existe o está deshabilitado                                     |
+| 400         | `FECHAS_SOLAPADAS`                      | El servicio ya tiene una reserva activa en ese período                         |
+| 400         | `CLIENTE_REQUERIDO`                     | No se envió `clienteId`, `crearCliente` ni `rut`                              |
+| 400         | `NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE`   | `crearCliente: true` pero `nombre` está vacío                                  |
+| 400         | `CEDULA_REQUERIDA_PARA_CREAR_CLIENTE`   | `crearCliente: true` pero `cedula` está vacío                                  |
+| 400         | `CELULAR_REQUERIDO_PARA_CREAR_CLIENTE`  | `crearCliente: true` pero `celular` está vacío                                 |
+| 400         | `RUT_SOLO_VALIDO_EN_COLABORACION`       | Se envió `rut` con un tipo de reserva distinto de `COLABORACION_SIN_FINES_DE_LUCRO` |
+| 400         | `CEDULA_INVALIDA`                       | La cédula del nuevo cliente no pasa la validación del algoritmo uruguayo       |
+| 400         | `CEDULA_DUPLICADA`                      | La cédula del nuevo cliente ya existe en el sistema                            |
+| 401         | —                                       | Token ausente, inválido o expirado                                             |
+
+---
+
+## Reservas — DTOs
+
+### Request DTOs
+
+#### `ReservaCreacionRequestDto` — body en `POST /api/v1/reservas`
+```typescript
+{
+  tipoReserva: TipoReserva       // obligatorio
+  procedencia: Procedencia       // obligatorio
+  servicioId: number             // obligatorio, > 0
+  fechaInicio: string            // obligatorio, LocalDate yyyy-MM-dd
+  fechaFin: string               // obligatorio, LocalDate yyyy-MM-dd
+  cantidadTotal?: number         // opcional, >= 0
+  cantidadMenores?: number       // opcional, >= 0
+  cantidad?: number              // opcional, >= 0
+  clienteId?: number             // condicional
+  crearCliente?: boolean         // opcional
+  tipoCliente?: TipoCliente      // opcional (pendiente de uso en cálculo de costo)
+  cedula?: string                // condicional (requerido si crearCliente: true)
+  nombre?: string                // condicional (requerido si crearCliente: true)
+  celular?: string               // condicional (requerido si crearCliente: true)
+  email?: string                 // opcional
+  rut?: string                   // condicional (solo para COLABORACION_SIN_FINES_DE_LUCRO)
+  notas?: string                 // opcional
+}
+```
+
+### Response DTOs
+
+#### `ReservaCreacionResponseDto` — respuesta de `POST /api/v1/reservas`
+```typescript
+{
+  id: number    // ID de la reserva creada
+}
+```
+
+---
+
 ## Finanzas — Endpoints
 
 ### `POST /api/v1/finanzas`

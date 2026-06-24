@@ -39,7 +39,6 @@ public class ClienteService implements IClienteService {
     private final ModificacionSocioValidator modificacionSocioValidator;
     private final RegistroSocioValidator registroSocioValidator;
     private final CedulaFormatoValidator cedulaFormatoValidator;
-    private final RegistroParticularValidator registroParticularValidator;
     private final IPagoCuotaService pagoCuotaService;
 
     public ClienteService(ClienteRepository clienteRepository,
@@ -56,7 +55,6 @@ public class ClienteService implements IClienteService {
         this.modificacionSocioValidator = modificacionSocioValidator;
         this.registroSocioValidator = registroSocioValidator;
         this.cedulaFormatoValidator = cedulaFormatoValidator;
-        this.registroParticularValidator = registroParticularValidator;
         this.pagoCuotaService = pagoCuotaService;
     }
 
@@ -228,35 +226,5 @@ public class ClienteService implements IClienteService {
             throw new SocioNotFoundException(id);
         }
         return ClienteMapper.toEstadoSocioResponseDto(socio);
-    }
-
-    @Override
-    @Transactional
-    public ClienteResponseDto registrarParticular(RegistroParticularRequestDto dto) {
-        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
-        String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
-        String nombreNormalizado = dto.getNombre().trim();
-        String celularNormalizado = dto.getCelular().trim();
-
-        registroParticularValidator.validar(
-                dto,
-                cedulaNormalizada
-        );
-
-        Particular particular = Particular.registrar(
-                cedulaNormalizada,
-                nombreNormalizado,
-                celularNormalizado,
-                mailNormalizado
-        );
-
-        try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null);
-        } catch (DataIntegrityViolationException e) {
-            throw new ClienteValidacionException(
-                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
-                    "Ya existe un cliente con esa cédula"
-            );
-        }
     }
 }
