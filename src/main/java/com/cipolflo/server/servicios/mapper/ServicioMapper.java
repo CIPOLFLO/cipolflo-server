@@ -1,5 +1,6 @@
 package com.cipolflo.server.servicios.mapper;
 
+import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
 import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
@@ -25,6 +26,15 @@ public class ServicioMapper {
                 estado,
                 servicio.getCapacidad(),
                 servicio.getCantidad()
+        );
+    }
+
+    public static ServicioDetalleReservaDto toServicioDetalleSimple(Servicio servicio){
+        return new ServicioDetalleReservaDto(
+                servicio.getId(),
+                servicio.getNombre(),
+                servicio.getProcedencia(),
+                servicio.getModalidadPrecio()
         );
     }
 }
