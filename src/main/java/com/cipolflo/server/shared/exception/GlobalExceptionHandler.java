@@ -23,6 +23,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -170,21 +171,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleJsonErrors(HttpMessageNotReadableException ex) {
-
         Throwable cause = ex.getCause();
-
         if (cause instanceof InvalidFormatException invalidFormatException) {
-
             if (invalidFormatException.getTargetType().isEnum()) {
-
                 String campo = invalidFormatException.getPath().get(0).getFieldName();
-
                 Object[] valores = invalidFormatException.getTargetType().getEnumConstants();
-
                 String valoresAceptados = Arrays.stream(valores)
                         .map(Object::toString)
                         .collect(Collectors.joining(", "));
-
                 return ResponseEntity.badRequest().body(
                         new ErrorResponse(
                                 "SOLICITUD_INVALIDA",
@@ -216,35 +210,31 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), ex.getMessage()));
     }
+
     @ExceptionHandler(ExportacionException.class)
     public ResponseEntity<ErrorResponse> handleExportacionException(ExportacionException ex) {
         log.warn("Error en exportación: {}", ex.getMessage());
-
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("LIMITE_TAMANIO_EXCEDIDO", ex.getMessage()));
     }
 
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException ex) {
+        log.warn("Parámetro requerido faltante: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("LIMITE_TAMANIO_EXCEDIDO", ex.getMessage()));
+                .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(),
+                        "El parámetro '" + ex.getParameterName() + "' es requerido"));
     }
 
-@ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
-public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
-        org.springframework.web.bind.MissingServletRequestParameterException ex) {
-    log.warn("Parámetro requerido faltante: {}", ex.getMessage());
-    return ResponseEntity
-            .status(HttpStatus.BAD_REQUEST)
-            .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(),
-                    "El parámetro '" + ex.getParameterName() + "' es requerido"));
-}
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception ex) {
+        log.error("Error inesperado: {}", ex.getMessage(), ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("ERROR_INTERNO", "Ocurrió un error inesperado"));
+    }
 
-@ExceptionHandler(Exception.class)
-public ResponseEntity<ErrorResponse> handleException(Exception ex) {
-    log.error("Error inesperado: {}", ex.getMessage(), ex);
-    return ResponseEntity
-            .status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(new ErrorResponse("ERROR_INTERNO", "Ocurrió un error inesperado"));
-}
 }
