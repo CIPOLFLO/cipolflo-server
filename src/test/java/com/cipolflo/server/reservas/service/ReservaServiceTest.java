@@ -70,7 +70,7 @@ class ReservaServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null,
+                null, null, null, null, null, null, null,
                 false
         );
 
@@ -125,7 +125,7 @@ class ReservaServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null,
+                null, null, null, null, null, null, null,
                 false
         );
 
@@ -163,7 +163,7 @@ class ReservaServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 6, 18),
                 LocalDate.of(2026, 6, 19),
-                null, null, null, null, null,
+                null, null, null, null, null, null, null,
                 false
         );
 

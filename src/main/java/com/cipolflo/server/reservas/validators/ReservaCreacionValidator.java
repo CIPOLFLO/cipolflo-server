@@ -6,6 +6,7 @@ import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
+import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import com.cipolflo.server.shared.ZonaHoraria;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ public class ReservaCreacionValidator {
     public void validar(ReservaCreacionRequestDto dto) {
         validarFechas(dto);
         validarServicio(dto.getServicioId());
+        validarHoras(dto);
         validarSolapamiento(dto);
         validarCliente(dto);
     }
@@ -61,6 +63,37 @@ public class ReservaCreacionValidator {
                         ReservaCodigoError.SERVICIO_NO_DISPONIBLE,
                         "El servicio no está disponible"
                 ));
+    }
+
+    private void validarHoras(ReservaCreacionRequestDto dto) {
+        ModalidadPrecio modalidad = servicioRepository.findById(dto.getServicioId())
+                .orElseThrow()
+                .getModalidadPrecio();
+
+        boolean esPorHora = ModalidadPrecio.POR_HORA.equals(modalidad);
+
+        if (esPorHora) {
+            if (dto.getHoraInicio() == null || dto.getHoraFin() == null) {
+                throw new ReservaValidacionException(
+                        ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA,
+                        "El servicio requiere hora de inicio y hora de fin"
+                );
+            }
+            boolean mismoDia = dto.getFechaInicio().isEqual(dto.getFechaFin());
+            if (mismoDia && !dto.getHoraFin().isAfter(dto.getHoraInicio())) {
+                throw new ReservaValidacionException(
+                        ReservaCodigoError.HORA_FIN_ANTERIOR_O_IGUAL_A_INICIO,
+                        "La hora de fin debe ser posterior a la hora de inicio"
+                );
+            }
+        } else {
+            if (dto.getHoraInicio() != null || dto.getHoraFin() != null) {
+                throw new ReservaValidacionException(
+                        ReservaCodigoError.HORA_NO_PERMITIDA_PARA_MODALIDAD,
+                        "Las horas solo aplican a servicios con modalidad por hora"
+                );
+            }
+        }
     }
 
     private void validarSolapamiento(ReservaCreacionRequestDto dto) {
