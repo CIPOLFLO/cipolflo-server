@@ -1,6 +1,7 @@
 package com.cipolflo.server.finanzas.domain;
 
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
+import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.shared.AuditableEntity;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -44,6 +45,8 @@ public abstract class Finanza extends AuditableEntity {
     private FormaPago formaPago;
 
     private String notas;
+
+    public abstract TipoMovimiento getTipoMovimiento();
 
     protected void inicializar(
             LocalDate fecha,
