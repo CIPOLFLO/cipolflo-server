@@ -13,6 +13,7 @@ import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
+import com.cipolflo.server.shared.export.ExportacionException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import jakarta.validation.ConstraintViolation;
