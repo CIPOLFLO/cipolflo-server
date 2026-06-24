@@ -72,15 +72,29 @@ public class ClienteMapper {
     }
 
     public static List<String> toExportFila(Cliente cliente){
-
         Socio socio = cliente instanceof Socio s ? s : null;
         return List.of(
-                cliente.getNombreCompleto(),
-                socio != null ? String.valueOf(socio.getNumeroSocio()) : "-",
-                cliente.getCedula(),
-                cliente.getMail() != null ? cliente.getMail() : "",
-                socio != null ? socio.getEstado().name() : "-",
-                cliente.getTelefono() != null ? cliente.getTelefono() : ""
+                orEmpty(cliente.getNombreCompleto()),
+                orNA(socio != null ? socio.getNumeroSocio() : null),
+                orEmpty(cliente.getCedula()),
+                orEmpty(cliente.getMail()),
+                orNA(socio != null ? socio.getEstado().toString() : null),
+                orEmpty(cliente.getTelefono()),
+                orEmpty(cliente.getNotas()),
+                orNA(socio != null ? socio.getMetodoCobro().toString() : null),
+                orEmpty(socio != null ? socio.getPais() : null),
+                orEmpty(socio != null ? socio.getDepartamento() : null),
+                orEmpty(socio != null ? socio.getDireccion() : null),
+                orEmpty(socio != null ? socio.getFechaIngreso() : null),
+                orEmpty(socio != null ? socio.getFechaUltimoPago() : null)
         );
+    }
+
+    private static String orEmpty(Object value) {
+        return value != null ? value.toString() : "";
+    }
+
+    private static String orNA(Object value) {
+        return value != null ? value.toString() : "N/A";
     }
 }

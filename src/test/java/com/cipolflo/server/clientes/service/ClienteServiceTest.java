@@ -15,6 +15,7 @@ import com.cipolflo.server.clientes.validator.*;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportacionException;
 import com.cipolflo.server.shared.export.ExportProperties;
 import com.cipolflo.server.shared.export.IExportService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -36,6 +37,7 @@ import java.time.Month;
 import java.util.Map;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -738,39 +740,39 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
     }
 
     @Test
-void deberiaExportarArchivoAunqueNoHayaClientes() {
+void deberiaLanzarExportacionExceptionCuandoNoHayClientes() {
+    when(clienteRepository.findAll(any(Specification.class)))
+            .thenReturn(List.of());
 
-    ListadoClientesRequestDto filtros = sinFiltros();
+    assertThrows(ExportacionException.class,
+            () -> clienteService.exportarClientes(sinFiltros()));
 
-    when(clienteRepository.findAll(
-            any(Specification.class),
-            any(Sort.class)
-    )).thenReturn(List.of());
-
-    byte[] excelGenerado = new byte[0];
-
-    when(exportService.generarExcel(
-            anyString(),
-            anyList(),
-            anyList(),
-            any(int[].class)
-    )).thenReturn(excelGenerado);
-
-    ArchivoExportado resultado = clienteService.exportarClientes(filtros);
-
-    assertNotNull(resultado);
-    assertNotNull(resultado.getContenido());
-    assertEquals(0, resultado.getContenido().length);
-
-    verify(clienteRepository).findAll(any(Specification.class), any(Sort.class));
-
-    verify(exportService).generarExcel(
-            anyString(),
-            anyList(),
-            anyList(),
-            any(int[].class)
-    );
+    verify(clienteRepository).findAll(any(Specification.class));
+    verify(exportService, never()).generarExcel(anyString(), anyList(), anyList(), any(int[].class));
 }
+@Test
+@SuppressWarnings("unchecked")
+void deberiaExportarFilasConLabelsLegiblesDeEstadoYMetodoCobro() {
+    Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+    // metodoCobro = EFECTIVO según crearSocio()
+
+    when(clienteRepository.findAll(any(Specification.class)))
+            .thenReturn(List.of(socio));
+    when(exportProperties.maxFilas()).thenReturn(1000);
+    when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+            .thenReturn(new byte[0]);
+
+    clienteService.exportarClientes(sinFiltros());
+
+    ArgumentCaptor<List<List<String>>> filasCaptor =
+            ArgumentCaptor.forClass((Class) List.class);
+    verify(exportService).generarExcel(anyString(), anyList(), filasCaptor.capture(), any(int[].class));
+
+    List<String> fila = filasCaptor.getValue().get(0);
+    assertEquals("Activo",   fila.get(4));   // estado usa label, no "ACTIVO"
+    assertEquals("Efectivo", fila.get(7));   // metodoCobro usa label, no "EFECTIVO"
+}
+
 @Test
 void deberiaExportarClientesCorrectamente() {
 
@@ -786,11 +788,9 @@ void deberiaExportarClientesCorrectamente() {
 
     byte[] excel = "excel".getBytes();
 
-    when(clienteRepository.findAll(
-            any(Specification.class),
-            any(Sort.class)
-    )).thenReturn(List.of(socio));
-
+    when(clienteRepository.findAll(any(Specification.class)))
+            .thenReturn(List.of(socio));
+    when(exportProperties.maxFilas()).thenReturn(1000);
     when(exportService.generarExcel(
             anyString(),
             anyList(),
@@ -805,8 +805,7 @@ void deberiaExportarClientesCorrectamente() {
     assertTrue(resultado.getContenido().length > 0);
     assertTrue(resultado.getNombre().contains("clientes"));
 
-    verify(clienteRepository).findAll(any(Specification.class), any(Sort.class));
-
+    verify(clienteRepository).findAll(any(Specification.class));
     verify(exportService).generarExcel(
             anyString(),
             anyList(),

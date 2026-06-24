@@ -54,9 +54,10 @@ public class FinanzaController {
     @PostMapping("/export")
     public ResponseEntity<byte[]> exportarFinanzas(
             @Valid @RequestBody ListadoFinanzasRequestDto filters )
-    { ArchivoExportado archivo = finanzaService.exportarFinanzas(filters);
-        return ResponseEntity.ok() .
-                header( HttpHeaders.CONTENT_DISPOSITION,
+    {
+        ArchivoExportado archivo = finanzaService.exportarFinanzas(filters);
+        return ResponseEntity.ok()
+            .header( HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + archivo.getNombre() + "\"" )
                 .contentType(MediaType.parseMediaType( "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ))
                 .body(archivo.getContenido());

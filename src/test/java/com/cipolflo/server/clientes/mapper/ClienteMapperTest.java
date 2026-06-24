@@ -14,6 +14,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -226,5 +227,98 @@ class ClienteMapperTest {
         assertNull(dto.getUltimaCuotaDto());
     }
 
+    // ── toExportFila ──────────────────────────────────────────────────────────
+
+    @Test
+    void toExportFila_socioCompleto_devuelveFilaConTodosLosCampos() {
+        Socio socio = crearSocio();
+        socio.setFechaUltimoPago(LocalDate.of(2026, 5, 10));
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals(13, fila.size());
+        assertEquals("Juan Pérez",           fila.get(0));
+        assertEquals("5",                    fila.get(1));
+        assertEquals("12345678",             fila.get(2));
+        assertEquals("juan@mail.com",        fila.get(3));
+        assertEquals("Activo",               fila.get(4));
+        assertEquals("099111111",            fila.get(5));
+        assertEquals("",                     fila.get(6));   // notas null → ""
+        assertEquals("Efectivo",             fila.get(7));
+        assertEquals("Uruguay",              fila.get(8));
+        assertEquals("Montevideo",           fila.get(9));
+        assertEquals("Av. 18 de Julio 100", fila.get(10));
+        assertEquals("2022-01-01",           fila.get(11));
+        assertEquals("2026-05-10",           fila.get(12));
+    }
+
+    @Test
+    void toExportFila_estadoDeBaja_devuelveLabelEnLugarDeNombreEnum() {
+        Socio socio = crearSocio();
+        socio.setEstado(EstadoSocio.DE_BAJA);
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals("De baja", fila.get(4));
+    }
+
+    @Test
+    void toExportFila_estadoInactivo_devuelveLabelEnLugarDeNombreEnum() {
+        Socio socio = crearSocio();
+        socio.setEstado(EstadoSocio.INACTIVO);
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals("Inactivo", fila.get(4));
+    }
+
+    @Test
+    void toExportFila_socioConCamposNulos_devuelveVaciosEnLugarDeNull() {
+        Socio socio = crearSocio();
+        socio.setMail(null);
+        socio.setPais(null);
+        socio.setDepartamento(null);
+        socio.setDireccion(null);
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals("", fila.get(3));   // mail
+        assertEquals("", fila.get(8));   // pais
+        assertEquals("", fila.get(9));   // departamento
+        assertEquals("", fila.get(10));  // direccion
+    }
+
+    @Test
+    void toExportFila_socioConFechaUltimoPagoNula_devuelveVacio() {
+        List<String> fila = ClienteMapper.toExportFila(crearSocio());
+
+        assertEquals("", fila.get(12));
+    }
+
+    @Test
+    void toExportFila_socioConNumeroSocioNulo_devuelveNA() {
+        Socio socio = crearSocio();
+        socio.setNumeroSocio(null);
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals("N/A", fila.get(1));
+    }
+
+    @Test
+    void toExportFila_particular_devuelveNAParaCamposExclusivoDeSocio() {
+        List<String> fila = ClienteMapper.toExportFila(crearParticular());
+
+        assertEquals("Laura Fernández", fila.get(0));
+        assertEquals("N/A", fila.get(1));    // numeroSocio
+        assertEquals("67890123",  fila.get(2));
+        assertEquals("N/A", fila.get(4));    // estado
+        assertEquals("N/A", fila.get(7));    // metodoCobro
+        assertEquals("", fila.get(8));       // pais
+        assertEquals("", fila.get(9));       // departamento
+        assertEquals("", fila.get(10));      // direccion
+        assertEquals("", fila.get(11));      // fechaIngreso
+        assertEquals("", fila.get(12));      // fechaUltimoPago
+    }
 
 }

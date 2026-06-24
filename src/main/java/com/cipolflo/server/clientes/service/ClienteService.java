@@ -13,10 +13,7 @@ import com.cipolflo.server.clientes.repository.ClienteSpecification;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.validator.*;
-import com.cipolflo.server.shared.export.ArchivoExportado;
-import com.cipolflo.server.shared.export.ExportProperties;
-import com.cipolflo.server.shared.export.IExportService;
-import com.cipolflo.server.shared.export.NombreArchivoExport;
+import com.cipolflo.server.shared.export.*;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
@@ -48,6 +45,7 @@ public class ClienteService implements IClienteService {
     private final ExportProperties exportProperties;
     private final IExportService exportService;
     private final IPagoCuotaService pagoCuotaService;
+
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
@@ -241,37 +239,6 @@ public class ClienteService implements IClienteService {
     }
 
     @Override
-    @Transactional
-    public ClienteResponseDto registrarParticular(RegistroParticularRequestDto dto) {
-        String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
-        String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
-        String nombreNormalizado = dto.getNombre().trim();
-        String celularNormalizado = dto.getCelular().trim();
-
-        registroParticularValidator.validar(
-                dto,
-                cedulaNormalizada
-        );
-
-        Particular particular = Particular.registrar(
-                cedulaNormalizada,
-                nombreNormalizado,
-                celularNormalizado,
-                mailNormalizado,
-                null
-        );
-
-        try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null);
-        } catch (DataIntegrityViolationException e) {
-            throw new ClienteValidacionException(
-                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
-                    "Ya existe un cliente con esa cédula"
-            );
-        }
-    }
-
-    @Override
     public ArchivoExportado exportarClientes(ListadoClientesRequestDto filtros){
         Specification<Cliente> spec = ClienteSpecification
                 .conEstado(filtros.estado())
@@ -279,16 +246,44 @@ public class ClienteService implements IClienteService {
                 .and(ClienteSpecification.conTipoCliente(filtros.tipoCliente()))
                 .and(ClienteSpecification.conIdentificador(filtros.identificador()));
 
-        List<Cliente> clientes = clienteRepository.findAll(spec,
-            Sort.by(Sort.Direction.ASC, "nombreCompleto"));
+        List<Cliente> clientes = clienteRepository.findAll(spec);
 
+        if(clientes.isEmpty()){
+            throw new ExportacionException("No hay registros que coincidan con los filtros aplicados");
+        }
 
-        List<String> encabezados = List.of("Nombre", "Número de socio", "Cédula", "Email", "Estado","Telefono");        List<List<String>> filas = clientes.stream()
+        if (clientes.size() > exportProperties.maxFilas()) {
+            throw new ExportacionException(
+                    "La exportación supera el límite de " + exportProperties.maxFilas() + " filas"
+            );
+        }
+
+        List<String> encabezados = List.of(
+                "Nombre",
+                "Número de socio",
+                "Cédula",
+                "Email",
+                "Estado",
+                "Telefono",
+                "Notas",
+                "Método de cobro",
+                "País",
+                "Departamento",
+                "Dirección",
+                "Fecha ingreso",
+                "Fecha último pago");
+
+        List<List<String>> filas = clientes.stream()
             .map(ClienteMapper::toExportFila)
             .toList();
 
-        int[] anchos ={8000,5000,5000,10000,5000};
-        byte[] contenido = exportService.generarExcel("Clientes",encabezados, filas, anchos);
+        int[] anchos = {8000,5000,5000,10000,5000,5000,5000,5000,5000,5000,5000};
+        byte[] contenido = exportService.generarExcel(
+                "Clientes",
+                encabezados,
+                filas,
+                anchos
+        );
 
         String nombre = NombreArchivoExport.generar("clientes");
         return new ArchivoExportado(nombre,contenido);
