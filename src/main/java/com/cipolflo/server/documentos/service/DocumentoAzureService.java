@@ -70,7 +70,7 @@ public class DocumentoAzureService {
     public DocumentoAnalizado analizarFactura(MultipartFile file) {
         try {
             validarArchivo(file);
-            log.info("Iniciando análisis de factura: {}", file.getOriginalFilename());
+            log.info("Iniciando análisis de factura.");
 
             // Leemos los bytes del archivo y creamos el request de Azure
             byte[] fileBytes = file.getBytes();
@@ -97,7 +97,8 @@ public class DocumentoAzureService {
             // getFinalResult() bloquea hasta que Azure termina el análisis
             AnalyzeResult result = poller.getFinalResult();
 
-            log.info("Análisis completado. Documentos detectados: {}", result.getDocuments().size());
+            int documentosDetectados = result.getDocuments() == null ? 0 : result.getDocuments().size();
+            log.info("Análisis completado. Documentos detectados: {}", documentosDetectados);
 
             // Construimos la entidad para persistir
             DocumentoAnalizado documento = new DocumentoAnalizado();
