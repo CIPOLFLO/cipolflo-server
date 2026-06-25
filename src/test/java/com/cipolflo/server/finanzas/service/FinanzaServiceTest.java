@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.repository.CrudRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -33,6 +34,10 @@ import java.util.Optional;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -471,5 +476,37 @@ class FinanzaServiceTest {
         assertEquals(TipoMovimiento.INGRESO, response.content().get(0).getTipoMovimiento());
         assertEquals(TipoMovimiento.EGRESO, response.content().get(1).getTipoMovimiento());
     }
+@Test
+void deberiaEliminarFinanzaExistente() {
+    Ingreso ingreso = Ingreso.crearManual(
+            LocalDate.of(2026, 6, 15),
+            BigDecimal.valueOf(1500),
+            Concepto.PAGO_RESERVA,
+            FormaPago.EFECTIVO,
+            Procedencia.SEDE,
+            "Alta manual"
+    );
+    ingreso.setId(1L);
 
+    when(finanzaRepository.findById(1L))
+            .thenReturn(Optional.of(ingreso));
+
+    finanzaService.eliminarFinanza(1L);
+
+    verify(finanzaRepository).findById(1L);
+    verify(finanzaRepository).delete(ingreso);
+}
+
+@Test
+void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
+    when(finanzaRepository.findById(99L))
+            .thenReturn(Optional.empty());
+
+    assertThrows(
+            FinanzaNotFoundException.class,
+            () -> finanzaService.eliminarFinanza(99L)
+    );
+
+    verify((CrudRepository<Finanza, Long>) finanzaRepository, never()).delete(any(Finanza.class));
+}
 }
