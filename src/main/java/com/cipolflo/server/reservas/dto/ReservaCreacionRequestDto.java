@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 @NoArgsConstructor
@@ -30,6 +31,10 @@ public class ReservaCreacionRequestDto {
 
     @NotNull
     private LocalDate fechaFin;
+
+    private LocalTime horaInicio;
+
+    private LocalTime horaFin;
 
     @Min(0)
     private Integer cantidadTotal;

@@ -13,6 +13,7 @@ import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
+import com.cipolflo.server.shared.export.ExportacionException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import jakarta.validation.ConstraintViolation;
@@ -25,6 +26,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,9 +40,12 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String RECURSO_NO_ENCONTRADO =
+            "Recurso no encontrado: {}";
+
     @ExceptionHandler(ClienteNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleClienteNotFoundException(ClienteNotFoundException ex) {
-        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ClienteCodigoError.CLIENTE_NO_ENCONTRADO.name(), ex.getMessage()));
@@ -56,7 +61,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ServicioNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleServicioNotFoundException(ServicioNotFoundException ex) {
-        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ServicioCodigoError.SERVICIO_NO_ENCONTRADO.name(), ex.getMessage()));
@@ -210,10 +215,18 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(FinanzaNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleFinanzaNotFoundException(FinanzaNotFoundException ex) {
-        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ExportacionException.class)
+    public ResponseEntity<ErrorResponse> handleExportacionException(ExportacionException ex) {
+        log.warn("Error en exportación: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("LIMITE_TAMANIO_EXCEDIDO", ex.getMessage()));
     }
 
     @ExceptionHandler(ReservaValidacionException.class)
@@ -230,6 +243,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ReservaCodigoError.RESERVA_NO_ENCONTRADA.name(), ex.getMessage()));
+    }
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameterException(
+            MissingServletRequestParameterException ex) {
+        log.warn("Parámetro requerido faltante: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(),
+                        "El parámetro '" + ex.getParameterName() + "' es requerido"));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception ex) {
+        log.error("Error inesperado: {}", ex.getMessage(), ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("ERROR_INTERNO", "Ocurrió un error inesperado"));
     }
 
 }

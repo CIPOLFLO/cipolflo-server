@@ -2,27 +2,32 @@ package com.cipolflo.server.finanzas.controller;
 
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
-import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
-import com.cipolflo.server.finanzas.dto.FinanzaResponseDto;
+import com.cipolflo.server.finanzas.dto.*;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.service.IFinanzaService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import com.cipolflo.server.finanzas.dto.FinanzaDetalleResponseDto;
 import java.time.Instant;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -445,4 +450,142 @@ class FinanzaControllerTest {
                 "admin"
         );
     }
+    @Test
+    void deberiaExportarFinanzas() throws Exception {
+        when(finanzaService.exportarFinanzas(any(ListadoFinanzasRequestDto.class)))
+                .thenReturn(new ArchivoExportado(
+                        "finanzas_2026-06-22_1427.xlsx",
+                        new byte[]{1, 2, 3}
+                ));
+
+        mockMvc.perform(post("/api/v1/finanzas/export")
+                        .with(jwt())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        containsString("finanzas_2026-06-22_1427.xlsx")
+                ))
+                .andExpect(content().contentType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ))
+                .andExpect(content().bytes(new byte[]{1, 2, 3}));
+
+        verify(finanzaService).exportarFinanzas(any(ListadoFinanzasRequestDto.class));
+    }
+    @Test
+    void deberiaExportarFinanzasConFiltros() throws Exception {
+        when(finanzaService.exportarFinanzas(any(ListadoFinanzasRequestDto.class)))
+                .thenReturn(new ArchivoExportado(
+                        "finanzas_2026-06-22_1427.xlsx",
+                        new byte[]{1, 2, 3}
+                ));
+
+        mockMvc.perform(post("/api/v1/finanzas/export")
+                        .with(jwt())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "fechaDesde": "2026-06-01",
+                              "fechaHasta": "2026-06-30",
+                              "concepto": "PAGO_RESERVA",
+                              "tipoMovimiento": "INGRESO"
+                            }
+                            """))
+                .andExpect(status().isOk());
+
+        verify(finanzaService).exportarFinanzas(any(ListadoFinanzasRequestDto.class));
+    }
+    @Test
+    void deberiaRetornar401AlExportarSinAutenticacion() throws Exception {
+        mockMvc.perform(post("/api/v1/finanzas/export")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+
+        verify(finanzaService, never()).exportarFinanzas(any());
+    }
+
+    @Test
+    void deberiaRetornarListadoFinanzas() throws Exception {
+        when(finanzaService.getListadoFinanzas(
+                any(ListadoFinanzasRequestDto.class),
+                any(PageRequestDto.class)
+        )).thenReturn(listadoResponse());
+
+        mockMvc.perform(get("/api/v1/finanzas")
+                        .with(jwt()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].concepto").value("PAGO_RESERVA"))
+                .andExpect(jsonPath("$.content[0].tipoMovimiento").value("INGRESO"));
+
+        verify(finanzaService).getListadoFinanzas(
+                any(ListadoFinanzasRequestDto.class),
+                any(PageRequestDto.class)
+        );
+    }
+
+    @Test
+    void deberiaRetornarListadoFinanzasConFiltros() throws Exception {
+        when(finanzaService.getListadoFinanzas(
+                any(ListadoFinanzasRequestDto.class),
+                any(PageRequestDto.class)
+        )).thenReturn(listadoResponse());
+
+        mockMvc.perform(get("/api/v1/finanzas")
+                        .param("fechaDesde", "2026-06-01")
+                        .param("fechaHasta", "2026-06-30")
+                        .param("concepto", "PAGO_RESERVA")
+                        .param("tipoMovimiento", "INGRESO")
+                        .with(jwt()))
+                .andExpect(status().isOk());
+
+        verify(finanzaService).getListadoFinanzas(
+                any(ListadoFinanzasRequestDto.class),
+                any(PageRequestDto.class)
+        );
+    }
+
+    @Test
+    void deberiaRetornarBadRequestCuandoSortFieldEsInvalido() throws Exception {
+        mockMvc.perform(get("/api/v1/finanzas")
+                        .param("sortField", "concepto")
+                        .with(jwt()))
+                .andExpect(status().isBadRequest());
+
+        verify(finanzaService, never()).getListadoFinanzas(any(), any());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlListarSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/finanzas"))
+                .andExpect(status().isUnauthorized());
+
+        verify(finanzaService, never()).getListadoFinanzas(any(), any());
+    }
+    private PageResponse<ListadoFinanzasResponseDto> listadoResponse() {
+        return new PageResponse<>(
+                List.of(new ListadoFinanzasResponseDto(
+                        1L,
+                        Concepto.PAGO_RESERVA,
+                        LocalDate.of(2026, 6, 15),
+                        BigDecimal.valueOf(1500),
+                        "Alta manual",
+                        TipoMovimiento.INGRESO
+                )),
+                0,
+                10,
+                1,
+                1,
+                true,
+                true
+        );
+    }
+
+
 }
