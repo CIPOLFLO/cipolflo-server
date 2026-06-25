@@ -29,7 +29,7 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 8, 10),
                 LocalDate.of(2026, 8, 15),
-                null, null, 4, 1, null, null,
+                null, null, 4, 1, null, null, null,
                 "Llegan a las 14hs",
                 false
         );
@@ -124,6 +124,13 @@ class ReservaMapperTest {
     }
 
     @Test
+    void deberiaNombreSerNullParaReservaComun() {
+        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
+
+        assertNull(dto.getNombre());
+    }
+
+    @Test
     void deberiaMapearRequiereDocumentacionComoTrue() {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN,
@@ -132,7 +139,7 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 8, 10),
                 LocalDate.of(2026, 8, 15),
-                null, null, 2, 0, null, null,
+                null, null, 2, 0, null, null, null,
                 null,
                 true
         );
@@ -164,7 +171,7 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 9, 3),
-                null, null, null, null, null, "20123456-7", null,
+                null, null, null, null, null, "20123456-7", "Org Solidaria", null,
                 false
         );
 
@@ -175,5 +182,6 @@ class ReservaMapperTest {
         assertEquals(BigDecimal.ZERO, dto.getImporte());
         assertNull(dto.getCliente());
         assertEquals("20123456-7", dto.getRut());
+        assertEquals("Org Solidaria", dto.getNombre());
     }
 }

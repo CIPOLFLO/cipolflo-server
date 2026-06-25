@@ -1,6 +1,7 @@
 package com.cipolflo.server.reservas;
 
 import com.cipolflo.server.reservas.domain.Reserva;
+import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
@@ -30,6 +31,8 @@ public class ReservaMapper {
                 reserva.getRequiereDocumentacion(),
                 reserva.getTieneDocumentacion(),
                 reserva.getRut(),
+                // TODO: temporal - nombre del RUT retornado hasta definir manejo de clientes RUT
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(reserva.getTipoReserva()) ? reserva.getNombreRut() : null,
                 reserva.getNotas(),
                 cliente,
                 servicio,
