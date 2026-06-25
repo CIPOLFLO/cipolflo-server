@@ -113,7 +113,7 @@ class CalculoCostoControllerTest {
     @WithMockUser
     void deberiaRetornarBadRequestCuandoPorHoraSinHoras() throws Exception {
         when(reservaService.calcularCosto(any())).thenThrow(
-                new ReservaValidacionException(ReservaCodigoError.HORAS_REQUERIDAS_PARA_MODALIDAD_POR_HORA,
+                new ReservaValidacionException(ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA,
                         "Las horas de inicio y fin son obligatorias para servicios con modalidad POR_HORA"));
 
         mockMvc.perform(post(URL).with(csrf())

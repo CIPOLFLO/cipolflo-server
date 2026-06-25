@@ -1087,13 +1087,13 @@ Calcula el costo estimado de una reserva en tiempo real, sin efectos secundarios
 
 **Errores:**
 
-| HTTP Status | Código                                       | Cuándo ocurre                                                    |
-|-------------|----------------------------------------------|------------------------------------------------------------------|
-| 400         | `SOLICITUD_INVALIDA`                         | Campo obligatorio faltante o con formato inválido                |
-| 400         | `FECHA_FIN_ANTERIOR_A_INICIO`                | `fechaFin` < `fechaInicio`                                       |
-| 400         | `HORAS_REQUERIDAS_PARA_MODALIDAD_POR_HORA`   | Servicio `POR_HORA` pero no se enviaron `horaInicio` y `horaFin` |
-| 404         | `SERVICIO_NO_ENCONTRADO`                     | No existe un servicio con el `servicioId` indicado              |
-| 401         | —                                            | Token ausente, inválido o expirado                               |
+| HTTP Status | Código                                      | Cuándo ocurre                                                    |
+|-------------|---------------------------------------------|------------------------------------------------------------------|
+| 400         | `SOLICITUD_INVALIDA`                        | Campo obligatorio faltante o con formato inválido                |
+| 400         | `FECHA_FIN_ANTERIOR_A_INICIO`               | `fechaFin` < `fechaInicio`                                       |
+| 400         | `HORA_REQUERIDA_PARA_SERVICIO_POR_HORA`   | Servicio `POR_HORA` pero no se enviaron `horaInicio` y `horaFin` |
+| 404         | `SERVICIO_NO_ENCONTRADO`                    | No existe un servicio con el `servicioId` indicado              |
+| 401         | —                                           | Token ausente, inválido o expirado                               |
 
 ---
 

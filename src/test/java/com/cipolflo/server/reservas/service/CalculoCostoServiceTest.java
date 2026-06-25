@@ -212,6 +212,6 @@ class CalculoCostoServiceTest {
 
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class,
                 () -> service.calcularCosto(dto));
-        assertEquals(ReservaCodigoError.HORAS_REQUERIDAS_PARA_MODALIDAD_POR_HORA.name(), ex.getCodigo());
+        assertEquals(ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA.name(), ex.getCodigo());
     }
 }
