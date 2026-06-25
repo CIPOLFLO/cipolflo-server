@@ -69,6 +69,7 @@ public class DocumentoAzureService {
 
     public DocumentoAnalizado analizarFactura(MultipartFile file) {
         try {
+            validarArchivo(file);
             log.info("Iniciando análisis de factura: {}", file.getOriginalFilename());
 
             // Leemos los bytes del archivo y creamos el request de Azure
