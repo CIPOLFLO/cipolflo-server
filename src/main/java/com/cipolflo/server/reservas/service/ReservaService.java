@@ -144,6 +144,8 @@ public class ReservaService implements IReservaService {
                 dto.getProcedencia(),
                 dto.getFechaInicio(),
                 dto.getFechaFin(),
+                dto.getHoraInicio(),
+                dto.getHoraFin(),
                 dto.getCantidadTotal(),
                 dto.getCantidadMenores(),
                 dto.getCantidad(),

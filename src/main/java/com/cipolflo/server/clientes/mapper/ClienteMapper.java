@@ -1,10 +1,11 @@
 package com.cipolflo.server.clientes.mapper;
 
+import java.util.List;
+
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.*;
-import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 
 public class ClienteMapper {
@@ -80,5 +81,32 @@ public class ClienteMapper {
                 cliente.getMail(),
                 cliente instanceof Socio ? TipoCliente.SOCIO : TipoCliente.PARTICULAR
         );
+    }
+
+    public static List<String> toExportFila(Cliente cliente){
+        Socio socio = cliente instanceof Socio s ? s : null;
+        return List.of(
+                orEmpty(cliente.getNombreCompleto()),
+                orNA(socio != null ? socio.getNumeroSocio() : null),
+                orEmpty(cliente.getCedula()),
+                orEmpty(cliente.getMail()),
+                orNA(socio != null ? socio.getEstado().toString() : null),
+                orEmpty(cliente.getTelefono()),
+                orEmpty(cliente.getNotas()),
+                orNA(socio != null ? socio.getMetodoCobro().toString() : null),
+                orEmpty(socio != null ? socio.getPais() : null),
+                orEmpty(socio != null ? socio.getDepartamento() : null),
+                orEmpty(socio != null ? socio.getDireccion() : null),
+                orEmpty(socio != null ? socio.getFechaIngreso() : null),
+                orEmpty(socio != null ? socio.getFechaUltimoPago() : null)
+        );
+    }
+
+    private static String orEmpty(Object value) {
+        return value != null ? value.toString() : "";
+    }
+
+    private static String orNA(Object value) {
+        return value != null ? value.toString() : "N/A";
     }
 }

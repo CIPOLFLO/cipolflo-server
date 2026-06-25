@@ -32,13 +32,15 @@ public class RegistroParticularService implements IRegistroParticularService {
     public ClienteResponseDto registrarParticular(RegistroParticularRequestDto dto) {
         String cedulaNormalizada = CedulaNormalizador.normalizar(dto.getCedula());
         String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+        String nombreNormalizado = dto.getNombre().trim();
+        String celularNormalizado = dto.getCelular().trim();
 
         registroParticularValidator.validar(dto, cedulaNormalizada);
 
         Particular particular = Particular.registrar(
                 cedulaNormalizada,
-                dto.getNombre().trim(),
-                dto.getCelular().trim(),
+                nombreNormalizado,
+                celularNormalizado,
                 mailNormalizado,
                 null
         );

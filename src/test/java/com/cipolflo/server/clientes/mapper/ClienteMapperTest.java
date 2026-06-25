@@ -5,15 +5,14 @@ import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
-import com.cipolflo.server.clientes.dto.ClienteResponseDto;
-import com.cipolflo.server.clientes.dto.EstadoSocioResponseDto;
-import com.cipolflo.server.clientes.dto.ListadoClientesResponseDto;
-import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
+import com.cipolflo.server.clientes.dto.*;
+import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -226,5 +225,173 @@ class ClienteMapperTest {
         assertNull(dto.getUltimaCuotaDto());
     }
 
+    // ── toBusquedaCedulaResponseDto ─────────────────────────────────────────────
 
+    @Test
+    void deberiaMapearTodosLosCamposEnBusquedaCedulaParaSocio() {
+        Socio socio = crearSocio();
+        socio.setNotas("Observación de prueba");
+
+        BusquedaCedulaResponseDto dto =
+                ClienteMapper.toBusquedaCedulaResponseDto(socio);
+
+        assertEquals(1L, dto.getId());
+        assertEquals("Juan Pérez", dto.getNombre());
+        assertEquals("12345678", dto.getCedula());
+        assertEquals("099111111", dto.getTelefono());
+        assertEquals("juan@mail.com", dto.getMail());
+        assertEquals("Observación de prueba", dto.getObservaciones());
+        assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
+    }
+
+    @Test
+    void deberiaMapearTipoParticularEnBusquedaCedula() {
+        BusquedaCedulaResponseDto dto =
+                ClienteMapper.toBusquedaCedulaResponseDto(crearParticular());
+
+        assertEquals(TipoCliente.PARTICULAR, dto.getTipoCliente());
+        assertEquals(2L, dto.getId());
+        assertEquals("Laura Fernández", dto.getNombre());
+        assertEquals("67890123", dto.getCedula());
+    }
+
+    @Test
+    void deberiaMapearObservacionesNulaEnBusquedaCedulaCuandoClienteNoTieneNotas() {
+        BusquedaCedulaResponseDto dto =
+                ClienteMapper.toBusquedaCedulaResponseDto(crearParticular());
+
+        assertNull(dto.getObservaciones());
+    }
+
+    // ── toClienteDetalleReservaDto ──────────────────────────────────────────────
+
+    @Test
+    void deberiaMapearTodosLosCamposDeClienteDetalleReservaDtoParaSocio() {
+        Socio socio = crearSocio();
+
+        ClienteDetalleReservaDto dto =
+                ClienteMapper.toClienteDetalleReservaDto(socio);
+
+        assertEquals(1L, dto.id());
+        assertEquals("Juan Pérez", dto.nombre());
+        assertEquals("12345678", dto.cedula());
+        assertEquals("099111111", dto.telefono());
+        assertEquals("juan@mail.com", dto.email());
+        assertEquals(TipoCliente.SOCIO, dto.tipoCliente());
+    }
+
+    // ── toExportFila ──────────────────────────────────────────────────────────
+
+    @Test
+    void toExportFila_socioCompleto_devuelveFilaConTodosLosCampos() {
+        Socio socio = crearSocio();
+        socio.setFechaUltimoPago(LocalDate.of(2026, 5, 10));
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals(13, fila.size());
+        assertEquals("Juan Pérez",           fila.get(0));
+        assertEquals("5",                    fila.get(1));
+        assertEquals("12345678",             fila.get(2));
+        assertEquals("juan@mail.com",        fila.get(3));
+        assertEquals("Activo",               fila.get(4));
+        assertEquals("099111111",            fila.get(5));
+        assertEquals("",                     fila.get(6));   // notas null → ""
+        assertEquals("Efectivo",             fila.get(7));
+        assertEquals("Uruguay",              fila.get(8));
+        assertEquals("Montevideo",           fila.get(9));
+        assertEquals("Av. 18 de Julio 100", fila.get(10));
+        assertEquals("2022-01-01",           fila.get(11));
+        assertEquals("2026-05-10",           fila.get(12));
+    }
+
+    @Test
+    void toExportFila_estadoDeBaja_devuelveLabelEnLugarDeNombreEnum() {
+        Socio socio = crearSocio();
+        socio.setEstado(EstadoSocio.DE_BAJA);
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals("De baja", fila.get(4));
+    }
+
+    @Test
+    void toExportFila_estadoInactivo_devuelveLabelEnLugarDeNombreEnum() {
+        Socio socio = crearSocio();
+        socio.setEstado(EstadoSocio.INACTIVO);
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals("Inactivo", fila.get(4));
+    }
+
+    @Test
+    void toExportFila_socioConCamposNulos_devuelveVaciosEnLugarDeNull() {
+        Socio socio = crearSocio();
+        socio.setMail(null);
+        socio.setPais(null);
+        socio.setDepartamento(null);
+        socio.setDireccion(null);
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals("", fila.get(3));   // mail
+        assertEquals("", fila.get(8));   // pais
+        assertEquals("", fila.get(9));   // departamento
+        assertEquals("", fila.get(10));  // direccion
+    }
+
+    @Test
+    void toExportFila_socioConFechaUltimoPagoNula_devuelveVacio() {
+        List<String> fila = ClienteMapper.toExportFila(crearSocio());
+
+        assertEquals("", fila.get(12));
+    }
+
+    @Test
+    void toExportFila_socioConNumeroSocioNulo_devuelveNA() {
+        Socio socio = crearSocio();
+        socio.setNumeroSocio(null);
+
+        List<String> fila = ClienteMapper.toExportFila(socio);
+
+        assertEquals("N/A", fila.get(1));
+    }
+
+    @Test
+    void toExportFila_particular_devuelveNAParaCamposExclusivoDeSocio() {
+        List<String> fila = ClienteMapper.toExportFila(crearParticular());
+
+        assertEquals("Laura Fernández", fila.get(0));
+        assertEquals("N/A", fila.get(1));    // numeroSocio
+        assertEquals("67890123",  fila.get(2));
+        assertEquals("N/A", fila.get(4));    // estado
+        assertEquals("N/A", fila.get(7));    // metodoCobro
+        assertEquals("", fila.get(8));       // pais
+        assertEquals("", fila.get(9));       // departamento
+        assertEquals("", fila.get(10));      // direccion
+        assertEquals("", fila.get(11));      // fechaIngreso
+        assertEquals("", fila.get(12));      // fechaUltimoPago
+    }
+
+    @Test
+    void deberiaMapearTipoSocioEnClienteDetalleReservaDto() {
+        ClienteDetalleReservaDto dto =
+                ClienteMapper.toClienteDetalleReservaDto(crearSocio());
+
+        assertEquals(TipoCliente.SOCIO, dto.tipoCliente());
+    }
+
+    @Test
+    void deberiaMapearTipoParticularEnClienteDetalleReservaDto() {
+        ClienteDetalleReservaDto dto =
+                ClienteMapper.toClienteDetalleReservaDto(crearParticular());
+
+        assertEquals(TipoCliente.PARTICULAR, dto.tipoCliente());
+        assertEquals(2L, dto.id());
+        assertEquals("Laura Fernández", dto.nombre());
+        assertEquals("67890123", dto.cedula());
+        assertEquals("099666666", dto.telefono());
+        assertEquals("laura@mail.com", dto.email());
+    }
 }

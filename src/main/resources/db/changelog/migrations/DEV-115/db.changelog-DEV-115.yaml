@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/migrations/DEV-115/alter_reserva_nueva_reserva.sql
   - include:
       file: db/changelog/migrations/DEV-115/alter_servicio_requiere_documentacion.sql
+  - include:
+      file: db/changelog/migrations/DEV-115/alter_reserva_horas.sql

@@ -13,6 +13,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "reserva")
@@ -53,6 +54,10 @@ public class Reserva extends AuditableEntity {
     @Column(nullable = false)
     private LocalDate fechaSalida;
 
+    private LocalTime horaInicio;
+
+    private LocalTime horaFin;
+
     private BigDecimal importe;
 
     private Integer cantidadTotal;
@@ -83,7 +88,8 @@ public class Reserva extends AuditableEntity {
     private String notas;
 
     public static Reserva crear(TipoReserva tipoReserva, Long clienteId, Long servicioId, Procedencia procedencia,
-                                LocalDate fechaEntrada, LocalDate fechaSalida, Integer cantidadTotal, Integer cantidadMenores,
+                                LocalDate fechaEntrada, LocalDate fechaSalida, LocalTime horaInicio, LocalTime horaFin,
+                                Integer cantidadTotal, Integer cantidadMenores,
                                 Integer cantidad, String rut, String notas,
                                 boolean requiereDocumentacionPrevia) {
         Reserva r = new Reserva();
@@ -93,6 +99,8 @@ public class Reserva extends AuditableEntity {
         r.procedencia = procedencia;
         r.fechaEntrada = fechaEntrada;
         r.fechaSalida = fechaSalida;
+        r.horaInicio = horaInicio;
+        r.horaFin = horaFin;
         r.cantidadTotal = cantidadTotal;
         r.cantidadMenores = cantidadMenores;
         r.cantidad = cantidad;
