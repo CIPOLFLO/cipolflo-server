@@ -153,4 +153,14 @@ public class FinanzaService implements IFinanzaService {
 
         return PaginationMapper.toPageResponse(page);
     }
+
+    @Override
+    @Transactional
+    public void eliminarFinanza(Long id) {
+      Finanza finanza = finanzaRepository.findById(id)
+      .orElseThrow(() -> new FinanzaNotFoundException(id));
+
+      finanzaRepository.delete(finanza);
+
+    }
 }

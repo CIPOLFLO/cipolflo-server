@@ -23,12 +23,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Instant;
 import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -587,5 +590,48 @@ class FinanzaControllerTest {
         );
     }
 
+@Test
+void deberiaEliminarFinanzaExistente() throws Exception {
+    doNothing().when(finanzaService).eliminarFinanza(1L);
 
+    mockMvc.perform(delete("/api/v1/finanzas/1")
+                    .with(jwt())
+                    .with(csrf()))
+            .andExpect(status().isNoContent());
+
+    verify(finanzaService).eliminarFinanza(1L);
+}
+
+@Test
+void deberiaRetornar404AlEliminarFinanzaInexistente() throws Exception {
+    doThrow(new FinanzaNotFoundException(99L))
+            .when(finanzaService).eliminarFinanza(99L);
+
+    mockMvc.perform(delete("/api/v1/finanzas/99")
+                    .with(jwt())
+                    .with(csrf()))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.codigo").value("FINANZA_NO_ENCONTRADA"));
+
+    verify(finanzaService).eliminarFinanza(99L);
+}
+
+@Test
+void deberiaRetornar400AlEliminarConIdNegativo() throws Exception {
+    mockMvc.perform(delete("/api/v1/finanzas/-1")
+                    .with(jwt())
+                    .with(csrf()))
+            .andExpect(status().isBadRequest());
+
+    verify(finanzaService, never()).eliminarFinanza(any());
+}
+
+@Test
+void deberiaRetornar401AlEliminarSinAutenticacion() throws Exception {
+    mockMvc.perform(delete("/api/v1/finanzas/1")
+                    .with(csrf()))
+            .andExpect(status().isUnauthorized());
+
+    verify(finanzaService, never()).eliminarFinanza(any());
+}
 }
