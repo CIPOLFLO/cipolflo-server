@@ -18,4 +18,6 @@ public interface IFinanzaService {
             ListadoFinanzasRequestDto filtros,
             PageRequestDto pageRequest
     );
+
+    void registrarPagoReserva(FinanzaCrearRequestDto dto);
 }

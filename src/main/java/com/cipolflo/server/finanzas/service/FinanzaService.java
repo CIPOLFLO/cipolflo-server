@@ -63,6 +63,7 @@ public class FinanzaService implements IFinanzaService {
 
         return FinanzaMapper.toResponseDto(finanzaRepository.save(finanza));
     }
+
     @Override
     public FinanzaDetalleResponseDto getDetalleFinanza(Long id) {
         Finanza finanza = finanzaRepository.findById(id)
@@ -152,5 +153,18 @@ public class FinanzaService implements IFinanzaService {
                 .map(FinanzaMapper::toListadoResponseDto);
 
         return PaginationMapper.toPageResponse(page);
+    }
+
+    @Override
+    public void registrarPagoReserva(FinanzaCrearRequestDto dto) {
+        Finanza finanza = Ingreso.crearDesdeReserva(
+                dto.getFecha(),
+                dto.getImporte(),
+                dto.getFormaPago(),
+                dto.getProcedencia(),
+                dto.getNotas(),
+                dto.getReservaId()
+        );
+        FinanzaMapper.toResponseDto(finanzaRepository.save(finanza));
     }
 }

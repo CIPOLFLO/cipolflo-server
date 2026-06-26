@@ -15,6 +15,7 @@
 5. [Clientes — Endpoints](#clientes--endpoints)
 6. [Clientes — DTOs](#clientes--dtos)
 7. [Reservas — Endpoints](#reservas--endpoints)
+   - `POST /api/v1/pago_reserva/{id}`
 8. [Reservas — DTOs](#reservas--dtos)
 9. [Finanzas — Endpoints](#finanzas--endpoints)
 10. [Finanzas — DTOs](#finanzas--dtos)
@@ -923,7 +924,8 @@ Crea una nueva reserva. Soporta tres variantes de cliente:
   "celular": null,
   "email": null,
   "rut": null,
-  "notas": "Llegan a las 14hs"
+  "notas": "Llegan a las 14hs",
+  "fechaLimite": null
 }
 ```
 
@@ -939,19 +941,20 @@ Crea una nueva reserva. Soporta tres variantes de cliente:
 | `cantidad`      | integer         | No          | >= 0                                                                             |
 | `clienteId`     | integer         | Condicional | Requerido si `crearCliente` no es `true` y no se envía `rut`                    |
 | `crearCliente`  | boolean         | No          | Si `true`, se crea un nuevo cliente particular con los campos siguientes         |
-| `tipoCliente`   | `TipoCliente`   | No          | Indica el tipo de cliente a crear (pendiente de uso en cálculo de costo)         |
+| `tipoCliente`   | `TipoCliente`   | No          | Usado para calcular el costo (precio socio vs. particular)                       |
 | `cedula`        | string          | Condicional | Requerido si `crearCliente: true`                                                |
 | `nombre`        | string          | Condicional | Requerido si `crearCliente: true`                                                |
 | `celular`       | string          | Condicional | Requerido si `crearCliente: true`                                                |
 | `email`         | string          | No          | Solo usado si `crearCliente: true`                                               |
 | `rut`           | string          | Condicional | Solo válido con `tipoReserva: COLABORACION_SIN_FINES_DE_LUCRO`; requerido si no hay `clienteId` ni `crearCliente` |
 | `notas`         | string          | No          | —                                                                                |
+| `fechaLimite`   | string (datetime) | No        | `yyyy-MM-dd'T'HH:mm:ss`; fecha límite para el pago de la reserva. Si no se envía, la reserva no tiene límite de pago |
 
 **Estado inicial según tipo de reserva:**
 
 | `tipoReserva`                      | Estado inicial | Importe inicial |
 |------------------------------------|----------------|-----------------|
-| `COMUN`                            | `PENDIENTE`    | null (se asigna al registrar pago) |
+| `COMUN`                            | `PENDIENTE`    | calculado al crear (según servicio y tipo de cliente) |
 | `COLABORACION_SIN_FINES_DE_LUCRO`  | `CONFIRMADA`   | `0`             |
 
 **Respuesta 201:**
@@ -999,7 +1002,6 @@ Retorna el detalle completo de una reserva.
   "cantidadMenores": 1,
   "cantidad": null,
   "importe": 15000.00,
-  "formaPago": "EFECTIVO",
   "pago": true,
   "requiereDocumentacion": false,
   "tieneDocumentacion": false,
@@ -1027,7 +1029,6 @@ Retorna el detalle completo de una reserva.
 ```
 
 > El campo `cliente` es `null` cuando la reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO` sin cliente asociado (solo `rut`).
-> `importe` y `formaPago` son `null` mientras la reserva no haya sido pagada.
 
 **Errores:**
 
@@ -1097,6 +1098,49 @@ Calcula el costo estimado de una reserva en tiempo real, sin efectos secundarios
 
 ---
 
+### `POST /api/v1/pago_reserva/{id}`
+Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y actualiza el saldo impago de la reserva. Si el pago se marca como total (o el importe coincide exactamente con el saldo impago), la reserva queda marcada como paga y puede transicionar automáticamente a `CONFIRMADA`.
+
+**Path param:** `id` — integer positivo; ID de la reserva a pagar
+
+**Body** (`application/json`):
+```json
+{
+  "importe": 15000.00,
+  "esPagoTotal": true,
+  "formaPago": "EFECTIVO",
+  "notas": "Pago en efectivo en administración"
+}
+```
+
+| Campo         | Tipo        | Obligatorio | Validación                                     |
+|---------------|-------------|-------------|------------------------------------------------|
+| `importe`     | number      | Sí          | > 0; no puede superar el saldo impago actual   |
+| `esPagoTotal` | boolean     | Sí          | Si `true`, la reserva queda marcada como paga independientemente del importe |
+| `formaPago`   | `FormaPago` | Sí          | —                                              |
+| `notas`       | string      | No          | —                                              |
+
+> **Pago total** (`esPagoTotal: true`): se registra el ingreso con el importe enviado (puede ser menor al saldo para contemplar descuentos), `montoImpago` pasa a `0` y `pago` a `true`.
+>
+> **Pago parcial** (`esPagoTotal: false`): se registra el importe y `montoImpago` se reduce en ese valor. Si el importe coincide exactamente con el saldo, el sistema lo trata como pago total.
+>
+> Cuando `pago` pasa a `true`: si `requiereDocumentacion = false` la reserva transiciona automáticamente a `CONFIRMADA`; si `requiereDocumentacion = true`, solo transiciona si además `tieneDocumentacion = true`.
+
+**Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código                                    | Cuándo ocurre                                                                  |
+|-------------|-------------------------------------------|--------------------------------------------------------------------------------|
+| 400         | `SOLICITUD_INVALIDA`                      | Campo obligatorio faltante o con formato inválido (Bean Validation)            |
+| 400         | `RESERVA_ESTADO_INVALIDO_PARA_PAGO`       | La reserva está en estado `FINALIZADA` o `CANCELADA`                          |
+| 400         | `PAGO_NO_APLICA_COLABORACION`             | La reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO`                       |
+| 400         | `PAGO_IMPORTE_SUPERA_SALDO`               | El importe enviado supera el saldo impago actual                               |
+| 404         | `RESERVA_NO_ENCONTRADA`                   | No existe una reserva con ese `id`                                             |
+| 401         | —                                         | Token ausente, inválido o expirado                                             |
+
+---
+
 ## Reservas — DTOs
 
 ### Request DTOs
@@ -1126,13 +1170,24 @@ Calcula el costo estimado de una reserva en tiempo real, sin efectos secundarios
   cantidad?: number              // opcional, >= 0
   clienteId?: number             // condicional
   crearCliente?: boolean         // opcional
-  tipoCliente?: TipoCliente      // opcional (pendiente de uso en cálculo de costo)
+  tipoCliente?: TipoCliente      // opcional; usado para calcular costo (precio socio vs. particular)
   cedula?: string                // condicional (requerido si crearCliente: true)
   nombre?: string                // condicional (requerido si crearCliente: true)
   celular?: string               // condicional (requerido si crearCliente: true)
   email?: string                 // opcional
   rut?: string                   // condicional (solo para COLABORACION_SIN_FINES_DE_LUCRO)
   notas?: string                 // opcional
+  fechaLimite?: string           // opcional; LocalDateTime yyyy-MM-dd'T'HH:mm:ss; fecha límite de pago
+}
+```
+
+#### `RegistroPagoReservaRequestDto` — body en `POST /api/v1/pago_reserva/{id}`
+```typescript
+{
+  importe: number          // obligatorio, > 0; no puede superar el saldo impago
+  esPagoTotal: boolean     // obligatorio
+  formaPago: FormaPago     // obligatorio
+  notas?: string           // opcional
 }
 ```
 
@@ -1193,8 +1248,7 @@ Calcula el costo estimado de una reserva en tiempo real, sin efectos secundarios
   cantidadTotal: number | null
   cantidadMenores: number | null
   cantidad: number | null
-  importe: number | null             // null si aún no fue pagada
-  formaPago: FormaPago | null        // null si aún no fue pagada
+  importe: number | null             // null si es reserva de colaboración (monto 0)
   pago: boolean
   requiereDocumentacion: boolean
   tieneDocumentacion: boolean
