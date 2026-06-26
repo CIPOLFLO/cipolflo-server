@@ -226,7 +226,8 @@ public class ReservaService implements IReservaService {
                 r.getFechaSalida(),
                 r.getEstado(),
                 r.getMontoImpago(),
-                r.getFechaLimitePago()
+                r.getFechaLimitePago(),
+                r.getRequiereDocumentacion() && !r.getTieneDocumentacion()
         ));
 
         return PaginationMapper.toPageResponse(dtoPage);

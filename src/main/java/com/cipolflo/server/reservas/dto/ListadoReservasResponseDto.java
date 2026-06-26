@@ -21,6 +21,7 @@ public class ListadoReservasResponseDto implements ResponseDto {
     private final EstadoReserva estadoReserva;
     private final BigDecimal montoImpago;
     private final LocalDateTime fechaLimitePago;
+    private final Boolean pendienteDocumentacion;
 
 
     public ListadoReservasResponseDto(
@@ -33,7 +34,8 @@ public class ListadoReservasResponseDto implements ResponseDto {
             LocalDate fechaSalida,
             EstadoReserva estadoReserva,
             BigDecimal montoImpago,
-            LocalDateTime fechaLimitePago
+            LocalDateTime fechaLimitePago,
+            boolean pendienteDocumentacion
     ){
         this.id = id;
         this.clienteId = clienteId;
@@ -45,5 +47,6 @@ public class ListadoReservasResponseDto implements ResponseDto {
         this.estadoReserva = estadoReserva;
         this.montoImpago = montoImpago;
         this.fechaLimitePago = fechaLimitePago;
+        this.pendienteDocumentacion = pendienteDocumentacion;
     }
 }
