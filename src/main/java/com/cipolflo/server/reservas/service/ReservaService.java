@@ -239,7 +239,7 @@ public class ReservaService implements IReservaService {
             );
         }
 
-        reservaModificacionValidator.validar(id, reserva.getTipoReserva(), dto);
+        reservaModificacionValidator.validar(reserva, dto);
 
         reserva.modificar(
                 dto.getServicioId(),

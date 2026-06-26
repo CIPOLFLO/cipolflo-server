@@ -639,7 +639,7 @@ class ReservaServiceTest {
         ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
 
         assertThrows(ReservaNotFoundException.class, () -> reservaService.modificar(99L, dto));
-        verify(reservaModificacionValidator, never()).validar(any(), any(), any());
+        verify(reservaModificacionValidator, never()).validar(any(), any());
     }
 
     @Test
@@ -661,7 +661,7 @@ class ReservaServiceTest {
                 () -> reservaService.modificar(reservaId, dto)
         );
         assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
-        verify(reservaModificacionValidator, never()).validar(any(), any(), any());
+        verify(reservaModificacionValidator, never()).validar(any(), any());
     }
 
     @Test
@@ -728,7 +728,7 @@ class ReservaServiceTest {
         reservaService.modificar(reservaId, dto);
 
         var inOrder = inOrder(reservaModificacionValidator, reservaRepository);
-        inOrder.verify(reservaModificacionValidator).validar(eq(reservaId), eq(TipoReserva.COMUN), eq(dto));
+        inOrder.verify(reservaModificacionValidator).validar(eq(reserva), eq(dto));
         inOrder.verify(reservaRepository).save(reserva);
     }
 }
