@@ -4,7 +4,7 @@ import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.RegistroParticularRequestDto;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
-import com.cipolflo.server.reservas.ReservaMapper;
+import com.cipolflo.server.reservas.mapper.ReservaMapper;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.dto.*;
@@ -153,6 +153,7 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
                 dto.getRut(),
+                dto.getNombre(),
                 dto.getNotas(),
                 requiereDocumentacion
         );
@@ -215,7 +216,8 @@ public class ReservaService implements IReservaService {
         Page<ListadoReservasResponseDto> dtoPage = page.map(r -> new ListadoReservasResponseDto(
                 r.getId(),
                 r.getClienteId(),
-                r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : null,
+                // TODO: temporal - usar nombreRut como nombre de cliente para reservas sin fines de lucro hasta definir manejo de clientes RUT
+                r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : r.getNombreRut(),
                 r.getServicioId(),
                 nombresServicios.get(r.getServicioId()),
                 r.getFechaEntrada(),
