@@ -26,8 +26,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
@@ -380,7 +381,7 @@ class FinanzaControllerTest {
                 tipoMovimiento,
                 tipoMovimiento == TipoMovimiento.INGRESO ? Procedencia.SEDE : Procedencia.CAMPING,
                 tipoMovimiento == TipoMovimiento.INGRESO ? Concepto.PAGO_RESERVA : Concepto.UTE,
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 tipoMovimiento == TipoMovimiento.INGRESO ? FormaPago.EFECTIVO : FormaPago.TRANSFERENCIA,
                 "Alta manual",
@@ -443,7 +444,7 @@ class FinanzaControllerTest {
                 TipoMovimiento.INGRESO,
                 Procedencia.SEDE,
                 Concepto.PAGO_RESERVA,
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 FormaPago.EFECTIVO,
                 "Alta manual",
@@ -576,7 +577,7 @@ class FinanzaControllerTest {
                 List.of(new ListadoFinanzasResponseDto(
                         1L,
                         Concepto.PAGO_RESERVA,
-                        LocalDate.of(2026, 6, 15),
+                        LocalDate.of(2026, Month.JUNE, 15),
                         BigDecimal.valueOf(1500),
                         "Alta manual",
                         TipoMovimiento.INGRESO
