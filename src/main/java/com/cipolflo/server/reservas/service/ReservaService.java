@@ -4,7 +4,7 @@ import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.RegistroParticularRequestDto;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
-import com.cipolflo.server.reservas.ReservaMapper;
+import com.cipolflo.server.reservas.mapper.ReservaMapper;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.dto.*;

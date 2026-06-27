@@ -1,4 +1,4 @@
-package com.cipolflo.server.reservas;
+package com.cipolflo.server.reservas.mapper;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
@@ -8,6 +8,9 @@ import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
 import jakarta.annotation.Nullable;
 
 public class ReservaMapper {
+
+    private ReservaMapper(){}
+
     public static ReservaDetalleResponseDto toDetalleResponseDto(
             Reserva reserva,
             @Nullable ClienteDetalleReservaDto cliente,
