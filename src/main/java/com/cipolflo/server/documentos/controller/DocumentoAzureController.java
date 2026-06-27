@@ -1,6 +1,6 @@
 package com.cipolflo.server.documentos.controller;
 
-import com.cipolflo.server.documentos.model.DocumentoAnalizado;
+import com.cipolflo.server.documentos.domain.DocumentoAnalizado;
 import com.cipolflo.server.documentos.service.DocumentoAzureService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

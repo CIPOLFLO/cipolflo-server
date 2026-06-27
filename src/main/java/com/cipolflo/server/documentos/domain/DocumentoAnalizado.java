@@ -1,4 +1,4 @@
-package com.cipolflo.server.documentos.model;
+package com.cipolflo.server.documentos.domain;
 
 
 import jakarta.persistence.*;

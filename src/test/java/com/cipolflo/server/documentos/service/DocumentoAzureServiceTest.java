@@ -5,7 +5,7 @@ import com.azure.ai.documentintelligence.models.AnalyzeDocumentRequest;
 import com.azure.ai.documentintelligence.models.AnalyzeResult;
 import com.azure.ai.documentintelligence.models.AnalyzeResultOperation;
 import com.azure.core.util.polling.SyncPoller;
-import com.cipolflo.server.documentos.model.DocumentoAnalizado;
+import com.cipolflo.server.documentos.domain.DocumentoAnalizado;
 import com.cipolflo.server.documentos.repository.DocumentoAnalizadoRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
+import com.cipolflo.server.documentos.validation.DocumentoAzureValidator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,14 +26,16 @@ class DocumentoAzureServiceTest {
     private DocumentoAnalizadoRepository repository;
     private ObjectMapper objectMapper;
     private DocumentoAzureService service;
+    private DocumentoAzureValidator validator;
 
     @BeforeEach
     void setUp() {
         client = mock(DocumentIntelligenceClient.class);
         repository = mock(DocumentoAnalizadoRepository.class);
         objectMapper = mock(ObjectMapper.class);
+        validator = new DocumentoAzureValidator();
 
-        service = new DocumentoAzureService(client, repository, objectMapper);
+        service = new DocumentoAzureService(client, repository, objectMapper, validator);
     }
 
     @Test

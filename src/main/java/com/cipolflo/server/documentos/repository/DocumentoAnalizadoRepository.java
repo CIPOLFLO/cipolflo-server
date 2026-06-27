@@ -1,7 +1,7 @@
 package com.cipolflo.server.documentos.repository;
 
 
-import com.cipolflo.server.documentos.model.DocumentoAnalizado;
+import com.cipolflo.server.documentos.domain.DocumentoAnalizado;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
