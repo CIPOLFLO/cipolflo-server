@@ -7,6 +7,7 @@ import com.cipolflo.server.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -61,5 +62,20 @@ public class ReservaController {
                     "sortField inválido. Valores permitidos: " + CAMPOS_ORDEN_PERMITIDOS);
         }
         return ResponseEntity.ok(reservaService.getListadoReservas(filtros, pageRequest));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{id}")
+    public ResponseEntity<ReservaModificacionResponseDto> modificar(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id,
+            @Valid @RequestBody ReservaModificacionRequestDto dto) {
+        return ResponseEntity.ok(reservaService.modificar(id, dto));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/calcular-costo")
+    public ResponseEntity<CalculoCostoResponseDto> calcularCosto(
+            @Valid @RequestBody CalculoCostoRequestDto dto) {
+        return ResponseEntity.ok(reservaService.calcularCosto(dto));
     }
 }

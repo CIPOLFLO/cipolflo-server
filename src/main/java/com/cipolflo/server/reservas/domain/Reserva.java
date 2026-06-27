@@ -166,6 +166,20 @@ public class Reserva extends AuditableEntity {
         };
     }
 
+    public void modificar(Long servicioId, Procedencia procedencia, LocalDate fechaEntrada,
+                          LocalDate fechaSalida, Integer cantidadTotal, Integer cantidadMenores,
+                          Integer cantidad, String rut, String notas) {
+        this.servicioId = servicioId;
+        this.procedencia = procedencia;
+        this.fechaEntrada = fechaEntrada;
+        this.fechaSalida = fechaSalida;
+        this.cantidadTotal = cantidadTotal;
+        this.cantidadMenores = cantidadMenores;
+        this.cantidad = cantidad;
+        this.rut = rut;
+        this.notas = notas;
+    }
+
     public void cancelar() {
         cambiarEstado(EstadoReserva.CANCELADA);
     }

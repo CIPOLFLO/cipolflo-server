@@ -3,6 +3,7 @@ package com.cipolflo.server.reservas.controller;
 import com.cipolflo.server.reservas.dto.ListadoReservasRequestDto;
 import com.cipolflo.server.reservas.dto.ListadoReservasResponseDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
+import com.cipolflo.server.reservas.dto.ReservaModificacionResponseDto;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -20,8 +21,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
+
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
@@ -208,5 +213,164 @@ class ReservaControllerTest {
                 .andExpect(status().isOk());
 
         verify(reservaService).getListadoReservas(any(), any());
+    }
+
+    // ── PUT /api/v1/reservas/{id} (modificar) ─────────────────────────────────
+
+    private String bodyValido() {
+        return """
+                {
+                  "servicioId": 10,
+                  "procedencia": "CAMPING",
+                  "fechaInicio": "2026-07-01",
+                  "fechaFin": "2026-07-05"
+                }
+                """;
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarOkAlModificarReservaConUsuarioAutenticado() throws Exception {
+        ReservaModificacionResponseDto response = mock(ReservaModificacionResponseDto.class);
+        when(reservaService.modificar(eq(1L), any())).thenReturn(response);
+
+        mockMvc.perform(put("/api/v1/reservas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValido())
+                        .with(csrf()))
+                .andExpect(status().isOk());
+
+        verify(reservaService).modificar(eq(1L), any());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlModificarSinAutenticacion() throws Exception {
+        mockMvc.perform(put("/api/v1/reservas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValido())
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
+
+        verify(reservaService, never()).modificar(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlModificarConIdCero() throws Exception {
+        mockMvc.perform(put("/api/v1/reservas/0")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValido())
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).modificar(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlModificarConIdNegativo() throws Exception {
+        mockMvc.perform(put("/api/v1/reservas/-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValido())
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).modificar(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlModificarReservaInexistente() throws Exception {
+        when(reservaService.modificar(eq(99L), any()))
+                .thenThrow(new ReservaNotFoundException(99L));
+
+        mockMvc.perform(put("/api/v1/reservas/99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyValido())
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+
+        verify(reservaService).modificar(eq(99L), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlModificarSinServicioId() throws Exception {
+        String body = """
+                {
+                  "procedencia": "CAMPING",
+                  "fechaInicio": "2026-07-01",
+                  "fechaFin": "2026-07-05"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/reservas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).modificar(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlModificarSinFechaInicio() throws Exception {
+        String body = """
+                {
+                  "servicioId": 10,
+                  "procedencia": "CAMPING",
+                  "fechaFin": "2026-07-05"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/reservas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).modificar(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlModificarSinFechaFin() throws Exception {
+        String body = """
+                {
+                  "servicioId": 10,
+                  "procedencia": "CAMPING",
+                  "fechaInicio": "2026-07-01"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/reservas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).modificar(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlModificarConServicioIdCero() throws Exception {
+        String body = """
+                {
+                  "servicioId": 0,
+                  "procedencia": "CAMPING",
+                  "fechaInicio": "2026-07-01",
+                  "fechaFin": "2026-07-05"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/reservas/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).modificar(anyLong(), any());
     }
 }

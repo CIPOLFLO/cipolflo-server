@@ -94,6 +94,7 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(1500),
                 BigDecimal.valueOf(2500),
                 4,
+                null,
                 EstadoServicio.HABILITADO,
                 ModalidadPrecio.POR_DIA,
                 null, null, null, null
@@ -135,6 +136,7 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(1500),
                 BigDecimal.valueOf(2500),
                 4,
+                null,
                 EstadoServicio.DESHABILITADO,
                 ModalidadPrecio.POR_DIA,
                 null, null, null, null
@@ -257,6 +259,7 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(2000),
                 BigDecimal.valueOf(3000),
                 4,
+                null,
                 EstadoServicio.HABILITADO,
                 ModalidadPrecio.POR_DIA,
                 null, null, null, null
@@ -326,6 +329,7 @@ public class ServicioControllerTest {
                 BigDecimal.valueOf(1500),
                 BigDecimal.valueOf(2500),
                 4,
+                null,
                 EstadoServicio.HABILITADO,
                 ModalidadPrecio.POR_DIA,
                 null, null, null, null
@@ -617,6 +621,7 @@ public class ServicioControllerTest {
                 null,
                 BigDecimal.valueOf(1500),
                 BigDecimal.valueOf(2500),
+                null,
                 null,
                 EstadoServicio.HABILITADO,
                 ModalidadPrecio.POR_DIA,

@@ -14,12 +14,18 @@ import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
+import com.cipolflo.server.reservas.dto.ReservaModificacionRequestDto;
+import com.cipolflo.server.reservas.dto.ReservaModificacionResponseDto;
+import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
+import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
+import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
+import com.cipolflo.server.reservas.service.ICalculoCostoService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -58,6 +64,9 @@ class ReservaServiceTest {
     private ReservaCreacionValidator reservaCreacionValidator;
 
     @Mock
+    private ReservaModificacionValidator reservaModificacionValidator;
+
+    @Mock
     private IServicioRequiereDocumentacion servicioRequiereDocumentacion;
 
     @Mock
@@ -65,6 +74,9 @@ class ReservaServiceTest {
 
     @Mock
     private IConsultaServicioSimple consultaServicioSimple;
+
+    @Mock
+    private ICalculoCostoService calculoCostoService;
 
     @InjectMocks
     private ReservaService reservaService;
@@ -558,5 +570,166 @@ class ReservaServiceTest {
         var inOrder = inOrder(reservaCreacionValidator, reservaRepository);
         inOrder.verify(reservaCreacionValidator).validar(dto);
         inOrder.verify(reservaRepository).save(any(Reserva.class));
+    }
+
+    // ── modificar ─────────────────────────────────────────────────────────────
+
+    @Test
+    void deberiaModificarReservaCorrectamente() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, false
+        );
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+        when(dto.getServicioId()).thenReturn(20L);
+        when(dto.getProcedencia()).thenReturn(Procedencia.CAMPING);
+        when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(5));
+        when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(10));
+        when(dto.getCantidadTotal()).thenReturn(4);
+        when(dto.getCantidadMenores()).thenReturn(2);
+        when(dto.getCantidad()).thenReturn(null);
+        when(dto.getRut()).thenReturn(null);
+        when(dto.getNotas()).thenReturn("nueva nota");
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(reserva)).thenReturn(reserva);
+
+        ReservaModificacionResponseDto response = reservaService.modificar(reservaId, dto);
+
+        assertNotNull(response);
+        assertEquals(20L, reserva.getServicioId());
+        assertEquals(LocalDate.now().plusDays(5), reserva.getFechaEntrada());
+        assertEquals(LocalDate.now().plusDays(10), reserva.getFechaSalida());
+        assertEquals(4, reserva.getCantidadTotal());
+        assertEquals(2, reserva.getCantidadMenores());
+        assertEquals("nueva nota", reserva.getNotas());
+        verify(reservaRepository).save(reserva);
+    }
+
+    @Test
+    void deberiaModificarReservaEnEstadoConfirmada() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, "20123456-7", null, false
+        );
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+        when(dto.getServicioId()).thenReturn(10L);
+        when(dto.getProcedencia()).thenReturn(Procedencia.CAMPING);
+        when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(5));
+        when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(10));
+        when(dto.getRut()).thenReturn("20123456-7");
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(reserva)).thenReturn(reserva);
+
+        assertDoesNotThrow(() -> reservaService.modificar(reservaId, dto));
+        verify(reservaRepository).save(reserva);
+    }
+
+    @Test
+    void deberiaLanzarNotFoundCuandoReservaNoExisteAlModificar() {
+        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+
+        assertThrows(ReservaNotFoundException.class, () -> reservaService.modificar(99L, dto));
+        verify(reservaModificacionValidator, never()).validar(any(), any());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoEstadoEsCancelada() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, false
+        );
+        reserva.cancelar();
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> reservaService.modificar(reservaId, dto)
+        );
+        assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
+        verify(reservaModificacionValidator, never()).validar(any(), any());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoEstadoEsEnCurso() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, "20123456-7", null, false
+        );
+        reserva.cambiarEstado(EstadoReserva.EN_CURSO);
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> reservaService.modificar(reservaId, dto)
+        );
+        assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoEstadoEsFinalizada() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, "20123456-7", null, false
+        );
+        reserva.cambiarEstado(EstadoReserva.EN_CURSO);
+        reserva.cambiarEstado(EstadoReserva.FINALIZADA);
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> reservaService.modificar(reservaId, dto)
+        );
+        assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLlamarValidadorAntesDeModificarYGuardar() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, false
+        );
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+        when(dto.getServicioId()).thenReturn(10L);
+        when(dto.getProcedencia()).thenReturn(Procedencia.CAMPING);
+        when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(5));
+        when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(10));
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(any())).thenReturn(reserva);
+
+        reservaService.modificar(reservaId, dto);
+
+        var inOrder = inOrder(reservaModificacionValidator, reservaRepository);
+        inOrder.verify(reservaModificacionValidator).validar(eq(reserva), eq(dto));
+        inOrder.verify(reservaRepository).save(reserva);
     }
 }

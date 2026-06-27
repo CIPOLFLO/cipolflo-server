@@ -1,5 +1,6 @@
 package com.cipolflo.server.servicios.domain;
 
+import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
@@ -44,6 +45,8 @@ public class Servicio extends AuditableEntity {
 
     private Integer cantidad;
 
+    private BigDecimal costoPersonaExtra;
+
     @Column(nullable = false)
     private Boolean habilitado = true;
 
@@ -53,8 +56,13 @@ public class Servicio extends AuditableEntity {
         this.habilitado = !this.habilitado;
     }
 
+    public BigDecimal precioBase(TipoCliente tipoCliente) {
+        return tipoCliente == TipoCliente.SOCIO ? precioSocio : precioParticular;
+    }
+
     public void modificar(String nombre, BigDecimal precioParticular, BigDecimal precioSocio,
-                          ModalidadPrecio modalidadPrecio, Integer capacidad, Integer cantidad) {
+                          ModalidadPrecio modalidadPrecio, Integer capacidad, Integer cantidad,
+                          BigDecimal costoPersonaExtra) {
         if (precioSocio.compareTo(precioParticular) >= 0) {
             throw new ServicioValidacionException(
                     ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
@@ -67,6 +75,7 @@ public class Servicio extends AuditableEntity {
         this.modalidadPrecio = modalidadPrecio;
         this.capacidad = capacidad;
         this.cantidad = cantidad;
+        this.costoPersonaExtra = costoPersonaExtra;
     }
 
     public static Servicio registrar(
@@ -76,7 +85,8 @@ public class Servicio extends AuditableEntity {
             BigDecimal precioSocio,
             ModalidadPrecio modalidadPrecio,
             Integer capacidad,
-            Integer cantidad) {
+            Integer cantidad,
+            BigDecimal costoPersonaExtra) {
 
         if (precioSocio.compareTo(precioParticular) >= 0) {
             throw new ServicioValidacionException(
@@ -93,6 +103,7 @@ public class Servicio extends AuditableEntity {
         servicio.modalidadPrecio = modalidadPrecio;
         servicio.capacidad = capacidad;
         servicio.cantidad = cantidad;
+        servicio.costoPersonaExtra = costoPersonaExtra;
         servicio.habilitado = true;
 
         return servicio;
