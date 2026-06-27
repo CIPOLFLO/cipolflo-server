@@ -128,7 +128,8 @@ public class ServicioService implements IServicioService {
                 dto.getPrecioSocio(),
                 dto.getModalidadPrecio(),
                 dto.getCapacidad(),
-                dto.getCantidad()
+                dto.getCantidad(),
+                dto.getCostoPersonaExtra()
         );
 
         return mapToResponse(servicioRepository.save(servicio));
@@ -201,7 +202,8 @@ public class ServicioService implements IServicioService {
                 request.getPrecioSocio(),
                 request.getModalidadPrecio(),
                 request.getCapacidad(),
-                request.getCantidad()
+                request.getCantidad(),
+                request.getCostoPersonaExtra()
         );
 
         return mapToResponse(servicioRepository.save(servicio));
@@ -236,6 +238,7 @@ public class ServicioService implements IServicioService {
                 servicio.getPrecioSocio(),
                 servicio.getPrecioParticular(),
                 servicio.getCapacidad(),
+                servicio.getCostoPersonaExtra(),
                 estado,
                 servicio.getModalidadPrecio(),
                 servicio.getCreatedAt(),

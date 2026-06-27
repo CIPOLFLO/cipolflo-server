@@ -20,6 +20,7 @@ public class ServicioResponseDto extends AuditInfoDto implements ResponseDto {
         private final BigDecimal precioSocio;
         private final BigDecimal precioParticular;
         private final Integer capacidad;
+        private final BigDecimal costoPersonaExtra;
         private final EstadoServicio estado;
         private final ModalidadPrecio modalidadPrecio;
 
@@ -31,6 +32,7 @@ public class ServicioResponseDto extends AuditInfoDto implements ResponseDto {
                 BigDecimal precioSocio,
                 BigDecimal precioParticular,
                 Integer capacidad,
+                BigDecimal costoPersonaExtra,
                 EstadoServicio estado,
                 ModalidadPrecio modalidadPrecio,
                 Instant createdAt,
@@ -46,6 +48,7 @@ public class ServicioResponseDto extends AuditInfoDto implements ResponseDto {
                 this.precioSocio = precioSocio;
                 this.precioParticular = precioParticular;
                 this.capacidad = capacidad;
+                this.costoPersonaExtra = costoPersonaExtra;
                 this.estado = estado;
                 this.modalidadPrecio = modalidadPrecio;
         }

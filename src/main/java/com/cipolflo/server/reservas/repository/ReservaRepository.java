@@ -3,12 +3,13 @@ package com.cipolflo.server.reservas.repository;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
-public interface ReservaRepository extends JpaRepository<Reserva, Long> {
+public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpecificationExecutor<Reserva> {
     List<Reserva> findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
             Long servicioId,
             LocalDate desde,
@@ -33,5 +34,13 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
             Collection<EstadoReserva> estados,
             LocalDate fechaFin,
             LocalDate fechaInicio
+    );
+
+    boolean existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqualAndIdNot(
+            Long servicioId,
+            Collection<EstadoReserva> estados,
+            LocalDate fechaFin,
+            LocalDate fechaInicio,
+            Long idExcluir
     );
 }

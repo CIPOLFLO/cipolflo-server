@@ -8,28 +8,44 @@ import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
+import com.cipolflo.server.reservas.dto.ListadoReservasRequestDto;
+import com.cipolflo.server.reservas.dto.ListadoReservasResponseDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
+import com.cipolflo.server.reservas.dto.ReservaModificacionRequestDto;
+import com.cipolflo.server.reservas.dto.ReservaModificacionResponseDto;
+import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
+import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
+import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
+import com.cipolflo.server.reservas.service.ICalculoCostoService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
+import com.cipolflo.server.shared.pagination.PageRequestDto;
+import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -48,6 +64,9 @@ class ReservaServiceTest {
     private ReservaCreacionValidator reservaCreacionValidator;
 
     @Mock
+    private ReservaModificacionValidator reservaModificacionValidator;
+
+    @Mock
     private IServicioRequiereDocumentacion servicioRequiereDocumentacion;
 
     @Mock
@@ -55,6 +74,9 @@ class ReservaServiceTest {
 
     @Mock
     private IConsultaServicioSimple consultaServicioSimple;
+
+    @Mock
+    private ICalculoCostoService calculoCostoService;
 
     @InjectMocks
     private ReservaService reservaService;
@@ -396,6 +418,135 @@ class ReservaServiceTest {
         assertEquals("Nota", resultado.getNotas());
     }
 
+    // ── getListadoReservas ─────────────────────────────────────────────────────
+
+    private Reserva crearReservaComun(Long clienteId, Long servicioId) {
+        return Reserva.crear(
+                TipoReserva.COMUN, clienteId, servicioId, Procedencia.CAMPING,
+                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 5),
+                null, null, null, null, null, null, null, false
+        );
+    }
+
+    @Test
+    void deberiaRetornarPaginaConReservasMapeadasCorrectamente() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, null, null, null, null);
+        PageRequestDto pageRequest = new PageRequestDto(0, 10, null, null);
+
+        Reserva reserva = crearReservaComun(1L, 5L);
+        when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(reserva)));
+        when(consultaClienteDetalle.getNombresByIds(Set.of(1L))).thenReturn(Map.of(1L, "Juan Pérez"));
+        when(consultaServicioSimple.getNombresByIds(Set.of(5L))).thenReturn(Map.of(5L, "Cabaña"));
+
+        PageResponse<ListadoReservasResponseDto> resultado =
+                reservaService.getListadoReservas(filtros, pageRequest);
+
+        assertEquals(1, resultado.content().size());
+        ListadoReservasResponseDto dto = resultado.content().get(0);
+        assertEquals(1L, dto.getClienteId());
+        assertEquals("Juan Pérez", dto.getNombreCliente());
+        assertEquals(5L, dto.getServicioId());
+        assertEquals("Cabaña", dto.getServicioNombre());
+        assertEquals(LocalDate.of(2026, 7, 1), dto.getFechaEntrada());
+        assertEquals(LocalDate.of(2026, 7, 5), dto.getFechaSalida());
+        assertEquals(EstadoReserva.PENDIENTE, dto.getEstadoReserva());
+    }
+
+    @Test
+    void deberiaLlamarGetIdsByNombreCuandoFiltroNombreClienteTieneValor() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, "Juan", null, null, null);
+        PageRequestDto pageRequest = new PageRequestDto(0, 10, null, null);
+
+        when(consultaClienteDetalle.getIdsByNombre("Juan")).thenReturn(List.of(1L, 2L));
+        when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+        when(consultaClienteDetalle.getNombresByIds(any())).thenReturn(Map.of());
+        when(consultaServicioSimple.getNombresByIds(any())).thenReturn(Map.of());
+
+        reservaService.getListadoReservas(filtros, pageRequest);
+
+        verify(consultaClienteDetalle).getIdsByNombre("Juan");
+        verify(reservaRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaRetornarPaginaVaciaSinConsultarRepositorioCuandoNombreNoTieneCoincidencias() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, "NoExiste", null, null, null);
+        PageRequestDto pageRequest = new PageRequestDto(0, 10, null, null);
+
+        when(consultaClienteDetalle.getIdsByNombre("NoExiste")).thenReturn(List.of());
+
+        PageResponse<ListadoReservasResponseDto> resultado =
+                reservaService.getListadoReservas(filtros, pageRequest);
+
+        assertTrue(resultado.content().isEmpty());
+        assertEquals(0, resultado.totalElements());
+        verify(reservaRepository, never()).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void deberiaRetornarNombreClienteNullCuandoReservaTieneClienteIdNull() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 5L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, "20123456-7", null, false
+        );
+
+        when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(reserva)));
+        when(consultaClienteDetalle.getNombresByIds(any())).thenReturn(Map.of());
+        when(consultaServicioSimple.getNombresByIds(any())).thenReturn(Map.of(5L, "Cabaña"));
+
+        PageResponse<ListadoReservasResponseDto> resultado = reservaService.getListadoReservas(
+                new ListadoReservasRequestDto(null, null, null, null, null, null),
+                new PageRequestDto(0, 10, null, null)
+        );
+
+        assertNull(resultado.content().get(0).getClienteId());
+        assertNull(resultado.content().get(0).getNombreCliente());
+    }
+
+    @Test
+    void deberiaBuscarNombresDeClientesYServiciosDeTodasLasReservasDeLaPagina() {
+        Reserva reserva1 = crearReservaComun(1L, 5L);
+        Reserva reserva2 = crearReservaComun(2L, 6L);
+
+        when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(reserva1, reserva2)));
+        when(consultaClienteDetalle.getNombresByIds(Set.of(1L, 2L)))
+                .thenReturn(Map.of(1L, "Juan", 2L, "Ana"));
+        when(consultaServicioSimple.getNombresByIds(Set.of(5L, 6L)))
+                .thenReturn(Map.of(5L, "Cabaña", 6L, "Parcela"));
+
+        PageResponse<ListadoReservasResponseDto> resultado = reservaService.getListadoReservas(
+                new ListadoReservasRequestDto(null, null, null, null, null, null),
+                new PageRequestDto(0, 10, null, null)
+        );
+
+        assertEquals(2, resultado.content().size());
+        verify(consultaClienteDetalle).getNombresByIds(Set.of(1L, 2L));
+        verify(consultaServicioSimple).getNombresByIds(Set.of(5L, 6L));
+    }
+
+    @Test
+    void deberiaRetornarMetadatosDePaginacionCorrectamente() {
+        when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), Pageable.ofSize(10), 0));
+        when(consultaClienteDetalle.getNombresByIds(any())).thenReturn(Map.of());
+        when(consultaServicioSimple.getNombresByIds(any())).thenReturn(Map.of());
+
+        PageResponse<ListadoReservasResponseDto> resultado = reservaService.getListadoReservas(
+                new ListadoReservasRequestDto(null, null, null, null, null, null),
+                new PageRequestDto(0, 10, null, null)
+        );
+
+        assertEquals(0, resultado.totalElements());
+        assertEquals(0, resultado.totalPages());
+        assertTrue(resultado.first());
+        assertTrue(resultado.last());
+    }
+
     @Test
     void deberiaLlamarValidadorAntesDeCrearReserva() {
         ReservaCreacionRequestDto dto = mock(ReservaCreacionRequestDto.class);
@@ -418,5 +569,166 @@ class ReservaServiceTest {
         var inOrder = inOrder(reservaCreacionValidator, reservaRepository);
         inOrder.verify(reservaCreacionValidator).validar(dto);
         inOrder.verify(reservaRepository).save(any(Reserva.class));
+    }
+
+    // ── modificar ─────────────────────────────────────────────────────────────
+
+    @Test
+    void deberiaModificarReservaCorrectamente() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, false
+        );
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+        when(dto.getServicioId()).thenReturn(20L);
+        when(dto.getProcedencia()).thenReturn(Procedencia.CAMPING);
+        when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(5));
+        when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(10));
+        when(dto.getCantidadTotal()).thenReturn(4);
+        when(dto.getCantidadMenores()).thenReturn(2);
+        when(dto.getCantidad()).thenReturn(null);
+        when(dto.getRut()).thenReturn(null);
+        when(dto.getNotas()).thenReturn("nueva nota");
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(reserva)).thenReturn(reserva);
+
+        ReservaModificacionResponseDto response = reservaService.modificar(reservaId, dto);
+
+        assertNotNull(response);
+        assertEquals(20L, reserva.getServicioId());
+        assertEquals(LocalDate.now().plusDays(5), reserva.getFechaEntrada());
+        assertEquals(LocalDate.now().plusDays(10), reserva.getFechaSalida());
+        assertEquals(4, reserva.getCantidadTotal());
+        assertEquals(2, reserva.getCantidadMenores());
+        assertEquals("nueva nota", reserva.getNotas());
+        verify(reservaRepository).save(reserva);
+    }
+
+    @Test
+    void deberiaModificarReservaEnEstadoConfirmada() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, "20123456-7", null, false
+        );
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+        when(dto.getServicioId()).thenReturn(10L);
+        when(dto.getProcedencia()).thenReturn(Procedencia.CAMPING);
+        when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(5));
+        when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(10));
+        when(dto.getRut()).thenReturn("20123456-7");
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(reserva)).thenReturn(reserva);
+
+        assertDoesNotThrow(() -> reservaService.modificar(reservaId, dto));
+        verify(reservaRepository).save(reserva);
+    }
+
+    @Test
+    void deberiaLanzarNotFoundCuandoReservaNoExisteAlModificar() {
+        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+
+        assertThrows(ReservaNotFoundException.class, () -> reservaService.modificar(99L, dto));
+        verify(reservaModificacionValidator, never()).validar(any(), any());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoEstadoEsCancelada() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, false
+        );
+        reserva.cancelar();
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> reservaService.modificar(reservaId, dto)
+        );
+        assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
+        verify(reservaModificacionValidator, never()).validar(any(), any());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoEstadoEsEnCurso() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, "20123456-7", null, false
+        );
+        reserva.cambiarEstado(EstadoReserva.EN_CURSO);
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> reservaService.modificar(reservaId, dto)
+        );
+        assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoEstadoEsFinalizada() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, "20123456-7", null, false
+        );
+        reserva.cambiarEstado(EstadoReserva.EN_CURSO);
+        reserva.cambiarEstado(EstadoReserva.FINALIZADA);
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> reservaService.modificar(reservaId, dto)
+        );
+        assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLlamarValidadorAntesDeModificarYGuardar() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, false
+        );
+
+        ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
+        when(dto.getServicioId()).thenReturn(10L);
+        when(dto.getProcedencia()).thenReturn(Procedencia.CAMPING);
+        when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(5));
+        when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(10));
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(any())).thenReturn(reserva);
+
+        reservaService.modificar(reservaId, dto);
+
+        var inOrder = inOrder(reservaModificacionValidator, reservaRepository);
+        inOrder.verify(reservaModificacionValidator).validar(eq(reserva), eq(dto));
+        inOrder.verify(reservaRepository).save(reserva);
     }
 }
