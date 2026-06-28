@@ -146,6 +146,12 @@ public class ReservaCreacionValidator {
                         "Se requiere un clienteId o RUT para la reserva"
                 );
             }
+            if (!StringUtils.hasText(dto.getNombre())) {
+                throw new ReservaValidacionException(
+                        ReservaCodigoError.NOMBRE_REQUERIDO_PARA_COLABORACION,
+                        "El nombre de la organización es requerido para reservas de colaboración sin fines de lucro"
+                );
+            }
         }
     }
 }

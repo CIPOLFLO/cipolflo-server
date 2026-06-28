@@ -215,7 +215,7 @@ class ServicioServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -252,7 +252,7 @@ class ServicioServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -299,7 +299,7 @@ class ServicioServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -572,7 +572,7 @@ class ServicioServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reservaProxima, "id", 2L);
@@ -800,7 +800,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -862,7 +862,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
@@ -891,7 +891,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 Procedencia.CAMPING,
                 fechaEntrada,
                 fechaSalida,
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 5L);
@@ -928,7 +928,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva1, "id", 1L);
@@ -940,7 +940,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(3),
                 LocalDate.now().plusDays(4),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva2, "id", 2L);
@@ -978,7 +978,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 6, 17),
                 LocalDate.of(2026, 6, 19),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
         ReflectionTestUtils.setField(reserva, "id", 5L);

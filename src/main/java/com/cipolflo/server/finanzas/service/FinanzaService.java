@@ -167,4 +167,11 @@ public class FinanzaService implements IFinanzaService {
         );
         FinanzaMapper.toResponseDto(finanzaRepository.save(finanza));
     }
+
+    @Transactional
+    public void eliminarFinanza(Long id) {
+      Finanza finanza = finanzaRepository.findById(id)
+      .orElseThrow(() -> new FinanzaNotFoundException(id));
+      finanzaRepository.delete(finanza);
+    }
 }

@@ -92,7 +92,7 @@ class ReservaServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
 
@@ -147,7 +147,7 @@ class ReservaServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
 
@@ -185,7 +185,7 @@ class ReservaServiceTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 6, 18),
                 LocalDate.of(2026, 6, 19),
-                null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 false
         );
 
@@ -293,6 +293,7 @@ class ReservaServiceTest {
         when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(1));
         when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(3));
         when(dto.getRut()).thenReturn("20123456-7");
+        when(dto.getNombre()).thenReturn("Org Solidaria");
 
         when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
 
@@ -328,7 +329,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, clienteId, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, false
+                null, null, null, null, null, null, null, null, false
         );
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO
@@ -351,7 +352,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", null, false
+                null, null, null, null, null, "20123456-7", "Org Test", null, false
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
@@ -372,7 +373,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, servicioId, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, false
+                null, null, null, null, null, null, null, null, false
         );
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 5L, "Juan", "12345678", "099", null, TipoCliente.SOCIO
@@ -395,7 +396,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, 4, 1, null, null, "Nota", false
+                null, null, 4, 1, null, null, null, "Nota", false
         );
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 5L, "Juan", "12345678", "099", "j@mail.com", TipoCliente.SOCIO
@@ -424,7 +425,7 @@ class ReservaServiceTest {
         return Reserva.crear(
                 TipoReserva.COMUN, clienteId, servicioId, Procedencia.CAMPING,
                 LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 5),
-                null, null, null, null, null, null, null, false
+                null, null, null, null, null, null, null, null, false
         );
     }
 
@@ -490,7 +491,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 5L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", null, false
+                null, null, null, null, null, "20123456-7", "Org Test", null, false
         );
 
         when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
@@ -504,7 +505,7 @@ class ReservaServiceTest {
         );
 
         assertNull(resultado.content().get(0).getClienteId());
-        assertNull(resultado.content().get(0).getNombreCliente());
+        assertEquals("Org Test", resultado.content().get(0).getNombreCliente());
     }
 
     @Test
@@ -579,7 +580,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, false
+                null, null, null, null, null, null, null, null, false
         );
 
         ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
@@ -614,7 +615,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", null, false
+                null, null, null, null, null, "20123456-7", null, null, false
         );
         assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
 
@@ -639,7 +640,7 @@ class ReservaServiceTest {
         ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
 
         assertThrows(ReservaNotFoundException.class, () -> reservaService.modificar(99L, dto));
-        verify(reservaModificacionValidator, never()).validar(any(), any(), any());
+        verify(reservaModificacionValidator, never()).validar(any(), any());
     }
 
     @Test
@@ -648,7 +649,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, false
+                null, null, null, null, null, null, null, null, false
         );
         reserva.cancelar();
 
@@ -661,7 +662,7 @@ class ReservaServiceTest {
                 () -> reservaService.modificar(reservaId, dto)
         );
         assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
-        verify(reservaModificacionValidator, never()).validar(any(), any(), any());
+        verify(reservaModificacionValidator, never()).validar(any(), any());
     }
 
     @Test
@@ -670,7 +671,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", null, false
+                null, null, null, null, null, "20123456-7", null, null, false
         );
         reserva.cambiarEstado(EstadoReserva.EN_CURSO);
 
@@ -691,7 +692,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", null, false
+                null, null, null, null, null, "20123456-7", null, null, false
         );
         reserva.cambiarEstado(EstadoReserva.EN_CURSO);
         reserva.cambiarEstado(EstadoReserva.FINALIZADA);
@@ -713,7 +714,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, false
+                null, null, null, null, null, null, null, null, false
         );
 
         ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
@@ -728,7 +729,7 @@ class ReservaServiceTest {
         reservaService.modificar(reservaId, dto);
 
         var inOrder = inOrder(reservaModificacionValidator, reservaRepository);
-        inOrder.verify(reservaModificacionValidator).validar(eq(reservaId), eq(TipoReserva.COMUN), eq(dto));
+        inOrder.verify(reservaModificacionValidator).validar(eq(reserva), eq(dto));
         inOrder.verify(reservaRepository).save(reserva);
     }
 }

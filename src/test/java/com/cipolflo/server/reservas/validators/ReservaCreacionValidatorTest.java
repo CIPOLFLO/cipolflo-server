@@ -286,7 +286,22 @@ class ReservaCreacionValidatorTest {
     }
 
     @Test
-    void deberiaPasarValidacionColaboracionConRut() {
+    void deberiaPasarValidacionColaboracionConRutYNombre() {
+        ReservaCreacionRequestDto dto = mockDto(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, 1L,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, false, "Org Solidaria", null, null, "20123456-7"
+        );
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                any(), any(), any(), any()
+        )).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar(dto));
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoColaboracionSinNombre() {
         ReservaCreacionRequestDto dto = mockDto(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, 1L,
                 LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
@@ -297,7 +312,11 @@ class ReservaCreacionValidatorTest {
                 any(), any(), any(), any()
         )).thenReturn(false);
 
-        assertDoesNotThrow(() -> validator.validar(dto));
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> validator.validar(dto)
+        );
+        assertEquals(ReservaCodigoError.NOMBRE_REQUERIDO_PARA_COLABORACION.name(), ex.getCodigo());
     }
 
     @Test

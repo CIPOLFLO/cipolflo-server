@@ -1,5 +1,6 @@
 package com.cipolflo.server.reservas.validators;
 
+import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ReservaModificacionRequestDto;
@@ -31,20 +32,22 @@ public class ReservaModificacionValidator {
         this.servicioRepository = servicioRepository;
     }
 
-    public void validar(Long reservaId, TipoReserva tipoReserva, ReservaModificacionRequestDto dto) {
-        validarFechas(dto);
+    public void validar(Reserva reserva, ReservaModificacionRequestDto dto) {
+        validarFechas(reserva.getFechaEntrada(), reserva.getFechaSalida() ,dto);
         validarServicio(dto.getServicioId());
-        validarSolapamiento(reservaId, dto);
-        validarRut(tipoReserva, dto.getRut());
+        validarSolapamiento(reserva.getId(), dto);
+        validarRut(reserva.getTipoReserva(), dto.getRut());
     }
 
-    private void validarFechas(ReservaModificacionRequestDto dto) {
-        LocalDate hoy = LocalDate.now(ZonaHoraria.URUGUAY);
-        if (dto.getFechaInicio().isBefore(hoy)) {
-            throw new ReservaValidacionException(
-                    ReservaCodigoError.FECHA_PASADA,
-                    "La fecha de inicio no puede ser anterior a hoy"
-            );
+    private void validarFechas(LocalDate fechaEntrada, LocalDate fechaSalida, ReservaModificacionRequestDto dto) {
+        if(!fechaEntrada.isEqual(dto.getFechaInicio()) ){
+            LocalDate hoy = LocalDate.now(ZonaHoraria.URUGUAY);
+            if (dto.getFechaInicio().isBefore(hoy)) {
+                throw new ReservaValidacionException(
+                        ReservaCodigoError.FECHA_PASADA,
+                        "La fecha de inicio no puede ser anterior a hoy"
+                );
+            }
         }
         if (dto.getFechaFin().isBefore(dto.getFechaInicio())) {
             throw new ReservaValidacionException(
@@ -52,6 +55,7 @@ public class ReservaModificacionValidator {
                     "La fecha de fin no puede ser anterior a la fecha de inicio"
             );
         }
+
     }
 
     private void validarServicio(Long servicioId) {

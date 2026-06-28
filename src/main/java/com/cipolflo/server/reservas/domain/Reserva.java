@@ -70,6 +70,9 @@ public class Reserva extends AuditableEntity {
     // TODO: definir manejo del RUT (validación de formato, tabla de organizaciones, etc.)
     private String rut;
 
+    // TODO: temporal - nombre de la organización con RUT hasta definir manejo de clientes RUT
+    private String nombreRut;
+
     @Column(nullable = false)
     @Setter(AccessLevel.NONE)
     private Boolean pago = false;
@@ -95,7 +98,7 @@ public class Reserva extends AuditableEntity {
                                 Integer cantidadTotal, Integer cantidadMenores,
                                 Integer cantidad, String rut, String notas,
                                 boolean requiereDocumentacionPrevia,
-                                BigDecimal importe, LocalDateTime fechaLimite
+                                BigDecimal importe, LocalDateTime fechaLimite,  String nombre
     ) {
         Reserva r = new Reserva();
         r.tipoReserva = tipoReserva;
@@ -110,6 +113,9 @@ public class Reserva extends AuditableEntity {
         r.cantidadMenores = cantidadMenores;
         r.cantidad = cantidad;
         r.rut = rut;
+        if (TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(tipoReserva) && nombre != null) {
+            r.nombreRut = nombre.trim();
+        }
         r.notas = notas;
         r.requiereDocumentacion = requiereDocumentacionPrevia;
         r.estado = resolverEstado(tipoReserva);

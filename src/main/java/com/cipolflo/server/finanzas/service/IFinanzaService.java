@@ -20,4 +20,7 @@ public interface IFinanzaService {
     );
 
     void registrarPagoReserva(FinanzaCrearRequestDto dto);
+
+    void eliminarFinanza(Long id);
+
 }
