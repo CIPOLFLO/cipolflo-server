@@ -156,11 +156,12 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
                 dto.getRut(),
-                dto.getNombre(),
                 dto.getNotas(),
                 requiereDocumentacion,
                 calculoCosto.costoTotal(),
-                dto.getFechaLimite()
+                dto.getFechaLimite(),
+                dto.getNombre()
+
         );
 
         Reserva guardada = reservaRepository.save(reserva);
