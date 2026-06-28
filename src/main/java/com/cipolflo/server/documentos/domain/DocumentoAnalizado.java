@@ -4,8 +4,7 @@ package com.cipolflo.server.documentos.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "documento_analizado")
@@ -30,7 +29,7 @@ public class DocumentoAnalizado {
 
     /** Timestamp UTC del momento en que se realizó el análisis. */
     @Column(nullable = false)
-    private Instant fechaAnalisis;
+    private LocalDate fechaAnalisis;
 
 
     /**

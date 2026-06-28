@@ -6,7 +6,7 @@ CREATE TABLE public.documento_analizado (
                                             nombre_archivo varchar(255) NOT NULL,
                                             tipo_contenido varchar(255),
                                             modelo_usado varchar(100) NOT NULL,
-                                            fecha_analisis timestamp with time zone NOT NULL,
+                                            fecha_analisis date NOT NULL,
                                             resultado_json text NOT NULL
 );
 

@@ -1,6 +1,8 @@
 package com.cipolflo.server.shared.config;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * Propiedades de configuración para Azure Document Intelligence.
@@ -8,10 +10,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 
 @ConfigurationProperties(prefix = "azure.document-intelligence")
+@Validated
 public record AzureDocumentIntelligenceProperties(
-
-        String endpoint,
-        String key
-) {}
+        @NotBlank String endpoint,
+        @NotBlank String key
+) {
+}
 
 

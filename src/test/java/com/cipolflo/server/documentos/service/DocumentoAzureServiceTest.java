@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import com.cipolflo.server.documentos.mapper.DocumentoAnalizadoMapper;
+import com.cipolflo.server.documentos.dto.DocumentoAnalizadoResponseDto;
 
 class DocumentoAzureServiceTest {
 
@@ -27,6 +29,7 @@ class DocumentoAzureServiceTest {
     private ObjectMapper objectMapper;
     private DocumentoAzureService service;
     private DocumentoAzureValidator validator;
+    private DocumentoAnalizadoMapper mapper;
 
     @BeforeEach
     void setUp() {
@@ -34,8 +37,8 @@ class DocumentoAzureServiceTest {
         repository = mock(DocumentoAnalizadoRepository.class);
         objectMapper = mock(ObjectMapper.class);
         validator = new DocumentoAzureValidator();
-
-        service = new DocumentoAzureService(client, repository, objectMapper, validator);
+        mapper = new DocumentoAnalizadoMapper();
+        service = new DocumentoAzureService(client, repository, objectMapper, validator, mapper);
     }
 
     @Test
@@ -87,7 +90,7 @@ class DocumentoAzureServiceTest {
                 "file",
                 "factura.txt",
                 "text/plain",
-                "contenido".getBytes()
+                "%PDF-1.4 contenido".getBytes()
         );
 
         assertThatThrownBy(() -> service.analizarFactura(file))
@@ -103,7 +106,7 @@ class DocumentoAzureServiceTest {
                 "file",
                 "factura.pdf",
                 "application/pdf",
-                "contenido".getBytes()
+                "%PDF-1.4 contenido".getBytes()
         );
 
         AnalyzeResult result = mock(AnalyzeResult.class);
@@ -129,13 +132,13 @@ class DocumentoAzureServiceTest {
 
         when(repository.save(any(DocumentoAnalizado.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        DocumentoAnalizado documento = service.analizarFactura(file);
+        DocumentoAnalizadoResponseDto   documento = service.analizarFactura(file);
 
-        assertThat(documento.getNombreArchivo()).isEqualTo("factura.pdf");
-        assertThat(documento.getTipoContenido()).isEqualTo("application/pdf");
-        assertThat(documento.getModeloUsado()).isEqualTo("prebuilt-invoice");
-        assertThat(documento.getResultadoJson()).isEqualTo("{\"content\":\"factura\"}");
-        assertThat(documento.getFechaAnalisis()).isNotNull();
+        assertThat(documento.nombreArchivo()).isEqualTo("factura.pdf");
+        assertThat(documento.tipoContenido()).isEqualTo("application/pdf");
+        assertThat(documento.modeloUsado()).isEqualTo("prebuilt-invoice");
+        assertThat(documento.resultadoJson()).isEqualTo("{\"content\":\"factura\"}");
+        assertThat(documento.fechaAnalisis()).isNotNull();
 
         ArgumentCaptor<DocumentoAnalizado> captor = ArgumentCaptor.forClass(DocumentoAnalizado.class);
         verify(repository).save(captor.capture());
@@ -149,7 +152,7 @@ class DocumentoAzureServiceTest {
                 "file",
                 "factura.pdf",
                 "application/pdf",
-                "contenido".getBytes()
+                "%PDF-1.4 contenido".getBytes()
         );
 
         when(client.beginAnalyzeDocument(

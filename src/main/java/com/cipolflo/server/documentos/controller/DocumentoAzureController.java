@@ -1,9 +1,11 @@
 package com.cipolflo.server.documentos.controller;
 
 import com.cipolflo.server.documentos.domain.DocumentoAnalizado;
+import com.cipolflo.server.documentos.dto.DocumentoAnalizadoResponseDto;
 import com.cipolflo.server.documentos.service.DocumentoAzureService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,9 +33,10 @@ public class DocumentoAzureController {
             value = "/analizar-factura",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
-    public ResponseEntity<DocumentoAnalizado> analizarFactura(
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<DocumentoAnalizadoResponseDto> analizarFactura(
             @RequestParam("file") MultipartFile file) {
-        DocumentoAnalizado resultado = service.analizarFactura(file);
+        DocumentoAnalizadoResponseDto resultado = service.analizarFactura(file);
         return ResponseEntity.ok(resultado);
     }
 

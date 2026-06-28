@@ -1,10 +1,14 @@
 package com.cipolflo.server.documentos.controller;
 
-import com.cipolflo.server.documentos.domain.DocumentoAnalizado;
+
+import com.cipolflo.server.documentos.dto.DocumentoAnalizadoResponseDto;
 import com.cipolflo.server.documentos.service.DocumentoAzureService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
+
+
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -23,15 +27,18 @@ class DocumentoAzureControllerTest {
                 "contenido".getBytes()
         );
 
-        DocumentoAnalizado documento = new DocumentoAnalizado();
-        documento.setNombreArchivo("factura.pdf");
-        documento.setTipoContenido("application/pdf");
-        documento.setModeloUsado("prebuilt-invoice");
-        documento.setResultadoJson("{}");
+        DocumentoAnalizadoResponseDto documento = new DocumentoAnalizadoResponseDto(
+                1L,
+                "factura.pdf",
+                "application/pdf",
+                "prebuilt-invoice",
+                LocalDate.now(),
+                "{}"
+        );
 
         when(service.analizarFactura(file)).thenReturn(documento);
 
-        ResponseEntity<DocumentoAnalizado> response = controller.analizarFactura(file);
+        ResponseEntity<DocumentoAnalizadoResponseDto> response = controller.analizarFactura(file);
 
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).isEqualTo(documento);
