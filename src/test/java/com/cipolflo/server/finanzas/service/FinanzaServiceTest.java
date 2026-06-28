@@ -24,15 +24,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.repository.CrudRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +56,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaRegistrarIngresoManualCorrectamente() {
         FinanzaCrearRequestDto dto = crearDto(TipoMovimiento.INGRESO);
-        dto.setFecha(LocalDate.of(2026, 6, 15));
+        dto.setFecha(LocalDate.of(2026, Month.JUNE, 15));
 
         when(finanzaRepository.save(any(Finanza.class)))
                 .thenAnswer(invocation -> {
@@ -66,7 +72,7 @@ class FinanzaServiceTest {
         assertEquals(TipoMovimiento.INGRESO, response.getTipoMovimiento());
         assertEquals(Procedencia.SEDE, response.getProcedencia());
         assertEquals(Concepto.PAGO_RESERVA, response.getConcepto());
-        assertEquals(LocalDate.of(2026, 6, 15), response.getFecha());
+        assertEquals(LocalDate.of(2026, Month.JUNE, 15), response.getFecha());
         assertEquals(BigDecimal.valueOf(1500), response.getImporte());
         assertEquals(FormaPago.EFECTIVO, response.getFormaPago());
         assertEquals("Alta manual", response.getNotas());
@@ -131,7 +137,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaRespetarFechaInformada() {
         FinanzaCrearRequestDto dto = crearDto(TipoMovimiento.EGRESO);
-        dto.setFecha(LocalDate.of(2026, 1, 20));
+        dto.setFecha(LocalDate.of(2026, Month.JANUARY, 20));
 
         when(finanzaRepository.save(any(Finanza.class)))
                 .thenAnswer(invocation -> {
@@ -142,7 +148,7 @@ class FinanzaServiceTest {
 
         FinanzaResponseDto response = finanzaService.registrarFinanza(dto);
 
-        assertEquals(LocalDate.of(2026, 1, 20), response.getFecha());
+        assertEquals(LocalDate.of(2026, Month.JANUARY, 20), response.getFecha());
     }
 
     @Test
@@ -173,7 +179,7 @@ class FinanzaServiceTest {
         dto.setTipoMovimiento(tipoMovimiento);
         dto.setProcedencia(Procedencia.SEDE);
         dto.setConcepto(Concepto.PAGO_RESERVA);
-        dto.setFecha(LocalDate.of(2026, 6, 15));
+        dto.setFecha(LocalDate.of(2026, Month.JUNE, 15));
         dto.setImporte(BigDecimal.valueOf(1500));
         dto.setFormaPago(FormaPago.EFECTIVO);
         dto.setNotas("Alta manual");
@@ -182,7 +188,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaRetornarDetalleDeIngreso() {
         Ingreso ingreso = Ingreso.crearManual(
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 Concepto.PAGO_RESERVA,
                 FormaPago.EFECTIVO,
@@ -202,7 +208,7 @@ class FinanzaServiceTest {
         assertEquals(TipoMovimiento.INGRESO, response.getTipoMovimiento());
         assertEquals(Procedencia.SEDE, response.getProcedencia());
         assertEquals(Concepto.PAGO_RESERVA, response.getConcepto());
-        assertEquals(LocalDate.of(2026, 6, 15), response.getFecha());
+        assertEquals(LocalDate.of(2026, Month.JUNE, 15), response.getFecha());
         assertEquals(BigDecimal.valueOf(1500), response.getImporte());
         assertEquals(FormaPago.EFECTIVO, response.getFormaPago());
         assertEquals("Alta manual", response.getNotas());
@@ -210,7 +216,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaRetornarDetalleDeEgreso() {
         Egreso egreso = Egreso.crearManual(
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(2000),
                 Concepto.UTE,
                 FormaPago.TRANSFERENCIA,
@@ -230,7 +236,7 @@ class FinanzaServiceTest {
         assertEquals(TipoMovimiento.EGRESO, response.getTipoMovimiento());
         assertEquals(Procedencia.CAMPING, response.getProcedencia());
         assertEquals(Concepto.UTE, response.getConcepto());
-        assertEquals(LocalDate.of(2026, 6, 15), response.getFecha());
+        assertEquals(LocalDate.of(2026, Month.JUNE, 15), response.getFecha());
         assertEquals(BigDecimal.valueOf(2000), response.getImporte());
         assertEquals(FormaPago.TRANSFERENCIA, response.getFormaPago());
         assertEquals("Pago UTE", response.getNotas());
@@ -238,7 +244,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaRetornarDetalleConNotasNulas() {
         Ingreso ingreso = Ingreso.crearManual(
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 Concepto.PAGO_RESERVA,
                 FormaPago.EFECTIVO,
@@ -258,7 +264,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaMapearCamposDeAuditoriaEnDetalle() {
         Ingreso ingreso = Ingreso.crearManual(
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 Concepto.PAGO_RESERVA,
                 FormaPago.EFECTIVO,
@@ -298,7 +304,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaExportarFinanzasSinFiltros() {
         Ingreso ingreso = Ingreso.crearManual(
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 Concepto.PAGO_RESERVA,
                 FormaPago.EFECTIVO,
@@ -325,7 +331,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaExportarFilaDeIngresoConDatosCorrectos() {
         Ingreso ingreso = Ingreso.crearManual(
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 Concepto.PAGO_RESERVA,
                 FormaPago.EFECTIVO,
@@ -362,7 +368,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaExportarFilaDeEgresoConDatosCorrectos() {
         Egreso egreso = Egreso.crearManual(
-                LocalDate.of(2026, 6, 20),
+                LocalDate.of(2026, Month.JUNE, 20),
                 BigDecimal.valueOf(2000),
                 Concepto.UTE,
                 FormaPago.TRANSFERENCIA,
@@ -400,7 +406,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaRetornarListadoFinanzas() {
         Ingreso ingreso = Ingreso.crearManual(
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 Concepto.PAGO_RESERVA,
                 FormaPago.EFECTIVO,
@@ -435,7 +441,7 @@ class FinanzaServiceTest {
     @Test
     void deberiaMapearTipoMovimientoIngresoYEgresoEnListado() {
         Ingreso ingreso = Ingreso.crearManual(
-                LocalDate.of(2026, 6, 15),
+                LocalDate.of(2026, Month.JUNE, 15),
                 BigDecimal.valueOf(1500),
                 Concepto.PAGO_RESERVA,
                 FormaPago.EFECTIVO,
@@ -445,7 +451,7 @@ class FinanzaServiceTest {
         ingreso.setId(1L);
 
         Egreso egreso = Egreso.crearManual(
-                LocalDate.of(2026, 6, 16),
+                LocalDate.of(2026, Month.JUNE, 16),
                 BigDecimal.valueOf(2000),
                 Concepto.UTE,
                 FormaPago.TRANSFERENCIA,
@@ -471,5 +477,37 @@ class FinanzaServiceTest {
         assertEquals(TipoMovimiento.INGRESO, response.content().get(0).getTipoMovimiento());
         assertEquals(TipoMovimiento.EGRESO, response.content().get(1).getTipoMovimiento());
     }
+@Test
+void deberiaEliminarFinanzaExistente() {
+    Ingreso ingreso = Ingreso.crearManual(
+            LocalDate.of(2026, Month.JUNE, 15),
+            BigDecimal.valueOf(1500),
+            Concepto.PAGO_RESERVA,
+            FormaPago.EFECTIVO,
+            Procedencia.SEDE,
+            "Alta manual"
+    );
+    ingreso.setId(1L);
 
+    when(finanzaRepository.findById(1L))
+            .thenReturn(Optional.of(ingreso));
+
+    finanzaService.eliminarFinanza(1L);
+
+    verify(finanzaRepository).findById(1L);
+    verify(finanzaRepository).delete(ingreso);
+}
+
+@Test
+void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
+    when(finanzaRepository.findById(99L))
+            .thenReturn(Optional.empty());
+
+    assertThrows(
+            FinanzaNotFoundException.class,
+            () -> finanzaService.eliminarFinanza(99L)
+    );
+
+    verify((CrudRepository<Finanza, Long>) finanzaRepository, never()).delete(any(Finanza.class));
+}
 }

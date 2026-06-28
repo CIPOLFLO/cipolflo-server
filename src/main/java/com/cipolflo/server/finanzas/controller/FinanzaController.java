@@ -78,5 +78,20 @@ public class FinanzaController {
 
         return ResponseEntity.ok(finanzaService.getListadoFinanzas(filters, pageRequest));
     }
+
+@PreAuthorize("isAuthenticated()")
+@DeleteMapping("/{id}")
+public ResponseEntity<Void> eliminarFinanza(
+    @PathVariable @Positive(message = "El id de la finanza debe ser un número positivo") Long id
+) {
+ finanzaService.eliminarFinanza(id);
+
+    return ResponseEntity.noContent().build();
+
 }
+
+
+}
+
+
 
