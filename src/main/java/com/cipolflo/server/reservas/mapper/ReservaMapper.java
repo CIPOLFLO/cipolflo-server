@@ -1,5 +1,7 @@
 package com.cipolflo.server.reservas.mapper;
 
+import java.util.List;
+
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
@@ -15,7 +17,9 @@ public class ReservaMapper {
             Reserva reserva,
             @Nullable ClienteDetalleReservaDto cliente,
             ServicioDetalleReservaDto servicio
-    ){
+    )
+
+    {
         return new ReservaDetalleResponseDto(
                 reserva.getId(),
                 reserva.getTipoReserva(),
@@ -44,5 +48,32 @@ public class ReservaMapper {
                 reserva.getCreatedBy(),
                 reserva.getUpdatedBy()
         );
+    }
+
+    public static List<String> toExportFila(Reserva reserva,String nombreCliente,String nombreServicio){
+        return List.of(
+             str(reserva.getId()),
+        str(reserva.getTipoReserva()),
+        str(reserva.getEstado()),
+        str(reserva.getProcedencia()),
+        str(reserva.getFechaEntrada()),
+        str(reserva.getFechaSalida()),
+        str(reserva.getHoraInicio()),
+        str(reserva.getHoraFin()),
+        nombreCliente != null ? nombreCliente : (reserva.getNombreRut() != null ? reserva.getNombreRut() : ""),
+        nombreServicio != null ? nombreServicio : "",
+        reserva.getImporte() != null ? reserva.getImporte().toPlainString() : "",
+        str(reserva.getFormaPago()),
+        reserva.getPago() ? "Sí" : "No",
+        str(reserva.getCantidadTotal()),
+        str(reserva.getCantidadMenores()),
+        str(reserva.getCantidad()),
+        reserva.getRequiereDocumentacion() ? "Sí" : "No",
+        reserva.getTieneDocumentacion() ? "Sí" : "No",
+        reserva.getNotas() != null ? reserva.getNotas() : ""
+        );
+    }
+     private static String str(Object value) {
+        return value != null ? value.toString() : "";
     }
 }

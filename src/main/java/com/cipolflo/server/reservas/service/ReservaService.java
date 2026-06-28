@@ -18,6 +18,11 @@ import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.shared.ZonaHoraria;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportProperties;
+import com.cipolflo.server.shared.export.ExportacionException;
+import com.cipolflo.server.shared.export.IExportService;
+import com.cipolflo.server.shared.export.NombreArchivoExport;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
@@ -54,7 +59,8 @@ public class ReservaService implements IReservaService {
     private final IConsultaClienteDetalle consultaClienteDetalle;
     private final IConsultaServicioSimple consultaServicioSimple;
     private final ICalculoCostoService calculoCostoService;
-
+    private final ExportProperties exportProperties;
+    private final IExportService exportService;
     public ReservaService(
             ReservaRepository reservaRepository,
             IRegistroParticularService registroParticularService,
@@ -63,7 +69,9 @@ public class ReservaService implements IReservaService {
             IServicioRequiereDocumentacion servicioRequiereDocumentacion,
             IConsultaServicioSimple consultaServicioSimple,
             IConsultaClienteDetalle consultaClienteDetalle,
-            ICalculoCostoService calculoCostoService
+            ICalculoCostoService calculoCostoService,
+            ExportProperties exportProperties,
+            IExportService exportService
     ) {
         this.reservaRepository = reservaRepository;
         this.registroParticularService = registroParticularService;
@@ -73,6 +81,8 @@ public class ReservaService implements IReservaService {
         this.consultaClienteDetalle = consultaClienteDetalle;
         this.consultaServicioSimple = consultaServicioSimple;
         this.calculoCostoService = calculoCostoService;
+        this.exportProperties = exportProperties;
+        this.exportService = exportService;
     }
 
     @Override
@@ -264,4 +274,79 @@ public class ReservaService implements IReservaService {
     public CalculoCostoResponseDto calcularCosto(CalculoCostoRequestDto request) {
         return calculoCostoService.calcularCosto(request);
     }
+
+    @Override
+public ArchivoExportado exportarReservas(ListadoReservasRequestDto filtros) {
+    List<Long> clienteIds = null;
+    if (filtros.nombreCliente() != null && !filtros.nombreCliente().isBlank()) {
+        clienteIds = consultaClienteDetalle.getIdsByNombre(filtros.nombreCliente());
+        if (clienteIds.isEmpty()) {
+            throw new ExportacionException("No hay registros que coincidan con los filtros aplicados");
+        }
+    }
+
+    Specification<Reserva> spec = ReservaSpecification.conProcedencia(filtros.procedencia())
+            .and(ReservaSpecification.conServicioId(filtros.servicioId()))
+            .and(ReservaSpecification.conEstado(filtros.estadoReserva()))
+            .and(ReservaSpecification.conFechaEntradaDesde(filtros.fechaDesde()))
+            .and(ReservaSpecification.conFechaSalidaHasta(filtros.fechaHasta()))
+            .and(ReservaSpecification.conClienteIds(clienteIds));
+
+    List<Reserva> reservas = reservaRepository.findAll(spec);
+
+    if (reservas.isEmpty()) {
+        throw new ExportacionException("No hay registros que coincidan con los filtros aplicados");
+    }
+
+    if (reservas.size() > exportProperties.maxFilas()) {
+        throw new ExportacionException(
+                "La exportación supera el límite de " + exportProperties.maxFilas() + " filas"
+        );
+    }
+
+    Set<Long> clienteIdsExport = reservas.stream()
+            .map(Reserva::getClienteId).filter(Objects::nonNull).collect(Collectors.toSet());
+    Map<Long, String> nombresClientes = consultaClienteDetalle.getNombresByIds(clienteIdsExport);
+
+    Set<Long> servicioIdsExport = reservas.stream()
+            .map(Reserva::getServicioId).collect(Collectors.toSet());
+    Map<Long, String> nombresServicios = consultaServicioSimple.getNombresByIds(servicioIdsExport);
+
+    List<String> encabezados = List.of(
+            "ID",
+            "Tipo de reserva",
+            "Estado",
+            "Procedencia",
+            "Fecha entrada",
+            "Fecha salida",
+            "Hora inicio",
+            "Hora fin",
+            "Cliente",
+            "Servicio",
+            "Importe",
+            "Forma de pago",
+            "Pago confirmado",
+            "Cantidad total",
+            "Cantidad menores",
+            "Cantidad",
+            "Requiere documentación",
+            "Tiene documentación",
+            "Notas"
+    );
+
+    List<List<String>> filas = reservas.stream()
+            .map(r -> ReservaMapper.toExportFila(
+                    r,
+                    r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : null,
+                    nombresServicios.get(r.getServicioId())
+            ))
+            .toList();
+
+    int[] anchos = {3000, 8000, 6000, 6000, 6000, 6000, 5000, 5000, 8000, 8000, 5000, 6000, 6000, 5000, 5000, 5000, 7000, 7000, 8000};
+
+    byte[] contenido = exportService.generarExcel("Reservas", encabezados, filas, anchos);
+
+    String nombre = NombreArchivoExport.generar("reservas");
+    return new ArchivoExportado(nombre, contenido);
+}
 }
