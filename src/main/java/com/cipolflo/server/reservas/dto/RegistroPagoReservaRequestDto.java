@@ -6,10 +6,12 @@ import jakarta.validation.constraints.Positive;
 import jdk.jfr.Description;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
 @Getter
+@Setter
 @NoArgsConstructor
 public class RegistroPagoReservaRequestDto {
 

@@ -682,4 +682,68 @@ class ReservaServiceTest {
         inOrder.verify(reservaModificacionValidator).validar(eq(reserva), eq(dto));
         inOrder.verify(reservaRepository).save(reserva);
     }
+    @Test
+    void deberiaObtenerProximasPorServicioEnRango() {
+        Long servicioId = 10L;
+
+        Reserva reserva = crearReservaComun(1L, servicioId);
+
+        when(reservaRepository.findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
+                eq(servicioId),
+                any(LocalDate.class),
+                any(LocalDate.class),
+                eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA))
+        )).thenReturn(List.of(reserva));
+
+        List<Reserva> resultado = reservaService.obtenerProximasPorServicioEnRango(servicioId);
+
+        assertEquals(1, resultado.size());
+        assertEquals(reserva, resultado.get(0));
+
+        verify(reservaRepository).findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
+                eq(servicioId),
+                any(LocalDate.class),
+                any(LocalDate.class),
+                eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA))
+        );
+    }
+    @Test
+    void deberiaOrdenarListadoPorNombreCliente() {
+        ListadoReservasRequestDto filtros =
+                new ListadoReservasRequestDto(null, null, null, null, null, null);
+
+        PageRequestDto pageRequest =
+                new PageRequestDto(0, 10, "nombreCliente", "DESC");
+
+        Reserva reserva = crearReservaComun(1L, 5L);
+
+        when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(reserva)));
+
+        when(consultaClienteDetalle.getNombresByIds(Set.of(1L)))
+                .thenReturn(Map.of(1L, "Juan Pérez"));
+
+        when(consultaServicioSimple.getNombresByIds(Set.of(5L)))
+                .thenReturn(Map.of(5L, "Cabaña"));
+
+        PageResponse<ListadoReservasResponseDto> resultado =
+                reservaService.getListadoReservas(filtros, pageRequest);
+
+        assertEquals(1, resultado.content().size());
+
+        verify(reservaRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+    @Test
+    void deberiaCalcularCosto() {
+        CalculoCostoRequestDto request = new CalculoCostoRequestDto();
+        CalculoCostoResponseDto response =
+                new CalculoCostoResponseDto(BigDecimal.valueOf(1500));
+
+        when(calculoCostoService.calcularCosto(request)).thenReturn(response);
+
+        CalculoCostoResponseDto resultado = reservaService.calcularCosto(request);
+
+        assertEquals(response, resultado);
+        verify(calculoCostoService).calcularCosto(request);
+    }
 }
