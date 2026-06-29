@@ -3,7 +3,6 @@ databaseChangeLog:
       file: db/changelog/migrations/001_initial_schema.sql
   - include:
       file: db/changelog/migrations/DEV-117/db.changelog-DEV-117.yaml
-
   - include:
       file: db/changelog/migrations/DEV-114/db.changelog-DEV-114.yaml
   - include:
@@ -16,3 +15,8 @@ databaseChangeLog:
       file: db/changelog/migrations/DEV-97/db.changelog-DEV-97.yaml
   - include:
       file: db/changelog/migrations/DEV-111/db.changelog-DEV-111.yaml
+  - include:
+      file: db/changelog/migrations/DEV-138/db.changelog-DEV-138.yaml
+  - include:
+      file: db/changelog/migrations/DEV-133/db.changelog-DEV-133.yaml
+
