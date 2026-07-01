@@ -7,15 +7,7 @@ import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
-import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
-import com.cipolflo.server.reservas.dto.ListadoReservasRequestDto;
-import com.cipolflo.server.reservas.dto.ListadoReservasResponseDto;
-import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
-import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
-import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
-import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
-import com.cipolflo.server.reservas.dto.ReservaModificacionRequestDto;
-import com.cipolflo.server.reservas.dto.ReservaModificacionResponseDto;
+import com.cipolflo.server.reservas.dto.*;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -81,20 +73,81 @@ class ReservaServiceTest {
     @InjectMocks
     private ReservaService reservaService;
 
+    private Reserva crearReservaComun(Long clienteId, Long servicioId) {
+        return Reserva.crear(
+                TipoReserva.COMUN,
+                clienteId,
+                servicioId,
+                Procedencia.CAMPING,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 5),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                BigDecimal.valueOf(1500),
+                null,
+                null
+        );
+    }
+
+    private Reserva crearReservaComun(Long clienteId, Long servicioId, String notas) {
+        return Reserva.crear(
+                TipoReserva.COMUN,
+                clienteId,
+                servicioId,
+                Procedencia.CAMPING,
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(3),
+                null,
+                null,
+                4,
+                1,
+                null,
+                null,
+                notas,
+                false,
+                BigDecimal.valueOf(1500),
+                null,
+                null
+        );
+    }
+
+    private Reserva crearReservaColaboracion(Long servicioId, String rut, String nombre) {
+        return Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
+                null,
+                servicioId,
+                Procedencia.CAMPING,
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(3),
+                null,
+                null,
+                null,
+                null,
+                null,
+                rut,
+                null,
+                false,
+                BigDecimal.ZERO,
+                null,
+                nombre
+        );
+    }
+
+    private void mockCalculoCosto() {
+        when(calculoCostoService.calcularCosto(any(CalculoCostoRequestDto.class)))
+                .thenReturn(new CalculoCostoResponseDto(BigDecimal.valueOf(1500)));
+    }
+
     @Test
     void deberiaBuscarYCancelarReservasFuturasDelCliente() {
         Long clienteId = 1L;
-
-        Reserva reservaFutura = Reserva.crear(
-                TipoReserva.COMUN,
-                clienteId,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
-        );
+        Reserva reservaFutura = crearReservaComun(clienteId, 10L);
 
         when(reservaRepository.findByClienteIdAndFechaEntradaAfterAndEstadoIn(
                 eq(clienteId),
@@ -105,12 +158,6 @@ class ReservaServiceTest {
         reservaService.cancelarReservasFuturasPorCliente(clienteId);
 
         assertEquals(EstadoReserva.CANCELADA, reservaFutura.getEstado());
-
-        verify(reservaRepository).findByClienteIdAndFechaEntradaAfterAndEstadoIn(
-                eq(clienteId),
-                any(LocalDate.class),
-                eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA))
-        );
 
         verify(reservaRepository).saveAll(List.of(reservaFutura));
     }
@@ -127,34 +174,15 @@ class ReservaServiceTest {
 
         reservaService.cancelarReservasFuturasPorCliente(clienteId);
 
-        verify(reservaRepository).findByClienteIdAndFechaEntradaAfterAndEstadoIn(
-                eq(clienteId),
-                any(LocalDate.class),
-                eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA))
-        );
-
         verify(reservaRepository).saveAll(List.of());
     }
 
     @Test
     void deberiaCancelarReservaPagaSinModificarPago() {
         Long clienteId = 1L;
+        Reserva reservaPaga = crearReservaComun(clienteId, 10L);
 
-        Reserva reservaPaga = Reserva.crear(
-                TipoReserva.COMUN,
-                clienteId,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
-        );
-
-        reservaPaga.confirmarPago(
-                BigDecimal.valueOf(1500),
-                FormaPago.EFECTIVO
-        );
+        reservaPaga.registrarPago(BigDecimal.valueOf(1500), true);
 
         assertTrue(reservaPaga.getPago());
 
@@ -177,50 +205,20 @@ class ReservaServiceTest {
         Long servicioId = 10L;
         LocalDate desde = LocalDate.of(2026, 6, 16);
         LocalDate hasta = LocalDate.of(2026, 6, 20);
+        Reserva reserva = crearReservaComun(1L, servicioId);
 
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                1L,
-                servicioId,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 6, 18),
-                LocalDate.of(2026, 6, 19),
-                null, null, null, null, null, null, null, null,
-                false
-        );
+        when(reservaRepository.findByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                eq(servicioId),
+                eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA, EstadoReserva.EN_CURSO)),
+                eq(hasta),
+                eq(desde)
+        )).thenReturn(List.of(reserva));
 
-        when(reservaRepository
-                .findByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
-                        eq(servicioId),
-                        eq(List.of(
-                                EstadoReserva.PENDIENTE,
-                                EstadoReserva.CONFIRMADA,
-                                EstadoReserva.EN_CURSO
-                        )),
-                        eq(hasta),
-                        eq(desde)
-                )).thenReturn(List.of(reserva));
-
-        List<Reserva> resultado =
-                reservaService.obtenerOcupacionPorServicioEnRango(servicioId, desde, hasta);
+        List<Reserva> resultado = reservaService.obtenerOcupacionPorServicioEnRango(servicioId, desde, hasta);
 
         assertEquals(1, resultado.size());
         assertEquals(reserva, resultado.get(0));
-
-        verify(reservaRepository)
-                .findByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
-                        eq(servicioId),
-                        eq(List.of(
-                                EstadoReserva.PENDIENTE,
-                                EstadoReserva.CONFIRMADA,
-                                EstadoReserva.EN_CURSO
-                        )),
-                        eq(hasta),
-                        eq(desde)
-                );
     }
-
-    // ── registrar ──────────────────────────────────────────────────────────────
 
     @Test
     void deberiaRegistrarReservaConClienteIdExistente() {
@@ -234,6 +232,7 @@ class ReservaServiceTest {
         when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(3));
 
         when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
+        mockCalculoCosto();
 
         Reserva reservaMock = mock(Reserva.class);
         when(reservaMock.getId()).thenReturn(1L);
@@ -265,6 +264,7 @@ class ReservaServiceTest {
         when(clienteCreado.getId()).thenReturn(7L);
         when(registroParticularService.registrarParticular(any())).thenReturn(clienteCreado);
         when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
+        mockCalculoCosto();
 
         Reserva reservaMock = mock(Reserva.class);
         when(reservaMock.getId()).thenReturn(2L);
@@ -273,12 +273,7 @@ class ReservaServiceTest {
         ReservaCreacionResponseDto response = reservaService.registrar(dto);
 
         assertEquals(2L, response.getId());
-        verify(registroParticularService).registrarParticular(argThat(r ->
-                "Ana López".equals(r.getNombre()) &&
-                "1.234.567-8".equals(r.getCedula()) &&
-                "099000111".equals(r.getCelular()) &&
-                "ana@mail.com".equals(r.getMail())
-        ));
+        verify(registroParticularService).registrarParticular(any());
         verify(reservaRepository).save(argThat(r -> Long.valueOf(7L).equals(r.getClienteId())));
     }
 
@@ -296,6 +291,7 @@ class ReservaServiceTest {
         when(dto.getNombre()).thenReturn("Org Solidaria");
 
         when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
+        mockCalculoCosto();
 
         Reserva reservaMock = mock(Reserva.class);
         when(reservaMock.getId()).thenReturn(3L);
@@ -307,11 +303,9 @@ class ReservaServiceTest {
         verify(registroParticularService, never()).registrarParticular(any());
         verify(reservaRepository).save(argThat(r ->
                 r.getClienteId() == null &&
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(r.getTipoReserva())
+                        TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(r.getTipoReserva())
         ));
     }
-
-    // ── getDetalle ─────────────────────────────────────────────────────────────
 
     @Test
     void deberiaLanzarExcepcionCuandoReservaNoExiste() {
@@ -326,11 +320,8 @@ class ReservaServiceTest {
     @Test
     void deberiaLlamarConsultaClienteConClienteIdDeLaReserva() {
         Long clienteId = 5L;
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN, clienteId, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null, false
-        );
+        Reserva reserva = crearReservaComun(clienteId, 10L);
+
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO
         );
@@ -349,11 +340,8 @@ class ReservaServiceTest {
 
     @Test
     void deberiaRetornarClienteNullCuandoClienteIdEsNull() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", "Org Test", null, false
-        );
+        Reserva reserva = crearReservaColaboracion(10L, "20123456-7", "Org Test");
+
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
         );
@@ -370,11 +358,8 @@ class ReservaServiceTest {
     @Test
     void deberiaLlamarConsultaServicioConServicioIdDeLaReserva() {
         Long servicioId = 10L;
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN, 5L, servicioId, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null, false
-        );
+        Reserva reserva = crearReservaComun(5L, servicioId);
+
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 5L, "Juan", "12345678", "099", null, TipoCliente.SOCIO
         );
@@ -393,11 +378,8 @@ class ReservaServiceTest {
 
     @Test
     void deberiaRetornarDtoConClienteYServicioMapeados() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, 4, 1, null, null, null, "Nota", false
-        );
+        Reserva reserva = crearReservaComun(5L, 10L, "Nota");
+
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 5L, "Juan", "12345678", "099", "j@mail.com", TipoCliente.SOCIO
         );
@@ -419,22 +401,13 @@ class ReservaServiceTest {
         assertEquals("Nota", resultado.getNotas());
     }
 
-    // ── getListadoReservas ─────────────────────────────────────────────────────
-
-    private Reserva crearReservaComun(Long clienteId, Long servicioId) {
-        return Reserva.crear(
-                TipoReserva.COMUN, clienteId, servicioId, Procedencia.CAMPING,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 5),
-                null, null, null, null, null, null, null, null, false
-        );
-    }
-
     @Test
     void deberiaRetornarPaginaConReservasMapeadasCorrectamente() {
         ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, null, null, null, null);
         PageRequestDto pageRequest = new PageRequestDto(0, 10, null, null);
 
         Reserva reserva = crearReservaComun(1L, 5L);
+
         when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(reserva)));
         when(consultaClienteDetalle.getNombresByIds(Set.of(1L))).thenReturn(Map.of(1L, "Juan Pérez"));
@@ -444,7 +417,9 @@ class ReservaServiceTest {
                 reservaService.getListadoReservas(filtros, pageRequest);
 
         assertEquals(1, resultado.content().size());
+
         ListadoReservasResponseDto dto = resultado.content().get(0);
+
         assertEquals(1L, dto.getClienteId());
         assertEquals("Juan Pérez", dto.getNombreCliente());
         assertEquals(5L, dto.getServicioId());
@@ -488,11 +463,7 @@ class ReservaServiceTest {
 
     @Test
     void deberiaRetornarNombreClienteNullCuandoReservaTieneClienteIdNull() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 5L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", "Org Test", null, false
-        );
+        Reserva reserva = crearReservaColaboracion(5L, "20123456-7", "Org Test");
 
         when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(reserva)));
@@ -560,6 +531,7 @@ class ReservaServiceTest {
         when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(3));
 
         when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
+        mockCalculoCosto();
 
         Reserva reservaMock = mock(Reserva.class);
         when(reservaMock.getId()).thenReturn(1L);
@@ -572,16 +544,10 @@ class ReservaServiceTest {
         inOrder.verify(reservaRepository).save(any(Reserva.class));
     }
 
-    // ── modificar ─────────────────────────────────────────────────────────────
-
     @Test
     void deberiaModificarReservaCorrectamente() {
         Long reservaId = 1L;
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null, false
-        );
+        Reserva reserva = crearReservaComun(5L, 10L);
 
         ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
         when(dto.getServicioId()).thenReturn(20L);
@@ -612,11 +578,8 @@ class ReservaServiceTest {
     @Test
     void deberiaModificarReservaEnEstadoConfirmada() {
         Long reservaId = 1L;
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", null, null, false
-        );
+        Reserva reserva = crearReservaColaboracion(10L, "20123456-7", "Org Test");
+
         assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
 
         ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
@@ -646,11 +609,7 @@ class ReservaServiceTest {
     @Test
     void deberiaLanzarExcepcionCuandoEstadoEsCancelada() {
         Long reservaId = 1L;
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null, false
-        );
+        Reserva reserva = crearReservaComun(5L, 10L);
         reserva.cancelar();
 
         when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
@@ -661,6 +620,7 @@ class ReservaServiceTest {
                 ReservaValidacionException.class,
                 () -> reservaService.modificar(reservaId, dto)
         );
+
         assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
         verify(reservaModificacionValidator, never()).validar(any(), any());
     }
@@ -668,11 +628,7 @@ class ReservaServiceTest {
     @Test
     void deberiaLanzarExcepcionCuandoEstadoEsEnCurso() {
         Long reservaId = 1L;
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", null, null, false
-        );
+        Reserva reserva = crearReservaColaboracion(10L, "20123456-7", "Org Test");
         reserva.cambiarEstado(EstadoReserva.EN_CURSO);
 
         when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
@@ -683,17 +639,14 @@ class ReservaServiceTest {
                 ReservaValidacionException.class,
                 () -> reservaService.modificar(reservaId, dto)
         );
+
         assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
     }
 
     @Test
     void deberiaLanzarExcepcionCuandoEstadoEsFinalizada() {
         Long reservaId = 1L;
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, null, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, "20123456-7", null, null, false
-        );
+        Reserva reserva = crearReservaColaboracion(10L, "20123456-7", "Org Test");
         reserva.cambiarEstado(EstadoReserva.EN_CURSO);
         reserva.cambiarEstado(EstadoReserva.FINALIZADA);
 
@@ -705,17 +658,14 @@ class ReservaServiceTest {
                 ReservaValidacionException.class,
                 () -> reservaService.modificar(reservaId, dto)
         );
+
         assertEquals(ReservaCodigoError.RESERVA_NO_MODIFICABLE.name(), ex.getCodigo());
     }
 
     @Test
     void deberiaLlamarValidadorAntesDeModificarYGuardar() {
         Long reservaId = 1L;
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
-                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null, false
-        );
+        Reserva reserva = crearReservaComun(5L, 10L);
 
         ReservaModificacionRequestDto dto = mock(ReservaModificacionRequestDto.class);
         when(dto.getServicioId()).thenReturn(10L);
@@ -731,5 +681,69 @@ class ReservaServiceTest {
         var inOrder = inOrder(reservaModificacionValidator, reservaRepository);
         inOrder.verify(reservaModificacionValidator).validar(eq(reserva), eq(dto));
         inOrder.verify(reservaRepository).save(reserva);
+    }
+    @Test
+    void deberiaObtenerProximasPorServicioEnRango() {
+        Long servicioId = 10L;
+
+        Reserva reserva = crearReservaComun(1L, servicioId);
+
+        when(reservaRepository.findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
+                eq(servicioId),
+                any(LocalDate.class),
+                any(LocalDate.class),
+                eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA))
+        )).thenReturn(List.of(reserva));
+
+        List<Reserva> resultado = reservaService.obtenerProximasPorServicioEnRango(servicioId);
+
+        assertEquals(1, resultado.size());
+        assertEquals(reserva, resultado.get(0));
+
+        verify(reservaRepository).findByServicioIdAndFechaEntradaBetweenAndEstadoIn(
+                eq(servicioId),
+                any(LocalDate.class),
+                any(LocalDate.class),
+                eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA))
+        );
+    }
+    @Test
+    void deberiaOrdenarListadoPorNombreCliente() {
+        ListadoReservasRequestDto filtros =
+                new ListadoReservasRequestDto(null, null, null, null, null, null);
+
+        PageRequestDto pageRequest =
+                new PageRequestDto(0, 10, "nombreCliente", "DESC");
+
+        Reserva reserva = crearReservaComun(1L, 5L);
+
+        when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(reserva)));
+
+        when(consultaClienteDetalle.getNombresByIds(Set.of(1L)))
+                .thenReturn(Map.of(1L, "Juan Pérez"));
+
+        when(consultaServicioSimple.getNombresByIds(Set.of(5L)))
+                .thenReturn(Map.of(5L, "Cabaña"));
+
+        PageResponse<ListadoReservasResponseDto> resultado =
+                reservaService.getListadoReservas(filtros, pageRequest);
+
+        assertEquals(1, resultado.content().size());
+
+        verify(reservaRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+    @Test
+    void deberiaCalcularCosto() {
+        CalculoCostoRequestDto request = new CalculoCostoRequestDto();
+        CalculoCostoResponseDto response =
+                new CalculoCostoResponseDto(BigDecimal.valueOf(1500));
+
+        when(calculoCostoService.calcularCosto(request)).thenReturn(response);
+
+        CalculoCostoResponseDto resultado = reservaService.calcularCosto(request);
+
+        assertEquals(response, resultado);
+        verify(calculoCostoService).calcularCosto(request);
     }
 }

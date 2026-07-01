@@ -39,4 +39,6 @@ public class FinanzaCrearRequestDto {
     private FormaPago formaPago;
 
     private String notas;
+
+    private Long reservaId;
 }

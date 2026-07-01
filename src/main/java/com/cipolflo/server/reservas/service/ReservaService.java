@@ -21,6 +21,7 @@ import com.cipolflo.server.shared.ZonaHoraria;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -123,7 +124,6 @@ public class ReservaService implements IReservaService {
     public ReservaCreacionResponseDto registrar(ReservaCreacionRequestDto dto) {
         reservaCreacionValidator.validar(dto);
 
-        // TODO: usar dto.getTipoCliente() para diferenciar el cálculo de costo según tipo de cliente (ticket pendiente)
         Long clienteId;
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
             RegistroParticularRequestDto nuevoCliente = new RegistroParticularRequestDto();
@@ -140,6 +140,9 @@ public class ReservaService implements IReservaService {
 
         boolean requiereDocumentacion = servicioRequiereDocumentacion.requiereDocumentacion(dto.getServicioId());
 
+        CalculoCostoRequestDto calculoCostoRequest = getCalculoCostoRequestDto(dto);
+        CalculoCostoResponseDto calculoCosto = calculoCostoService.calcularCosto(calculoCostoRequest);
+
         Reserva reserva = Reserva.crear(
                 dto.getTipoReserva(),
                 clienteId,
@@ -153,12 +156,14 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
                 dto.getRut(),
-                dto.getNombre(),
                 dto.getNotas(),
-                requiereDocumentacion
+                requiereDocumentacion,
+                calculoCosto.costoTotal(),
+                dto.getFechaLimite(),
+                dto.getNombre()
+
         );
 
-        // TODO: calcular y asignar importe llamando a ServicioCalculoImporte antes de guardar (ticket pendiente)
         Reserva guardada = reservaRepository.save(reserva);
 
         return new ReservaCreacionResponseDto(guardada.getId());
@@ -222,7 +227,10 @@ public class ReservaService implements IReservaService {
                 nombresServicios.get(r.getServicioId()),
                 r.getFechaEntrada(),
                 r.getFechaSalida(),
-                r.getEstado()
+                r.getEstado(),
+                r.getMontoImpago(),
+                r.getFechaLimitePago(),
+                r.getRequiereDocumentacion() && !r.getTieneDocumentacion()
         ));
 
         return PaginationMapper.toPageResponse(dtoPage);
@@ -263,5 +271,20 @@ public class ReservaService implements IReservaService {
     @Override
     public CalculoCostoResponseDto calcularCosto(CalculoCostoRequestDto request) {
         return calculoCostoService.calcularCosto(request);
+    }
+
+    @Nonnull
+    private static CalculoCostoRequestDto getCalculoCostoRequestDto(ReservaCreacionRequestDto dto) {
+        CalculoCostoRequestDto calculoCostoRequest = new CalculoCostoRequestDto();
+        calculoCostoRequest.setServicioId(dto.getServicioId());
+        calculoCostoRequest.setFechaInicio(dto.getFechaInicio());
+        calculoCostoRequest.setFechaFin(dto.getFechaFin());
+        calculoCostoRequest.setHoraInicio(dto.getHoraInicio());
+        calculoCostoRequest.setHoraFin(dto.getHoraFin());
+        calculoCostoRequest.setCantidadTotal(dto.getCantidadTotal());
+        calculoCostoRequest.setCantidad(dto.getCantidad());
+        calculoCostoRequest.setCantidadMenores(dto.getCantidadMenores());
+        calculoCostoRequest.setTipoCliente(dto.getTipoCliente());
+        return calculoCostoRequest;
     }
 }

@@ -3,7 +3,6 @@ package com.cipolflo.server.reservas.domain;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.shared.AuditableEntity;
-import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -12,7 +11,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
@@ -76,9 +77,11 @@ public class Reserva extends AuditableEntity {
     @Setter(AccessLevel.NONE)
     private Boolean pago = false;
 
-    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     @Setter(AccessLevel.NONE)
-    private FormaPago formaPago;
+    private BigDecimal montoImpago;
+
+    private LocalDateTime fechaLimitePago;
 
     @Column(nullable = false)
     @Setter(AccessLevel.NONE)
@@ -93,8 +96,10 @@ public class Reserva extends AuditableEntity {
     public static Reserva crear(TipoReserva tipoReserva, Long clienteId, Long servicioId, Procedencia procedencia,
                                 LocalDate fechaEntrada, LocalDate fechaSalida, LocalTime horaInicio, LocalTime horaFin,
                                 Integer cantidadTotal, Integer cantidadMenores,
-                                Integer cantidad, String rut, String nombre, String notas,
-                                boolean requiereDocumentacionPrevia) {
+                                Integer cantidad, String rut, String notas,
+                                boolean requiereDocumentacionPrevia,
+                                BigDecimal importe, LocalDateTime fechaLimite,  String nombre
+    ) {
         Reserva r = new Reserva();
         r.tipoReserva = tipoReserva;
         r.clienteId = clienteId;
@@ -113,30 +118,31 @@ public class Reserva extends AuditableEntity {
         }
         r.notas = notas;
         r.requiereDocumentacion = requiereDocumentacionPrevia;
-        r.estado = resolverEstado(r.tipoReserva);
-        if (tipoReserva == TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO) {
-            r.importe = BigDecimal.ZERO;
-        }
+        r.estado = resolverEstado(tipoReserva);
+        r.importe = resolverImporte(importe, tipoReserva);
+        r.montoImpago = resolverImporte(importe, tipoReserva);
+        r.fechaLimitePago = fechaLimite;
         return r;
     }
 
-    public void confirmarPago(BigDecimal importe, FormaPago formaPago) {
+    public void registrarPago(BigDecimal importe, Boolean esPagoTotal) {
         if (this.pago) {
-            throw new IllegalStateException("La reserva ya tiene el pago confirmado");
+            throw new IllegalStateException("La reserva está paga");
         }
-        if (importe == null) {
-            throw new IllegalArgumentException("El importe no puede ser nulo");
+        if(esPagoTotal || importe.compareTo(this.getMontoImpago()) == 0){
+            this.montoImpago = BigDecimal.ZERO;
+            this.pago = true;
+            if(esPagoTotal){
+                this.setImporte(importe);
+            }
+        }else {
+            this.montoImpago = this.montoImpago.subtract(importe);
+            if (this.montoImpago.compareTo(BigDecimal.ZERO) == 0) {
+                this.pago = true;
+            }
         }
-        if (formaPago == null) {
-            throw new IllegalArgumentException("La forma de pago no puede ser nula");
-        }
-        if (importe.signum() <= 0) {
-            throw new IllegalArgumentException("El importe debe ser mayor que cero");
-        }
-        this.importe = importe;
-        this.formaPago = formaPago;
-        this.pago = true;
-        if (this.estado == EstadoReserva.PENDIENTE && this.tieneDocumentacion) {
+        if (this.getEstado().equals(EstadoReserva.PENDIENTE)
+                && tienePagadoAlMenosLaMitad() && sePuedeConfirmar()) {
             cambiarEstado(EstadoReserva.CONFIRMADA);
         }
     }
@@ -192,5 +198,26 @@ public class Reserva extends AuditableEntity {
         }else{
             return EstadoReserva.PENDIENTE;
         }
+    }
+
+    private static BigDecimal resolverImporte(BigDecimal importe, TipoReserva tipoReserva){
+        BigDecimal imp = BigDecimal.ZERO;
+        if (tipoReserva == TipoReserva.COMUN) {
+            imp = importe;
+        };
+        return imp;
+    }
+
+    private Boolean sePuedeConfirmar()
+    {
+        return !this.requiereDocumentacion ||
+                this.tieneDocumentacion;
+    }
+
+    private boolean tienePagadoAlMenosLaMitad() {
+        BigDecimal montoPagado = getImporte().subtract(getMontoImpago());
+        BigDecimal mitad = getImporte().divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+
+        return montoPagado.compareTo(mitad) >= 0;
     }
 }
