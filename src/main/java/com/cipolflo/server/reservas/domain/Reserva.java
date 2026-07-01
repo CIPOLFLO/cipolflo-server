@@ -129,16 +129,20 @@ public class Reserva extends AuditableEntity {
         if (this.pago) {
             throw new IllegalStateException("La reserva está paga");
         }
-        if(esPagoTotal || importe.equals(this.getMontoImpago())){
+        if(esPagoTotal || importe.compareTo(this.getMontoImpago()) == 0){
             this.montoImpago = BigDecimal.ZERO;
             this.pago = true;
             if(esPagoTotal){
                 this.setImporte(importe);
             }
-        }else{
+        }else {
             this.montoImpago = this.montoImpago.subtract(importe);
+            if (this.montoImpago.compareTo(BigDecimal.ZERO) == 0) {
+                this.pago = true;
+            }
         }
-        if (tienePagadoAlMenosLaMitad() && sePuedeConfirmar()) {
+        if (this.getEstado().equals(EstadoReserva.PENDIENTE)
+                && tienePagadoAlMenosLaMitad() && sePuedeConfirmar()) {
             cambiarEstado(EstadoReserva.CONFIRMADA);
         }
     }
