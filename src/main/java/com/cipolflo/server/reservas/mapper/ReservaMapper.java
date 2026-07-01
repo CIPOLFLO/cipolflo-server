@@ -9,6 +9,9 @@ import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
 import jakarta.annotation.Nullable;
 
+import static com.cipolflo.server.shared.export.ExportFormatter.formatearBooleano;
+import static com.cipolflo.server.shared.export.ExportFormatter.orEmpty;
+
 public class ReservaMapper {
 
     private ReservaMapper(){}
@@ -49,30 +52,26 @@ public class ReservaMapper {
         );
     }
 
-    public static List<String> toExportFila(Reserva reserva,String nombreCliente,String nombreServicio){
+    public static List<String> toExportFila(Reserva reserva, String nombreCliente, String nombreServicio){
         return List.of(
-             str(reserva.getId()),
-        str(reserva.getTipoReserva()),
-        str(reserva.getEstado()),
-        str(reserva.getProcedencia()),
-        str(reserva.getFechaEntrada()),
-        str(reserva.getFechaSalida()),
-        str(reserva.getHoraInicio()),
-        str(reserva.getHoraFin()),
-        nombreCliente != null ? nombreCliente : (reserva.getNombreRut() != null ? reserva.getNombreRut() : ""),
-        nombreServicio != null ? nombreServicio : "",
-        reserva.getImporte() != null ? reserva.getImporte().toPlainString() : "",
-        str(reserva.getFormaPago()),
-        reserva.getPago() ? "Sí" : "No",
-        str(reserva.getCantidadTotal()),
-        str(reserva.getCantidadMenores()),
-        str(reserva.getCantidad()),
-        reserva.getRequiereDocumentacion() ? "Sí" : "No",
-        reserva.getTieneDocumentacion() ? "Sí" : "No",
-        reserva.getNotas() != null ? reserva.getNotas() : ""
+                orEmpty(reserva.getId()),
+                orEmpty(reserva.getTipoReserva().toString()),
+                orEmpty(reserva.getEstado().toString()),
+                orEmpty(reserva.getProcedencia()),
+                orEmpty(nombreServicio),
+                orEmpty(nombreCliente, reserva.getNombreRut()),
+                orEmpty(reserva.getFechaEntrada()),
+                orEmpty(reserva.getFechaSalida()),
+                orEmpty(reserva.getHoraInicio()),
+                orEmpty(reserva.getHoraFin()),
+                orEmpty(reserva.getImporte()),
+                formatearBooleano(reserva.getPago()),
+                orEmpty(reserva.getCantidadTotal()),
+                orEmpty(reserva.getCantidadMenores()),
+                orEmpty(reserva.getCantidad()),
+                formatearBooleano(reserva.getRequiereDocumentacion()),
+                formatearBooleano(reserva.getTieneDocumentacion()),
+                orEmpty(reserva.getNotas())
         );
-    }
-     private static String str(Object value) {
-        return value != null ? value.toString() : "";
     }
 }
