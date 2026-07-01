@@ -44,7 +44,8 @@ dependencies {
 	testRuntimeOnly ("org.junit.platform:junit-platform-launcher")
 	testRuntimeOnly ("com.h2database:h2")
 	testAnnotationProcessor ("org.projectlombok:lombok")
-
+	implementation("com.azure:azure-ai-documentintelligence:1.0.0-beta.4")
+	implementation("com.azure:azure-core:1.53.0")
 }
 
 tasks.withType<Test> {

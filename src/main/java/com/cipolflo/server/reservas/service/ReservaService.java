@@ -26,6 +26,7 @@ import com.cipolflo.server.shared.export.NombreArchivoExport;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -133,7 +134,6 @@ public class ReservaService implements IReservaService {
     public ReservaCreacionResponseDto registrar(ReservaCreacionRequestDto dto) {
         reservaCreacionValidator.validar(dto);
 
-        // TODO: usar dto.getTipoCliente() para diferenciar el cálculo de costo según tipo de cliente (ticket pendiente)
         Long clienteId;
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
             RegistroParticularRequestDto nuevoCliente = new RegistroParticularRequestDto();
@@ -150,6 +150,9 @@ public class ReservaService implements IReservaService {
 
         boolean requiereDocumentacion = servicioRequiereDocumentacion.requiereDocumentacion(dto.getServicioId());
 
+        CalculoCostoRequestDto calculoCostoRequest = getCalculoCostoRequestDto(dto);
+        CalculoCostoResponseDto calculoCosto = calculoCostoService.calcularCosto(calculoCostoRequest);
+
         Reserva reserva = Reserva.crear(
                 dto.getTipoReserva(),
                 clienteId,
@@ -163,12 +166,14 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
                 dto.getRut(),
-                dto.getNombre(),
                 dto.getNotas(),
-                requiereDocumentacion
+                requiereDocumentacion,
+                calculoCosto.costoTotal(),
+                dto.getFechaLimite(),
+                dto.getNombre()
+
         );
 
-        // TODO: calcular y asignar importe llamando a ServicioCalculoImporte antes de guardar (ticket pendiente)
         Reserva guardada = reservaRepository.save(reserva);
 
         return new ReservaCreacionResponseDto(guardada.getId());
@@ -232,7 +237,10 @@ public class ReservaService implements IReservaService {
                 nombresServicios.get(r.getServicioId()),
                 r.getFechaEntrada(),
                 r.getFechaSalida(),
-                r.getEstado()
+                r.getEstado(),
+                r.getMontoImpago(),
+                r.getFechaLimitePago(),
+                r.getRequiereDocumentacion() && !r.getTieneDocumentacion()
         ));
 
         return PaginationMapper.toPageResponse(dtoPage);
@@ -275,78 +283,93 @@ public class ReservaService implements IReservaService {
         return calculoCostoService.calcularCosto(request);
     }
 
+    @Nonnull
+    private static CalculoCostoRequestDto getCalculoCostoRequestDto(ReservaCreacionRequestDto dto) {
+        CalculoCostoRequestDto calculoCostoRequest = new CalculoCostoRequestDto();
+        calculoCostoRequest.setServicioId(dto.getServicioId());
+        calculoCostoRequest.setFechaInicio(dto.getFechaInicio());
+        calculoCostoRequest.setFechaFin(dto.getFechaFin());
+        calculoCostoRequest.setHoraInicio(dto.getHoraInicio());
+        calculoCostoRequest.setHoraFin(dto.getHoraFin());
+        calculoCostoRequest.setCantidadTotal(dto.getCantidadTotal());
+        calculoCostoRequest.setCantidad(dto.getCantidad());
+        calculoCostoRequest.setCantidadMenores(dto.getCantidadMenores());
+        calculoCostoRequest.setTipoCliente(dto.getTipoCliente());
+        return calculoCostoRequest;
+    }
+
     @Override
-public ArchivoExportado exportarReservas(ListadoReservasRequestDto filtros) {
-    List<Long> clienteIds = null;
-    if (filtros.nombreCliente() != null && !filtros.nombreCliente().isBlank()) {
-        clienteIds = consultaClienteDetalle.getIdsByNombre(filtros.nombreCliente());
-        if (clienteIds.isEmpty()) {
+    public ArchivoExportado exportarReservas(ListadoReservasRequestDto filtros) {
+        List<Long> clienteIds = null;
+        if (filtros.nombreCliente() != null && !filtros.nombreCliente().isBlank()) {
+            clienteIds = consultaClienteDetalle.getIdsByNombre(filtros.nombreCliente());
+            if (clienteIds.isEmpty()) {
+                throw new ExportacionException("No hay registros que coincidan con los filtros aplicados");
+            }
+        }
+
+        Specification<Reserva> spec = ReservaSpecification.conProcedencia(filtros.procedencia())
+                .and(ReservaSpecification.conServicioId(filtros.servicioId()))
+                .and(ReservaSpecification.conEstado(filtros.estadoReserva()))
+                .and(ReservaSpecification.conFechaEntradaDesde(filtros.fechaDesde()))
+                .and(ReservaSpecification.conFechaSalidaHasta(filtros.fechaHasta()))
+                .and(ReservaSpecification.conClienteIds(clienteIds));
+
+        List<Reserva> reservas = reservaRepository.findAll(spec);
+
+        if (reservas.isEmpty()) {
             throw new ExportacionException("No hay registros que coincidan con los filtros aplicados");
         }
-    }
 
-    Specification<Reserva> spec = ReservaSpecification.conProcedencia(filtros.procedencia())
-            .and(ReservaSpecification.conServicioId(filtros.servicioId()))
-            .and(ReservaSpecification.conEstado(filtros.estadoReserva()))
-            .and(ReservaSpecification.conFechaEntradaDesde(filtros.fechaDesde()))
-            .and(ReservaSpecification.conFechaSalidaHasta(filtros.fechaHasta()))
-            .and(ReservaSpecification.conClienteIds(clienteIds));
+        if (reservas.size() > exportProperties.maxFilas()) {
+            throw new ExportacionException(
+                    "La exportación supera el límite de " + exportProperties.maxFilas() + " filas"
+            );
+        }
 
-    List<Reserva> reservas = reservaRepository.findAll(spec);
+        Set<Long> clienteIdsExport = reservas.stream()
+                .map(Reserva::getClienteId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> nombresClientes = consultaClienteDetalle.getNombresByIds(clienteIdsExport);
 
-    if (reservas.isEmpty()) {
-        throw new ExportacionException("No hay registros que coincidan con los filtros aplicados");
-    }
+        Set<Long> servicioIdsExport = reservas.stream()
+                .map(Reserva::getServicioId).collect(Collectors.toSet());
+        Map<Long, String> nombresServicios = consultaServicioSimple.getNombresByIds(servicioIdsExport);
 
-    if (reservas.size() > exportProperties.maxFilas()) {
-        throw new ExportacionException(
-                "La exportación supera el límite de " + exportProperties.maxFilas() + " filas"
+        List<String> encabezados = List.of(
+                "ID",
+                "Tipo de reserva",
+                "Estado",
+                "Procedencia",
+                "Fecha entrada",
+                "Fecha salida",
+                "Hora inicio",
+                "Hora fin",
+                "Cliente",
+                "Servicio",
+                "Importe",
+                "Forma de pago",
+                "Pago confirmado",
+                "Cantidad total",
+                "Cantidad menores",
+                "Cantidad",
+                "Requiere documentación",
+                "Tiene documentación",
+                "Notas"
         );
-    }
 
-    Set<Long> clienteIdsExport = reservas.stream()
-            .map(Reserva::getClienteId).filter(Objects::nonNull).collect(Collectors.toSet());
-    Map<Long, String> nombresClientes = consultaClienteDetalle.getNombresByIds(clienteIdsExport);
+        List<List<String>> filas = reservas.stream()
+                .map(r -> ReservaMapper.toExportFila(
+                        r,
+                        r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : null,
+                        nombresServicios.get(r.getServicioId())
+                ))
+                .toList();
 
-    Set<Long> servicioIdsExport = reservas.stream()
-            .map(Reserva::getServicioId).collect(Collectors.toSet());
-    Map<Long, String> nombresServicios = consultaServicioSimple.getNombresByIds(servicioIdsExport);
+        int[] anchos = {3000, 8000, 6000, 6000, 6000, 6000, 5000, 5000, 8000, 8000, 5000, 6000, 6000, 5000, 5000, 5000, 7000, 7000, 8000};
 
-    List<String> encabezados = List.of(
-            "ID",
-            "Tipo de reserva",
-            "Estado",
-            "Procedencia",
-            "Fecha entrada",
-            "Fecha salida",
-            "Hora inicio",
-            "Hora fin",
-            "Cliente",
-            "Servicio",
-            "Importe",
-            "Forma de pago",
-            "Pago confirmado",
-            "Cantidad total",
-            "Cantidad menores",
-            "Cantidad",
-            "Requiere documentación",
-            "Tiene documentación",
-            "Notas"
-    );
+        byte[] contenido = exportService.generarExcel("Reservas", encabezados, filas, anchos);
 
-    List<List<String>> filas = reservas.stream()
-            .map(r -> ReservaMapper.toExportFila(
-                    r,
-                    r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : null,
-                    nombresServicios.get(r.getServicioId())
-            ))
-            .toList();
-
-    int[] anchos = {3000, 8000, 6000, 6000, 6000, 6000, 5000, 5000, 8000, 8000, 5000, 6000, 6000, 5000, 5000, 5000, 7000, 7000, 8000};
-
-    byte[] contenido = exportService.generarExcel("Reservas", encabezados, filas, anchos);
-
-    String nombre = NombreArchivoExport.generar("reservas");
-    return new ArchivoExportado(nombre, contenido);
+        String nombre = NombreArchivoExport.generar("reservas");
+        return new ArchivoExportado(nombre, contenido);
 }
 }

@@ -8,6 +8,7 @@ import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -24,8 +25,17 @@ class ServicioReservaOcupacionMapperTest {
                 Procedencia.CAMPING,
                 fechaEntrada,
                 fechaSalida,
-                null, null, null, null, null, null, null, null,
-                false
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                BigDecimal.ZERO,
+                null,
+                null
         );
         ReflectionTestUtils.setField(reserva, "id", id);
         return reserva;

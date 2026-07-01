@@ -1,4 +1,4 @@
-package com.cipolflo.server.reservas;
+package com.cipolflo.server.reservas.mapper;
 
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.reservas.domain.Reserva;
@@ -7,7 +7,6 @@ import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
-import com.cipolflo.server.reservas.mapper.ReservaMapper;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -23,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ReservaMapperTest {
 
+    private static final BigDecimal IMPORTE_RESERVA = BigDecimal.valueOf(15000);
+
     private Reserva crearReserva(Long clienteId) {
         Reserva r = Reserva.crear(
                 TipoReserva.COMUN,
@@ -31,25 +32,46 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 8, 10),
                 LocalDate.of(2026, 8, 15),
-                null, null, 4, 1, null, null, null,
+                null,
+                null,
+                4,
+                1,
+                null,
+                null,
                 "Llegan a las 14hs",
-                false
+                false,
+                IMPORTE_RESERVA,
+                null,
+                null
         );
         ReflectionTestUtils.setField(r, "id", 42L);
         return r;
     }
 
     private ClienteDetalleReservaDto clienteDto() {
-        return new ClienteDetalleReservaDto(12L, "Juan Pérez", "12345678", "099111111", "juan@mail.com", TipoCliente.SOCIO);
+        return new ClienteDetalleReservaDto(
+                12L,
+                "Juan Pérez",
+                "12345678",
+                "099111111",
+                "juan@mail.com",
+                TipoCliente.SOCIO
+        );
     }
 
     private ServicioDetalleReservaDto servicioDto() {
-        return new ServicioDetalleReservaDto(3L, "Cabaña del río", Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
+        return new ServicioDetalleReservaDto(
+                3L,
+                "Cabaña del río",
+                Procedencia.CAMPING,
+                ModalidadPrecio.POR_DIA
+        );
     }
 
     @Test
     void deberiaMapearTodosLosCamposDeLaReserva() {
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
 
         assertEquals(42L, dto.getId());
         assertEquals(TipoReserva.COMUN, dto.getTipoReserva());
@@ -60,8 +82,7 @@ class ReservaMapperTest {
         assertEquals(4, dto.getCantidadTotal());
         assertEquals(1, dto.getCantidadMenores());
         assertNull(dto.getCantidad());
-        assertNull(dto.getImporte());
-        assertNull(dto.getFormaPago());
+        assertEquals(IMPORTE_RESERVA, dto.getImporte());
         assertFalse(dto.getPago());
         assertFalse(dto.getRequiereDocumentacion());
         assertFalse(dto.getTieneDocumentacion());
@@ -71,7 +92,8 @@ class ReservaMapperTest {
 
     @Test
     void deberiaMapearClienteCuandoNoEsNull() {
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
 
         assertNotNull(dto.getCliente());
         assertEquals(12L, dto.getCliente().id());
@@ -84,14 +106,16 @@ class ReservaMapperTest {
 
     @Test
     void deberiaMapearClienteComoNullCuandoEsNull() {
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(crearReserva(null), null, servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(crearReserva(null), null, servicioDto());
 
         assertNull(dto.getCliente());
     }
 
     @Test
     void deberiaMapearServicio() {
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
 
         assertNotNull(dto.getServicio());
         assertEquals(3L, dto.getServicio().id());
@@ -101,14 +125,15 @@ class ReservaMapperTest {
     }
 
     @Test
-    void deberiaMapearImporteYFormaPagoCuandoReservaEsPaga() {
+    void deberiaMapearPagoCuandoReservaEsPaga() {
         Reserva reserva = crearReserva(12L);
-        reserva.confirmarPago(BigDecimal.valueOf(15000), FormaPago.EFECTIVO);
 
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+        reserva.registrarPago(IMPORTE_RESERVA, true);
 
-        assertEquals(BigDecimal.valueOf(15000), dto.getImporte());
-        assertEquals(FormaPago.EFECTIVO, dto.getFormaPago());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+
+        assertEquals(IMPORTE_RESERVA, dto.getImporte());
         assertTrue(dto.getPago());
     }
 
@@ -119,7 +144,8 @@ class ReservaMapperTest {
         ReflectionTestUtils.setField(reserva, "createdAt", ahora);
         ReflectionTestUtils.setField(reserva, "createdBy", "admin@test.com");
 
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
 
         assertEquals(ahora, dto.getCreatedAt());
         assertEquals("admin@test.com", dto.getCreatedBy());
@@ -127,7 +153,8 @@ class ReservaMapperTest {
 
     @Test
     void deberiaNombreSerNullParaReservaComun() {
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
 
         assertNull(dto.getNombre());
     }
@@ -141,12 +168,21 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 8, 10),
                 LocalDate.of(2026, 8, 15),
-                null, null, 2, 0, null, null, null,
                 null,
-                true
+                null,
+                2,
+                0,
+                null,
+                null,
+                null,
+                true,
+                IMPORTE_RESERVA,
+                null,
+                null
         );
 
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
 
         assertTrue(dto.getRequiereDocumentacion());
     }
@@ -158,7 +194,8 @@ class ReservaMapperTest {
         ReflectionTestUtils.setField(reserva, "updatedAt", ahora);
         ReflectionTestUtils.setField(reserva, "updatedBy", "editor@test.com");
 
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
 
         assertEquals(ahora, dto.getUpdatedAt());
         assertEquals("editor@test.com", dto.getUpdatedBy());
@@ -173,11 +210,21 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 9, 3),
-                null, null, null, null, null, "20123456-7", "Org Solidaria", null,
-                false
+                null,
+                null,
+                null,
+                null,
+                null,
+                "20123456-7",
+                null,
+                false,
+                BigDecimal.ZERO,
+                null,
+                "Org Solidaria"
         );
 
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, null, servicioDto());
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(reserva, null, servicioDto());
 
         assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
         assertEquals(TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, dto.getTipoReserva());

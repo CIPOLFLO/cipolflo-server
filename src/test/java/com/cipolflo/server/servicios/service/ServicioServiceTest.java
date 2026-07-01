@@ -85,10 +85,97 @@ class ServicioServiceTest {
         return servicio;
     }
 
+    private Servicio crearServicio(Long id, String nombre, Procedencia procedencia, Boolean habilitado) {
+        Servicio s = new Servicio();
+        s.setId(id);
+        s.setNombre(nombre);
+        s.setProcedencia(procedencia);
+        s.setHabilitado(habilitado);
+        s.setPrecioParticular(BigDecimal.valueOf(2500));
+        s.setPrecioSocio(BigDecimal.valueOf(1500));
+        s.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+        return s;
+    }
+
+    private Reserva crearReserva(
+            Long clienteId,
+            Long servicioId,
+            LocalDate fechaEntrada,
+            LocalDate fechaSalida
+    ) {
+        return crearReservaConImporte(
+                clienteId,
+                servicioId,
+                fechaEntrada,
+                fechaSalida,
+                BigDecimal.ZERO
+        );
+    }
+
+    private Reserva crearReservaConImporte(
+            Long clienteId,
+            Long servicioId,
+            LocalDate fechaEntrada,
+            LocalDate fechaSalida,
+            BigDecimal importe
+    ) {
+        return Reserva.crear(
+                TipoReserva.COMUN,
+                clienteId,
+                servicioId,
+                Procedencia.CAMPING,
+                fechaEntrada,
+                fechaSalida,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                importe,
+                null,
+                null
+        );
+    }
+
+    private PageRequestDto pageRequest() {
+        return new PageRequestDto(0, 10, null, null);
+    }
+
+    private ModificacionServicioDto crearDto(String nombre, BigDecimal precioParticular, BigDecimal precioSocio) {
+        ModificacionServicioDto dto = new ModificacionServicioDto();
+        dto.setNombre(nombre);
+        dto.setPrecioParticular(precioParticular);
+        dto.setPrecioSocio(precioSocio);
+        dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+        dto.setCapacidad(4);
+        dto.setCantidad(2);
+        return dto;
+    }
+
+    private ServicioRegistroRequestDto crearDtoRegistro(
+            String nombre,
+            BigDecimal precioParticular,
+            BigDecimal precioSocio,
+            Integer capacidad,
+            Integer cantidad
+    ) {
+        ServicioRegistroRequestDto dto = new ServicioRegistroRequestDto();
+        dto.setNombre(nombre);
+        dto.setProcedencia(Procedencia.CAMPING);
+        dto.setPrecioParticular(precioParticular);
+        dto.setPrecioSocio(precioSocio);
+        dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+        dto.setCapacidad(capacidad);
+        dto.setCantidad(cantidad);
+        return dto;
+    }
+
     @Test
     void deberiaRetornarDetalleServicioCuandoExiste() {
         Long servicioId = 1L;
-
         Servicio servicio = crearServicio(servicioId, true);
 
         when(servicioRepository.findById(servicioId))
@@ -106,24 +193,22 @@ class ServicioServiceTest {
         assertEquals(BigDecimal.valueOf(2500), resultado.getPrecioParticular());
         assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
         assertEquals(ModalidadPrecio.POR_DIA, resultado.getModalidadPrecio());
+
         verify(servicioRepository).findById(servicioId);
     }
 
     @Test
     void deberiaLanzarErrorCuandoElServicioNoExiste() {
         Long servicioId = 99L;
+
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.empty());
 
         ServicioNotFoundException exception =
-                assertThrows(ServicioNotFoundException.class, () -> {
-                    servicioService.getDetalleServicio(servicioId);
-                });
+                assertThrows(ServicioNotFoundException.class,
+                        () -> servicioService.getDetalleServicio(servicioId));
 
-        assertEquals(
-                "Servicio no encontrado con id: " + servicioId,
-                exception.getMessage()
-        );
+        assertEquals("Servicio no encontrado con id: " + servicioId, exception.getMessage());
 
         verify(servicioRepository).findById(servicioId);
     }
@@ -131,16 +216,13 @@ class ServicioServiceTest {
     @Test
     void deberiaDeshabilitarServicioCuandoEstaHabilitado() {
         Long servicioId = 1L;
-
         Servicio servicio = crearServicio(servicioId, true);
 
         ServicioRequestDto request = new ServicioRequestDto();
         request.setHabilitado(false);
 
-        when(servicioRepository.findById(servicioId))
-                .thenReturn(Optional.of(servicio));
-        when(servicioRepository.save(servicio))
-                .thenReturn(servicio);
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(servicioRepository.save(servicio)).thenReturn(servicio);
 
         ServicioResponseDto resultado =
                 servicioService.cambiarHabilitacionServicio(servicioId, request);
@@ -155,16 +237,13 @@ class ServicioServiceTest {
     @Test
     void deberiaHabilitarServicioCuandoEstaDeshabilitado() {
         Long servicioId = 1L;
-
         Servicio servicio = crearServicio(servicioId, false);
 
         ServicioRequestDto request = new ServicioRequestDto();
         request.setHabilitado(true);
 
-        when(servicioRepository.findById(servicioId))
-                .thenReturn(Optional.of(servicio));
-        when(servicioRepository.save(servicio))
-                .thenReturn(servicio);
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(servicioRepository.save(servicio)).thenReturn(servicio);
 
         ServicioResponseDto resultado =
                 servicioService.cambiarHabilitacionServicio(servicioId, request);
@@ -187,14 +266,10 @@ class ServicioServiceTest {
                 .thenReturn(Optional.empty());
 
         ServicioNotFoundException exception =
-                assertThrows(ServicioNotFoundException.class, () -> {
-                    servicioService.cambiarHabilitacionServicio(servicioId, request);
-                });
+                assertThrows(ServicioNotFoundException.class,
+                        () -> servicioService.cambiarHabilitacionServicio(servicioId, request));
 
-        assertEquals(
-                "Servicio no encontrado con id: " + servicioId,
-                exception.getMessage()
-        );
+        assertEquals("Servicio no encontrado con id: " + servicioId, exception.getMessage());
 
         verify(servicioRepository).findById(servicioId);
         verify(servicioRepository, never()).save(any());
@@ -208,15 +283,11 @@ class ServicioServiceTest {
         servicio.setId(servicioId);
         servicio.setHabilitado(true);
 
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reserva = crearReserva(
                 1L,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
+                LocalDate.now().plusDays(2)
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
@@ -224,12 +295,9 @@ class ServicioServiceTest {
         request.setHabilitado(false);
         request.setReservasACancelar(List.of(1L));
 
-        when(servicioRepository.findById(servicioId))
-                .thenReturn(Optional.of(servicio));
-        when(reservaService.obtenerProximasPorServicioEnRango(servicioId))
-                .thenReturn(List.of(reserva));
-        when(servicioRepository.save(any(Servicio.class)))
-                .thenReturn(servicio);
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reserva));
+        when(servicioRepository.save(any(Servicio.class))).thenReturn(servicio);
 
         servicioService.cambiarHabilitacionServicio(servicioId, request);
 
@@ -245,37 +313,28 @@ class ServicioServiceTest {
         servicio.setId(servicioId);
         servicio.setHabilitado(true);
 
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reserva = crearReservaConImporte(
                 1L,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
+                BigDecimal.valueOf(1500)
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
-        reserva.confirmarPago(
-                BigDecimal.valueOf(1500),
-                FormaPago.EFECTIVO
-        );
+        reserva.registrarPago(BigDecimal.valueOf(1500), true);
 
         ServicioRequestDto request = new ServicioRequestDto();
         request.setHabilitado(false);
         request.setReservasACancelar(List.of(1L));
         request.setConfirmarDevolucion(false);
 
-        when(servicioRepository.findById(servicioId))
-                .thenReturn(Optional.of(servicio));
-        when(reservaService.obtenerProximasPorServicioEnRango(servicioId))
-                .thenReturn(List.of(reserva));
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reserva));
 
         ConfirmacionDevolucionRequeridaException exception =
-                assertThrows(ConfirmacionDevolucionRequeridaException.class, () -> {
-                    servicioService.cambiarHabilitacionServicio(servicioId, request);
-                });
+                assertThrows(ConfirmacionDevolucionRequeridaException.class,
+                        () -> servicioService.cambiarHabilitacionServicio(servicioId, request));
 
         assertEquals(
                 "Existen reservas pagas. Debe confirmar la devolución para cancelarlas",
@@ -292,54 +351,29 @@ class ServicioServiceTest {
         Servicio servicio = new Servicio();
         servicio.setId(servicioId);
 
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reserva = crearReservaConImporte(
                 1L,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
+                BigDecimal.valueOf(1500)
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
-        reserva.confirmarPago(
-                BigDecimal.valueOf(1500),
-                FormaPago.EFECTIVO
-        );
+        reserva.registrarPago(BigDecimal.valueOf(1500), true);
 
         ServicioRequestDto request = new ServicioRequestDto();
         request.setHabilitado(false);
         request.setReservasACancelar(List.of(1L));
         request.setConfirmarDevolucion(true);
 
-        when(servicioRepository.findById(servicioId))
-                .thenReturn(Optional.of(servicio));
-        when(reservaService.obtenerProximasPorServicioEnRango(servicioId))
-                .thenReturn(List.of(reserva));
-        when(servicioRepository.save(any(Servicio.class)))
-                .thenReturn(servicio);
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reserva));
+        when(servicioRepository.save(any(Servicio.class))).thenReturn(servicio);
 
         servicioService.cambiarHabilitacionServicio(servicioId, request);
 
         verify(reservaService).cancelarTodas(List.of(reserva));
-    }
-
-    private Servicio crearServicio(Long id, String nombre, Procedencia procedencia, Boolean habilitado) {
-        Servicio s = new Servicio();
-        s.setId(id);
-        s.setNombre(nombre);
-        s.setProcedencia(procedencia);
-        s.setHabilitado(habilitado);
-        s.setPrecioParticular(BigDecimal.valueOf(2500));
-        s.setPrecioSocio(BigDecimal.valueOf(1500));
-        s.setModalidadPrecio(ModalidadPrecio.POR_DIA);
-        return s;
-    }
-
-    private PageRequestDto pageRequest() {
-        return new PageRequestDto(0, 10, null, null);
     }
 
     @Test
@@ -349,14 +383,17 @@ class ServicioServiceTest {
                 crearServicio(2L, "Cancha", Procedencia.SEDE, false)
         );
         Page<Servicio> page = new PageImpl<>(servicios, pageRequest().toPageable(), servicios.size());
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, null, null);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertNotNull(resultado);
         assertEquals(2, resultado.totalElements());
         assertEquals(2, resultado.content().size());
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
@@ -364,13 +401,16 @@ class ServicioServiceTest {
     void deberiaFiltrarServiciosPorNombre() {
         Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, true);
         Page<Servicio> page = new PageImpl<>(List.of(servicio));
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("Cabaña", null, null);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertEquals(1, resultado.content().size());
         assertEquals("Cabaña", resultado.content().get(0).getNombre());
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
@@ -378,12 +418,15 @@ class ServicioServiceTest {
     void deberiaFiltrarServiciosPorNombreParcial() {
         Servicio servicio = crearServicio(1L, "Cabaña Grande", Procedencia.CAMPING, true);
         Page<Servicio> page = new PageImpl<>(List.of(servicio));
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("caba", null, null);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertEquals(1, resultado.content().size());
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
@@ -391,13 +434,16 @@ class ServicioServiceTest {
     void deberiaFiltrarServiciosPorProcedencia() {
         Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, true);
         Page<Servicio> page = new PageImpl<>(List.of(servicio));
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, Procedencia.CAMPING, null);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertEquals(1, resultado.content().size());
         assertEquals(Procedencia.CAMPING, resultado.content().get(0).getProcedencia());
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
@@ -405,13 +451,17 @@ class ServicioServiceTest {
     void deberiaFiltrarServiciosPorEstadoHabilitado() {
         Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, true);
         Page<Servicio> page = new PageImpl<>(List.of(servicio));
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, null, EstadoServicio.HABILITADO);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        ListadoServiciosRequestDto filtros =
+                new ListadoServiciosRequestDto(null, null, EstadoServicio.HABILITADO);
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertEquals(1, resultado.content().size());
         assertEquals(EstadoServicio.HABILITADO, resultado.content().get(0).getEstado());
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
@@ -419,13 +469,17 @@ class ServicioServiceTest {
     void deberiaFiltrarServiciosPorEstadoDeshabilitado() {
         Servicio servicio = crearServicio(1L, "Cancha", Procedencia.SEDE, false);
         Page<Servicio> page = new PageImpl<>(List.of(servicio));
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, null, EstadoServicio.DESHABILITADO);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        ListadoServiciosRequestDto filtros =
+                new ListadoServiciosRequestDto(null, null, EstadoServicio.DESHABILITADO);
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertEquals(1, resultado.content().size());
         assertEquals(EstadoServicio.DESHABILITADO, resultado.content().get(0).getEstado());
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
@@ -433,38 +487,49 @@ class ServicioServiceTest {
     void deberiaFiltrarConTodosLosParametrosCombinados() {
         Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, true);
         Page<Servicio> page = new PageImpl<>(List.of(servicio));
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("Cabaña", Procedencia.CAMPING, EstadoServicio.HABILITADO);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        ListadoServiciosRequestDto filtros =
+                new ListadoServiciosRequestDto("Cabaña", Procedencia.CAMPING, EstadoServicio.HABILITADO);
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertEquals(1, resultado.content().size());
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     void deberiaRetornarPaginaVaciaCuandoNoHayCoincidencias() {
         Page<Servicio> page = Page.empty(pageRequest().toPageable());
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("nombreQueNoExiste", null, null);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        ListadoServiciosRequestDto filtros =
+                new ListadoServiciosRequestDto("nombreQueNoExiste", null, null);
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertNotNull(resultado);
         assertEquals(0, resultado.totalElements());
         assertTrue(resultado.content().isEmpty());
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
     void deberiaNormalizarNombreConEspacios() {
         Page<Servicio> page = new PageImpl<>(List.of());
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto("   ", null, null);
-        PageResponse<ListadoServiciosResponseDto> resultado = servicioService.getListadoServicios(filtros, pageRequest());
+        PageResponse<ListadoServiciosResponseDto> resultado =
+                servicioService.getListadoServicios(filtros, pageRequest());
 
         assertNotNull(resultado);
+
         verify(servicioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
 
@@ -472,30 +537,23 @@ class ServicioServiceTest {
     void deberiaLanzarExcepcionCuandoServicioTieneHabilitadoNull() {
         Servicio servicio = crearServicio(1L, "Cabaña", Procedencia.CAMPING, null);
         Page<Servicio> page = new PageImpl<>(List.of(servicio));
+
         when(servicioRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         ListadoServiciosRequestDto filtros = new ListadoServiciosRequestDto(null, null, null);
 
-        assertThrows(IllegalStateException.class,
-                () -> servicioService.getListadoServicios(filtros, pageRequest()));
-    }
-
-    private ModificacionServicioDto crearDto(String nombre, BigDecimal precioParticular, BigDecimal precioSocio) {
-        ModificacionServicioDto dto = new ModificacionServicioDto();
-        dto.setNombre(nombre);
-        dto.setPrecioParticular(precioParticular);
-        dto.setPrecioSocio(precioSocio);
-        dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
-        dto.setCapacidad(4);
-        dto.setCantidad(2);
-        return dto;
+        assertThrows(
+                IllegalStateException.class,
+                () -> servicioService.getListadoServicios(filtros, pageRequest())
+        );
     }
 
     @Test
     void deberiaModificarServicioExitosamente() {
         Long servicioId = 1L;
         Servicio servicio = crearServicio(servicioId, true);
-        ModificacionServicioDto dto = crearDto("Cabaña Premium", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+        ModificacionServicioDto dto =
+                crearDto("Cabaña Premium", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
         when(servicioRepository.save(servicio)).thenReturn(servicio);
@@ -506,6 +564,7 @@ class ServicioServiceTest {
         assertEquals("Cabaña Premium", resultado.getNombre());
         assertEquals(BigDecimal.valueOf(3000), resultado.getPrecioParticular());
         assertEquals(BigDecimal.valueOf(2000), resultado.getPrecioSocio());
+
         verify(modificacionServicioValidator).validar(any(ModificacionValidationContext.class));
         verify(servicioRepository).save(servicio);
     }
@@ -513,12 +572,15 @@ class ServicioServiceTest {
     @Test
     void deberiaLanzarErrorCuandoServicioNoExisteAlModificar() {
         Long servicioId = 99L;
-        ModificacionServicioDto dto = crearDto("Cabaña", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+        ModificacionServicioDto dto =
+                crearDto("Cabaña", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.empty());
 
-        assertThrows(ServicioNotFoundException.class,
-                () -> servicioService.modificarServicio(servicioId, dto));
+        assertThrows(
+                ServicioNotFoundException.class,
+                () -> servicioService.modificarServicio(servicioId, dto)
+        );
 
         verify(servicioRepository, never()).save(any());
     }
@@ -527,18 +589,25 @@ class ServicioServiceTest {
     void deberiaLanzarErrorCuandoNombreEsDuplicadoAlModificar() {
         Long servicioId = 1L;
         Servicio servicio = crearServicio(servicioId, true);
-        ModificacionServicioDto dto = crearDto("Cabaña Existente", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
+        ModificacionServicioDto dto =
+                crearDto("Cabaña Existente", BigDecimal.valueOf(3000), BigDecimal.valueOf(2000));
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
         doThrow(new ServicioValidacionException(
                 ServicioCodigoError.NOMBRE_DUPLICADO.name(),
-                "Ya existe un servicio con ese nombre"))
-                .when(modificacionServicioValidator).validar(any(ModificacionValidationContext.class));
+                "Ya existe un servicio con ese nombre"
+        ))
+                .when(modificacionServicioValidator)
+                .validar(any(ModificacionValidationContext.class));
 
-        ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
-                () -> servicioService.modificarServicio(servicioId, dto));
+        ServicioValidacionException exception =
+                assertThrows(
+                        ServicioValidacionException.class,
+                        () -> servicioService.modificarServicio(servicioId, dto)
+                );
 
         assertEquals(ServicioCodigoError.NOMBRE_DUPLICADO.name(), exception.getCodigo());
+
         verify(servicioRepository, never()).save(any());
     }
 
@@ -546,14 +615,19 @@ class ServicioServiceTest {
     void deberiaLanzarErrorCuandoPrecioSocioEsMayorOIgualAlParticular() {
         Long servicioId = 1L;
         Servicio servicio = crearServicio(servicioId, true);
-        ModificacionServicioDto dto = crearDto("Cabaña", BigDecimal.valueOf(2000), BigDecimal.valueOf(2000));
+        ModificacionServicioDto dto =
+                crearDto("Cabaña", BigDecimal.valueOf(2000), BigDecimal.valueOf(2000));
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
 
-        ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
-                () -> servicioService.modificarServicio(servicioId, dto));
+        ServicioValidacionException exception =
+                assertThrows(
+                        ServicioValidacionException.class,
+                        () -> servicioService.modificarServicio(servicioId, dto)
+                );
 
         assertEquals(ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(), exception.getCodigo());
+
         verify(servicioRepository, never()).save(any());
     }
 
@@ -565,15 +639,11 @@ class ServicioServiceTest {
         servicio.setId(servicioId);
         servicio.setHabilitado(true);
 
-        Reserva reservaProxima = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reservaProxima = crearReserva(
                 2L,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
+                LocalDate.now().plusDays(2)
         );
         ReflectionTestUtils.setField(reservaProxima, "id", 2L);
 
@@ -581,210 +651,185 @@ class ServicioServiceTest {
         request.setHabilitado(false);
         request.setReservasACancelar(List.of(99L));
 
-        when(servicioRepository.findById(servicioId))
-                .thenReturn(Optional.of(servicio));
-        when(reservaService.obtenerProximasPorServicioEnRango(servicioId))
-                .thenReturn(List.of(reservaProxima));
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
+        when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reservaProxima));
 
-        assertThrows(ReservaNoCancelableException.class, () -> {
-            servicioService.cambiarHabilitacionServicio(servicioId, request);
-        });
+        assertThrows(
+                ReservaNoCancelableException.class,
+                () -> servicioService.cambiarHabilitacionServicio(servicioId, request)
+        );
 
         verify(reservaService, never()).cancelarTodas(anyList());
     }
 
+    @Test
+    void deberiaRegistrarServicioExitosamente() {
+        ServicioRegistroRequestDto dto =
+                crearDtoRegistro("Cabaña Nueva", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), 4, 2);
 
-   private ServicioRegistroRequestDto crearDtoRegistro(
-        String nombre,
-        BigDecimal precioParticular,
-        BigDecimal precioSocio,
-        Integer capacidad,
-        Integer cantidad
-) {
-    ServicioRegistroRequestDto dto = new ServicioRegistroRequestDto();
+        Servicio servicioGuardado = new Servicio();
+        servicioGuardado.setId(1L);
+        servicioGuardado.setNombre("Cabaña Nueva");
+        servicioGuardado.setProcedencia(Procedencia.CAMPING);
+        servicioGuardado.setPrecioParticular(BigDecimal.valueOf(2500));
+        servicioGuardado.setPrecioSocio(BigDecimal.valueOf(1500));
+        servicioGuardado.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+        servicioGuardado.setCapacidad(4);
+        servicioGuardado.setCantidad(2);
+        servicioGuardado.setHabilitado(true);
 
-    dto.setNombre(nombre);
-    dto.setProcedencia(Procedencia.CAMPING);
-    dto.setPrecioParticular(precioParticular);
-    dto.setPrecioSocio(precioSocio);
-    dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
-    dto.setCapacidad(capacidad);
-    dto.setCantidad(cantidad);
+        when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
 
-    return dto;
-}
+        ServicioResponseDto resultado = servicioService.registrarServicio(dto);
 
+        assertNotNull(resultado);
+        assertEquals(1L, resultado.getId());
+        assertEquals("Cabaña Nueva", resultado.getNombre());
+        assertEquals(Procedencia.CAMPING, resultado.getProcedencia());
+        assertEquals(BigDecimal.valueOf(2500), resultado.getPrecioParticular());
+        assertEquals(BigDecimal.valueOf(1500), resultado.getPrecioSocio());
+        assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
 
-@Test
-void deberiaRegistrarServicioExitosamente() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Nueva", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), 4, 2);
+        verify(servicioRegistroValidator).validar(dto);
+        verify(servicioRepository).save(any(Servicio.class));
+    }
 
-    Servicio servicioGuardado = new Servicio();
-    servicioGuardado.setId(1L);
-    servicioGuardado.setNombre("Cabaña Nueva");
-    servicioGuardado.setProcedencia(Procedencia.CAMPING);
-    servicioGuardado.setPrecioParticular(BigDecimal.valueOf(2500));
-    servicioGuardado.setPrecioSocio(BigDecimal.valueOf(1500));
-    servicioGuardado.setModalidadPrecio(ModalidadPrecio.POR_DIA);
-    servicioGuardado.setCapacidad(4);
-    servicioGuardado.setCantidad(2);
-    servicioGuardado.setHabilitado(true);
+    @Test
+    void deberiaCrearServicioConEstadoHabilitadoPorDefecto() {
+        ServicioRegistroRequestDto dto =
+                crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
 
-    when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
+        Servicio servicioGuardado = new Servicio();
+        servicioGuardado.setId(1L);
+        servicioGuardado.setHabilitado(true);
 
-    ServicioResponseDto resultado = servicioService.registrarServicio(dto);
+        when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
 
-    assertNotNull(resultado);
-    assertEquals(1L, resultado.getId());
-    assertEquals("Cabaña Nueva", resultado.getNombre());
-    assertEquals(Procedencia.CAMPING, resultado.getProcedencia());
-    assertEquals(BigDecimal.valueOf(2500), resultado.getPrecioParticular());
-    assertEquals(BigDecimal.valueOf(1500), resultado.getPrecioSocio());
-    assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
+        ServicioResponseDto resultado = servicioService.registrarServicio(dto);
 
-    verify(servicioRegistroValidator).validar(dto);
-    verify(servicioRepository).save(any(Servicio.class));
-}
+        assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
+        verify(servicioRepository).save(argThat(servicio -> Boolean.TRUE.equals(servicio.getHabilitado())));
+    }
 
-@Test
-void deberiaCrearServicioConEstadoHabilitadoPorDefecto() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
-    
-    Servicio servicioGuardado = new Servicio();
-    servicioGuardado.setId(1L);
-    servicioGuardado.setHabilitado(true);
+    @Test
+    void deberiaLanzarErrorCuandoNombreDuplicadoAlRegistrar() {
+        ServicioRegistroRequestDto dto =
+                crearDtoRegistro("Cabaña Existente", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
 
-    when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
+        doThrow(new ServicioValidacionException(
+                ServicioCodigoError.NOMBRE_DUPLICADO.name(),
+                "Ya existe un servicio con ese nombre"
+        ))
+                .when(servicioRegistroValidator)
+                .validar(dto);
 
-    ServicioResponseDto resultado = servicioService.registrarServicio(dto);
+        ServicioValidacionException exception =
+                assertThrows(
+                        ServicioValidacionException.class,
+                        () -> servicioService.registrarServicio(dto)
+                );
 
-    assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
-    verify(servicioRepository).save(argThat(servicio -> servicio.getHabilitado() == true));
-}
+        assertEquals(ServicioCodigoError.NOMBRE_DUPLICADO.name(), exception.getCodigo());
 
-@Test
-void deberiaLanzarErrorCuandoNombreDuplicadoAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña Existente", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
+        verify(servicioRepository, never()).save(any());
+    }
 
-    doThrow(new ServicioValidacionException(
-            ServicioCodigoError.NOMBRE_DUPLICADO.name(),
-            "Ya existe un servicio con ese nombre"))
-            .when(servicioRegistroValidator).validar(dto);
+    @Test
+    void deberiaLanzarErrorCuandoPrecioParticularMenorQuePrecioSocioAlRegistrar() {
+        ServicioRegistroRequestDto dto =
+                crearDtoRegistro("Cabaña", BigDecimal.valueOf(1000), BigDecimal.valueOf(2000), null, null);
 
-    ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
-            () -> servicioService.registrarServicio(dto));
+        ServicioValidacionException exception =
+                assertThrows(
+                        ServicioValidacionException.class,
+                        () -> servicioService.registrarServicio(dto)
+                );
 
-    assertEquals(ServicioCodigoError.NOMBRE_DUPLICADO.name(), exception.getCodigo());
-    verify(servicioRepository, never()).save(any());
-}
+        assertEquals(ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(), exception.getCodigo());
 
-@Test
-void deberiaLanzarErrorCuandoPrecioParticularMenorQuePrecioSocioAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro(
-            "Cabaña",
-            BigDecimal.valueOf(1000),
-            BigDecimal.valueOf(2000),
-            null,
-            null
-    );
+        verify(servicioRepository, never()).save(any());
+    }
 
-    ServicioValidacionException exception =
-            assertThrows(ServicioValidacionException.class,
-                    () -> servicioService.registrarServicio(dto));
+    @Test
+    void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
+        ServicioRegistroRequestDto dto =
+                crearDtoRegistro("Cabaña Premium", BigDecimal.valueOf(3500), BigDecimal.valueOf(2000), null, null);
 
-    assertEquals(
-            ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
-            exception.getCodigo()
-    );
+        dto.setCapacidad(6);
+        dto.setCantidad(3);
 
-    verify(servicioRepository, never()).save(any());
-}
-@Test
-void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro(
-            "Cabaña Premium",
-            BigDecimal.valueOf(3500),
-            BigDecimal.valueOf(2000),
-            null,
-            null
-    );
+        Servicio servicioGuardado = new Servicio();
+        servicioGuardado.setId(1L);
 
-    dto.setCapacidad(6);
-    dto.setCantidad(3);
+        when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
 
-    Servicio servicioGuardado = new Servicio();
-    servicioGuardado.setId(1L);
+        servicioService.registrarServicio(dto);
 
-    when(servicioRepository.save(any(Servicio.class)))
-            .thenReturn(servicioGuardado);
+        verify(servicioRepository).save(argThat(servicio ->
+                servicio.getNombre().equals("Cabaña Premium") &&
+                        servicio.getProcedencia().equals(Procedencia.CAMPING) &&
+                        servicio.getPrecioParticular().equals(BigDecimal.valueOf(3500)) &&
+                        servicio.getPrecioSocio().equals(BigDecimal.valueOf(2000)) &&
+                        servicio.getModalidadPrecio().equals(ModalidadPrecio.POR_DIA) &&
+                        servicio.getCapacidad().equals(6) &&
+                        servicio.getCantidad().equals(3) &&
+                        Boolean.TRUE.equals(servicio.getHabilitado())
+        ));
+    }
 
-    servicioService.registrarServicio(dto);
+    @Test
+    void deberiaMapearHabilitadoFalseAEstadoDeshabilitadoEnDetalle() {
+        Long servicioId = 1L;
+        Servicio servicio = crearServicio(servicioId, false);
 
-    verify(servicioRepository).save(argThat(servicio ->
-        servicio.getNombre().equals("Cabaña Premium") &&
-        servicio.getProcedencia().equals(Procedencia.CAMPING) &&
-        servicio.getPrecioParticular().equals(BigDecimal.valueOf(3500)) &&
-        servicio.getPrecioSocio().equals(BigDecimal.valueOf(2000)) &&
-        servicio.getModalidadPrecio().equals(ModalidadPrecio.POR_DIA) &&
-        servicio.getCapacidad().equals(6) &&
-        servicio.getCantidad().equals(3) &&
-        servicio.getHabilitado().equals(true)
-));
-}
-@Test
-void deberiaMapearHabilitadoFalseAEstadoDeshabilitadoEnDetalle() {
-    Long servicioId = 1L;
-    Servicio servicio = crearServicio(servicioId, false);
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
 
-    when(servicioRepository.findById(servicioId))
-            .thenReturn(Optional.of(servicio));
+        ServicioResponseDto resultado = servicioService.getDetalleServicio(servicioId);
 
-    ServicioResponseDto resultado = servicioService.getDetalleServicio(servicioId);
+        assertEquals(EstadoServicio.DESHABILITADO, resultado.getEstado());
+    }
 
-    assertEquals(EstadoServicio.DESHABILITADO, resultado.getEstado());
-}
+    @Test
+    void deberiaIncluirCamposAuditoriaEnLaRespuestaDeDetalle() {
+        Long servicioId = 1L;
+        Instant createdAt = Instant.parse("2024-01-01T00:00:00Z");
+        Instant updatedAt = Instant.parse("2024-06-01T00:00:00Z");
 
-@Test
-void deberiaIncluirCamposAuditoriaEnLaRespuestaDeDetalle() {
-    Long servicioId = 1L;
-    Instant createdAt = Instant.parse("2024-01-01T00:00:00Z");
-    Instant updatedAt = Instant.parse("2024-06-01T00:00:00Z");
+        Servicio servicio = crearServicio(servicioId, true);
+        ReflectionTestUtils.setField(servicio, "createdAt", createdAt);
+        ReflectionTestUtils.setField(servicio, "updatedAt", updatedAt);
+        ReflectionTestUtils.setField(servicio, "createdBy", "admin");
+        ReflectionTestUtils.setField(servicio, "updatedBy", "editor");
 
-    Servicio servicio = crearServicio(servicioId, true);
-    ReflectionTestUtils.setField(servicio, "createdAt", createdAt);
-    ReflectionTestUtils.setField(servicio, "updatedAt", updatedAt);
-    ReflectionTestUtils.setField(servicio, "createdBy", "admin");
-    ReflectionTestUtils.setField(servicio, "updatedBy", "editor");
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
 
-    when(servicioRepository.findById(servicioId))
-            .thenReturn(Optional.of(servicio));
+        ServicioResponseDto resultado = servicioService.getDetalleServicio(servicioId);
 
-    ServicioResponseDto resultado = servicioService.getDetalleServicio(servicioId);
+        assertEquals(createdAt, resultado.getCreatedAt());
+        assertEquals(updatedAt, resultado.getUpdatedAt());
+        assertEquals("admin", resultado.getCreatedBy());
+        assertEquals("editor", resultado.getUpdatedBy());
+    }
 
-    assertEquals(createdAt, resultado.getCreatedAt());
-    assertEquals(updatedAt, resultado.getUpdatedAt());
-    assertEquals("admin", resultado.getCreatedBy());
-    assertEquals("editor", resultado.getUpdatedBy());
-}
+    @Test
+    void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
+        ServicioRegistroRequestDto dto =
+                crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
+        dto.setCapacidad(null);
+        dto.setCantidad(null);
 
-@Test
-void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
-    ServicioRegistroRequestDto dto = crearDtoRegistro("Cabaña", BigDecimal.valueOf(2500), BigDecimal.valueOf(1500), null, null);
-    dto.setCapacidad(null);
-    dto.setCantidad(null);
-    
-    Servicio servicioGuardado = new Servicio();
-    servicioGuardado.setId(1L);
+        Servicio servicioGuardado = new Servicio();
+        servicioGuardado.setId(1L);
 
-    when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
+        when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
 
-    servicioService.registrarServicio(dto);
+        servicioService.registrarServicio(dto);
 
-    verify(servicioRepository).save(argThat(servicio ->
-            servicio.getCapacidad() == null &&
-            servicio.getCantidad() == null
-    ));
-}
+        verify(servicioRepository).save(argThat(servicio ->
+                servicio.getCapacidad() == null &&
+                        servicio.getCantidad() == null
+        ));
+    }
 
     @Test
     void deberiaRetornarReservasProximasConNombreCliente() {
@@ -793,15 +838,11 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         Servicio servicio = crearServicio(servicioId, true);
 
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reserva = crearReserva(
                 clienteId,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
+                LocalDate.now().plusDays(2)
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
@@ -815,13 +856,13 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         assertEquals(1L, resultado.get(0).getId());
         assertEquals(clienteId, resultado.get(0).getClienteId());
         assertEquals("Juan Pérez", resultado.get(0).getNombreCliente());
+
         verify(clienteService).getNombresByIds(any());
     }
 
     @Test
     void deberiaRetornarListaVaciaSiNoHayReservasProximas() {
         Long servicioId = 1L;
-
         Servicio servicio = crearServicio(servicioId, true);
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
@@ -832,6 +873,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         assertNotNull(resultado);
         assertTrue(resultado.isEmpty());
+
         verify(clienteService).getNombresByIds(any());
     }
 
@@ -841,8 +883,10 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.empty());
 
-        assertThrows(ServicioNotFoundException.class,
-                () -> servicioService.getReservasProximas(servicioId));
+        assertThrows(
+                ServicioNotFoundException.class,
+                () -> servicioService.getReservasProximas(servicioId)
+        );
 
         verify(reservaService, never()).obtenerProximasPorServicioEnRango(any());
         verify(clienteService, never()).getNombresByIds(any());
@@ -855,15 +899,11 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         Servicio servicio = crearServicio(servicioId, true);
 
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reserva = crearReserva(
                 clienteId,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
+                LocalDate.now().plusDays(2)
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
@@ -871,8 +911,10 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         when(reservaService.obtenerProximasPorServicioEnRango(servicioId)).thenReturn(List.of(reserva));
         when(clienteService.getNombresByIds(any())).thenReturn(Map.of());
 
-        assertThrows(IllegalStateException.class,
-                () -> servicioService.getReservasProximas(servicioId));
+        assertThrows(
+                IllegalStateException.class,
+                () -> servicioService.getReservasProximas(servicioId)
+        );
     }
 
     @Test
@@ -884,16 +926,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         Servicio servicio = crearServicio(servicioId, true);
 
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                clienteId,
-                servicioId,
-                Procedencia.CAMPING,
-                fechaEntrada,
-                fechaSalida,
-                null, null, null, null, null, null, null, null,
-                false
-        );
+        Reserva reserva = crearReserva(clienteId, servicioId, fechaEntrada, fechaSalida);
         ReflectionTestUtils.setField(reserva, "id", 5L);
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
@@ -903,7 +936,9 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         List<ReservaProximaResponseDto> resultado = servicioService.getReservasProximas(servicioId);
 
         assertEquals(1, resultado.size());
+
         ReservaProximaResponseDto dto = resultado.get(0);
+
         assertEquals(5L, dto.getId());
         assertEquals(clienteId, dto.getClienteId());
         assertEquals("Ana García", dto.getNombreCliente());
@@ -921,27 +956,19 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         Servicio servicio = crearServicio(servicioId, true);
 
-        Reserva reserva1 = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reserva1 = crearReserva(
                 clienteId1,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null, null, null, null, null, null, null, null,
-                false
+                LocalDate.now().plusDays(2)
         );
         ReflectionTestUtils.setField(reserva1, "id", 1L);
 
-        Reserva reserva2 = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reserva2 = crearReserva(
                 clienteId2,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.now().plusDays(3),
-                LocalDate.now().plusDays(4),
-                null, null, null, null, null, null, null, null,
-                false
+                LocalDate.now().plusDays(4)
         );
         ReflectionTestUtils.setField(reserva2, "id", 2L);
 
@@ -971,15 +998,11 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         Servicio servicio = crearServicio(servicioId, true);
 
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
+        Reserva reserva = crearReserva(
                 10L,
                 servicioId,
-                Procedencia.CAMPING,
                 LocalDate.of(2026, 6, 17),
-                LocalDate.of(2026, 6, 19),
-                null, null, null, null, null, null, null, null,
-                false
+                LocalDate.of(2026, 6, 19)
         );
         ReflectionTestUtils.setField(reserva, "id", 5L);
 
@@ -991,11 +1014,14 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 servicioService.getFechasOcupadas(servicioId, desde, hasta);
 
         assertEquals(1, resultado.size());
+
         ServicioReservaOcupacionDto dto = resultado.get(0);
+
         assertEquals(5L, dto.reservaId());
         assertEquals(EstadoReserva.PENDIENTE, dto.estado());
         assertEquals(LocalDate.of(2026, 6, 17), dto.fechaInicio());
         assertEquals(LocalDate.of(2026, 6, 19), dto.fechaFin());
+
         verify(reservaService).obtenerOcupacionPorServicioEnRango(servicioId, desde, hasta);
     }
 
@@ -1033,6 +1059,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 servicioService.getFechasOcupadas(servicioId, dia, dia);
 
         assertNotNull(resultado);
+
         verify(reservaService).obtenerOcupacionPorServicioEnRango(servicioId, dia, dia);
     }
 
@@ -1042,10 +1069,14 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         LocalDate desde = LocalDate.of(2026, 6, 20);
         LocalDate hasta = LocalDate.of(2026, 6, 16);
 
-        ServicioValidacionException exception = assertThrows(ServicioValidacionException.class,
-                () -> servicioService.getFechasOcupadas(servicioId, desde, hasta));
+        ServicioValidacionException exception =
+                assertThrows(
+                        ServicioValidacionException.class,
+                        () -> servicioService.getFechasOcupadas(servicioId, desde, hasta)
+                );
 
         assertEquals(ServicioCodigoError.RANGO_FECHAS_INVALIDO.name(), exception.getCodigo());
+
         verify(servicioRepository, never()).findById(any());
         verify(reservaService, never()).obtenerOcupacionPorServicioEnRango(any(), any(), any());
     }
@@ -1058,8 +1089,10 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.empty());
 
-        assertThrows(ServicioNotFoundException.class,
-                () -> servicioService.getFechasOcupadas(servicioId, desde, hasta));
+        assertThrows(
+                ServicioNotFoundException.class,
+                () -> servicioService.getFechasOcupadas(servicioId, desde, hasta)
+        );
 
         verify(reservaService, never()).obtenerOcupacionPorServicioEnRango(any(), any(), any());
     }

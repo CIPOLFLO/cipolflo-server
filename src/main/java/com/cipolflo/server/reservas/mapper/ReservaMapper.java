@@ -33,7 +33,6 @@ public class ReservaMapper {
                 reserva.getCantidadMenores(),
                 reserva.getCantidad(),
                 reserva.getImporte(),
-                reserva.getFormaPago(),
                 reserva.getPago(),
                 reserva.getRequiereDocumentacion(),
                 reserva.getTieneDocumentacion(),

@@ -1,5 +1,6 @@
 package com.cipolflo.server;
 
+import com.azure.ai.documentintelligence.DocumentIntelligenceClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -10,6 +11,9 @@ class ServerApplicationTests {
 
 	@MockitoBean
 	JwtDecoder jwtDecoder;
+
+	@MockitoBean
+	DocumentIntelligenceClient documentIntelligenceClient;
 
 	@Test
 	void contextLoads() {
