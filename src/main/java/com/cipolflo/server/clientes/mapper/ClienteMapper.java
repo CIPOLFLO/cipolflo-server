@@ -8,6 +8,9 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 
+import static com.cipolflo.server.shared.export.ExportFormatter.orEmpty;
+import static com.cipolflo.server.shared.export.ExportFormatter.orNA;
+
 public class ClienteMapper {
 
     private ClienteMapper() {}
@@ -100,13 +103,5 @@ public class ClienteMapper {
                 orEmpty(socio != null ? socio.getFechaIngreso() : null),
                 orEmpty(socio != null ? socio.getFechaUltimoPago() : null)
         );
-    }
-
-    private static String orEmpty(Object value) {
-        return value != null ? value.toString() : "";
-    }
-
-    private static String orNA(Object value) {
-        return value != null ? value.toString() : "N/A";
     }
 }

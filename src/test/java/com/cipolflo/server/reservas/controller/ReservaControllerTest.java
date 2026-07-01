@@ -6,6 +6,7 @@ import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ReservaModificacionResponseDto;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
@@ -18,11 +19,15 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import java.util.List;
-
+import org.springframework.http.HttpHeaders;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import org.springframework.http.MediaType;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -373,4 +378,70 @@ class ReservaControllerTest {
 
         verify(reservaService, never()).modificar(anyLong(), any());
     }
+    @Test
+@WithMockUser
+void deberiaExportarReservasCorrectamente() throws Exception {
+    ArchivoExportado archivo = new ArchivoExportado(
+            "reservas.xlsx",
+            "excel".getBytes()
+    );
+
+    when(reservaService.exportarReservas(any())).thenReturn(archivo);
+
+    mockMvc.perform(post("/api/v1/reservas/exportar")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"))
+            .andExpect(status().isOk())
+            .andExpect(header().string(
+                    HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"reservas.xlsx\""
+            ));
+}
+
+@Test
+@WithMockUser
+void deberiaExportarReservasAunqueNoHayaResultados() throws Exception {
+    ArchivoExportado archivo = new ArchivoExportado(
+            "reservas.xlsx",
+            new byte[0]
+    );
+
+    when(reservaService.exportarReservas(any())).thenReturn(archivo);
+
+    mockMvc.perform(post("/api/v1/reservas/exportar")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"))
+            .andExpect(status().isOk())
+            .andExpect(header().exists(HttpHeaders.CONTENT_DISPOSITION));
+}
+
+@Test
+@WithMockUser
+void deberiaLlamarAlServiceAlExportarReservas() throws Exception {
+    when(reservaService.exportarReservas(any()))
+            .thenReturn(new ArchivoExportado("reservas.xlsx", new byte[0]));
+
+    mockMvc.perform(post("/api/v1/reservas/exportar")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"))
+            .andExpect(status().isOk());
+
+    verify(reservaService).exportarReservas(any());
+}
+
+@Test
+@WithMockUser
+void deberiaDevolverErrorSiFallaElServiceAlExportarReservas() throws Exception {
+    when(reservaService.exportarReservas(any()))
+            .thenThrow(new RuntimeException("Error exportando"));
+
+    mockMvc.perform(post("/api/v1/reservas/exportar")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"))
+            .andExpect(status().is5xxServerError());
+}
 }

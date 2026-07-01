@@ -7,7 +7,17 @@ import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
-import com.cipolflo.server.reservas.dto.*;
+import com.cipolflo.server.reservas.dto.CalculoCostoRequestDto;
+import com.cipolflo.server.reservas.dto.CalculoCostoResponseDto;
+import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
+import com.cipolflo.server.reservas.dto.ListadoReservasRequestDto;
+import com.cipolflo.server.reservas.dto.ListadoReservasResponseDto;
+import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
+import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
+import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
+import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
+import com.cipolflo.server.reservas.dto.ReservaModificacionRequestDto;
+import com.cipolflo.server.reservas.dto.ReservaModificacionResponseDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -20,6 +30,9 @@ import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.reservas.service.ICalculoCostoService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.export.ExportProperties;
+import com.cipolflo.server.shared.export.ExportacionException;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
@@ -31,7 +44,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
+import com.cipolflo.server.shared.export.IExportService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -70,6 +83,11 @@ class ReservaServiceTest {
     @Mock
     private ICalculoCostoService calculoCostoService;
 
+    @Mock
+    private ExportProperties exportProperties;
+
+    @Mock
+    private IExportService exportService;
     @InjectMocks
     private ReservaService reservaService;
 
@@ -745,5 +763,101 @@ class ReservaServiceTest {
 
         assertEquals(response, resultado);
         verify(calculoCostoService).calcularCosto(request);
+    }
+
+    private Reserva crearReservaExport() {
+        return Reserva.crear(
+                TipoReserva.COMUN, 1L, 5L, Procedencia.CAMPING,
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5),
+                null, null, 4, 1, null, null, "Nota", false,
+                BigDecimal.valueOf(1500), null, null
+        );
+    }
+
+    @Test
+    void deberiaExportarReservasCorrectamente() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, null, null, null, null);
+
+        Reserva reserva = crearReservaExport();
+        when(reservaRepository.findAll(any(Specification.class))).thenReturn(List.of(reserva));
+        when(exportProperties.maxFilas()).thenReturn(1000);
+        when(consultaClienteDetalle.getNombresByIds(Set.of(1L))).thenReturn(Map.of(1L, "Juan Pérez"));
+        when(consultaServicioSimple.getNombresByIds(Set.of(5L))).thenReturn(Map.of(5L, "Cabaña"));
+        when(exportService.generarExcel(any(), any(), any(), any())).thenReturn("excel".getBytes());
+
+        ArchivoExportado resultado = reservaService.exportarReservas(filtros);
+
+        assertNotNull(resultado);
+        assertTrue(resultado.getNombre().startsWith("reservas"));
+        assertTrue(resultado.getNombre().endsWith(".xlsx"));
+        assertNotNull(resultado.getContenido());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoNoHayReservasQueExportar() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, null, null, null, null);
+
+        when(reservaRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+        assertThrows(ExportacionException.class, () -> reservaService.exportarReservas(filtros));
+
+        verify(exportService, never()).generarExcel(any(), any(), any(), any());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoSeSuperaElLimiteDeFilas() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, null, null, null, null);
+
+        List<Reserva> reservas = List.of(crearReservaExport(), crearReservaExport());
+        when(reservaRepository.findAll(any(Specification.class))).thenReturn(reservas);
+        when(exportProperties.maxFilas()).thenReturn(1);
+
+        assertThrows(ExportacionException.class, () -> reservaService.exportarReservas(filtros));
+
+        verify(exportService, never()).generarExcel(any(), any(), any(), any());
+    }
+
+    @Test
+    void deberiaFiltrarPorNombreClienteCuandoSeEspecifica() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, "Juan", null, null, null);
+
+        when(consultaClienteDetalle.getIdsByNombre("Juan")).thenReturn(List.of(1L));
+        when(reservaRepository.findAll(any(Specification.class))).thenReturn(List.of(crearReservaExport()));
+        when(exportProperties.maxFilas()).thenReturn(1000);
+        when(consultaClienteDetalle.getNombresByIds(any())).thenReturn(Map.of(1L, "Juan Pérez"));
+        when(consultaServicioSimple.getNombresByIds(any())).thenReturn(Map.of(5L, "Cabaña"));
+        when(exportService.generarExcel(any(), any(), any(), any())).thenReturn("excel".getBytes());
+
+        reservaService.exportarReservas(filtros);
+
+        verify(consultaClienteDetalle).getIdsByNombre("Juan");
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoNombreClienteNoTieneCoincidencias() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, "NoExiste", null, null, null);
+
+        when(consultaClienteDetalle.getIdsByNombre("NoExiste")).thenReturn(List.of());
+
+        assertThrows(ExportacionException.class, () -> reservaService.exportarReservas(filtros));
+
+        verify(reservaRepository, never()).findAll(any(Specification.class));
+    }
+
+    @Test
+    void deberiaResolverNombresDeClientesYServiciosAlExportar() {
+        ListadoReservasRequestDto filtros = new ListadoReservasRequestDto(null, null, null, null, null, null);
+
+        Reserva reserva = crearReservaExport();
+        when(reservaRepository.findAll(any(Specification.class))).thenReturn(List.of(reserva));
+        when(exportProperties.maxFilas()).thenReturn(1000);
+        when(consultaClienteDetalle.getNombresByIds(Set.of(1L))).thenReturn(Map.of(1L, "Juan Pérez"));
+        when(consultaServicioSimple.getNombresByIds(Set.of(5L))).thenReturn(Map.of(5L, "Cabaña"));
+        when(exportService.generarExcel(any(), any(), any(), any())).thenReturn(new byte[0]);
+
+        reservaService.exportarReservas(filtros);
+
+        verify(consultaClienteDetalle).getNombresByIds(Set.of(1L));
+        verify(consultaServicioSimple).getNombresByIds(Set.of(5L));
     }
 }

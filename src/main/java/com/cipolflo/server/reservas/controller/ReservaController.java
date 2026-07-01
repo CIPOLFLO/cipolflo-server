@@ -2,12 +2,15 @@ package com.cipolflo.server.reservas.controller;
 
 import com.cipolflo.server.reservas.dto.*;
 import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-import org.springframework.http.HttpStatus;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -78,4 +81,14 @@ public class ReservaController {
             @Valid @RequestBody CalculoCostoRequestDto dto) {
         return ResponseEntity.ok(reservaService.calcularCosto(dto));
     }
+   @PreAuthorize("isAuthenticated()")
+@PostMapping("/exportar")
+public ResponseEntity<byte[]> exportarReservas(
+        @Valid @RequestBody ListadoReservasRequestDto filtros) {
+    ArchivoExportado archivo = reservaService.exportarReservas(filtros);
+    return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+            .body(archivo.getContenido());
+}
 }
