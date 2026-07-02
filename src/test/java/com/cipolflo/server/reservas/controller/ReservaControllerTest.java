@@ -22,7 +22,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import org.springframework.http.MediaType;
-
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -373,4 +376,54 @@ class ReservaControllerTest {
 
         verify(reservaService, never()).modificar(anyLong(), any());
     }
+
+
+@Test
+@WithMockUser
+void deberiaRetornarNoContentAlConfirmarDocumentacionConUsuarioAutenticado() throws Exception {
+    doNothing().when(reservaService).confirmarDocumentacion(1L);
+
+    mockMvc.perform(patch("/api/v1/reservas/1/documentacion").with(csrf()))
+            .andExpect(status().isNoContent());
+
+    verify(reservaService).confirmarDocumentacion(1L);
+}
+
+@Test
+void deberiaRetornarUnauthorizedAlConfirmarDocumentacionSinAutenticacion() throws Exception {
+    mockMvc.perform(patch("/api/v1/reservas/1/documentacion").with(csrf()))
+            .andExpect(status().isUnauthorized());
+
+    verify(reservaService, never()).confirmarDocumentacion(anyLong());
+}
+
+@Test
+@WithMockUser
+void deberiaRetornarBadRequestAlConfirmarDocumentacionConIdCero() throws Exception {
+    mockMvc.perform(patch("/api/v1/reservas/0/documentacion").with(csrf()))
+            .andExpect(status().isBadRequest());
+
+    verify(reservaService, never()).confirmarDocumentacion(anyLong());
+}
+
+@Test
+@WithMockUser
+void deberiaRetornarBadRequestAlConfirmarDocumentacionConIdNegativo() throws Exception {
+    mockMvc.perform(patch("/api/v1/reservas/-1/documentacion").with(csrf()))
+            .andExpect(status().isBadRequest());
+
+    verify(reservaService, never()).confirmarDocumentacion(anyLong());
+}
+
+@Test
+@WithMockUser
+void deberiaRetornarNotFoundAlConfirmarDocumentacionDeReservaInexistente() throws Exception {
+    doThrow(new ReservaNotFoundException(99L))
+            .when(reservaService).confirmarDocumentacion(99L);
+
+    mockMvc.perform(patch("/api/v1/reservas/99/documentacion").with(csrf()))
+            .andExpect(status().isNotFound());
+
+    verify(reservaService).confirmarDocumentacion(99L);
+}
 }

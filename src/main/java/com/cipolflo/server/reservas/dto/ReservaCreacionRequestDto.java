@@ -62,4 +62,8 @@ public class ReservaCreacionRequestDto {
     private String rut;
 
     private String notas;
+
+    private Boolean requiereDocumentacion;
+
+    private Boolean requiereSena;
 }

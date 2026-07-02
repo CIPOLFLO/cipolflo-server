@@ -216,7 +216,7 @@ class ServicioServiceTest {
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
@@ -253,7 +253,7 @@ class ServicioServiceTest {
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
@@ -300,7 +300,7 @@ class ServicioServiceTest {
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
@@ -573,7 +573,7 @@ class ServicioServiceTest {
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 null, null, null, null, null, null, null, null,
-                false
+                false,true
         );
         ReflectionTestUtils.setField(reservaProxima, "id", 2L);
 
@@ -801,7 +801,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
@@ -863,7 +863,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva, "id", 1L);
 
@@ -892,7 +892,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 fechaEntrada,
                 fechaSalida,
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva, "id", 5L);
 
@@ -910,7 +910,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         assertEquals(fechaEntrada, dto.getFechaEntrada());
         assertEquals(fechaSalida, dto.getFechaSalida());
         assertFalse(dto.getPago());
-        assertEquals(EstadoReserva.PENDIENTE, dto.getEstado());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
     }
 
     @Test
@@ -929,7 +929,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva1, "id", 1L);
 
@@ -941,7 +941,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 LocalDate.now().plusDays(3),
                 LocalDate.now().plusDays(4),
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva2, "id", 2L);
 
@@ -979,7 +979,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
                 LocalDate.of(2026, 6, 17),
                 LocalDate.of(2026, 6, 19),
                 null, null, null, null, null, null, null, null,
-                false
+                false,false
         );
         ReflectionTestUtils.setField(reserva, "id", 5L);
 
@@ -993,7 +993,7 @@ void deberiaPermitirCamposOpcionalesNulosAlRegistrar() {
         assertEquals(1, resultado.size());
         ServicioReservaOcupacionDto dto = resultado.get(0);
         assertEquals(5L, dto.reservaId());
-        assertEquals(EstadoReserva.PENDIENTE, dto.estado());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.estado());
         assertEquals(LocalDate.of(2026, 6, 17), dto.fechaInicio());
         assertEquals(LocalDate.of(2026, 6, 19), dto.fechaFin());
         verify(reservaService).obtenerOcupacionPorServicioEnRango(servicioId, desde, hasta);

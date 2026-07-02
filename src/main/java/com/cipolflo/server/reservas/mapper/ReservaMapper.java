@@ -33,6 +33,7 @@ public class ReservaMapper {
                 reserva.getPago(),
                 reserva.getRequiereDocumentacion(),
                 reserva.getTieneDocumentacion(),
+                reserva.getRequiereSena(),
                 reserva.getRut(),
                 // TODO: temporal - nombre del RUT retornado hasta definir manejo de clientes RUT
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(reserva.getTipoReserva()) ? reserva.getNombreRut() : null,
@@ -45,4 +46,4 @@ public class ReservaMapper {
                 reserva.getUpdatedBy()
         );
     }
-}
+} 

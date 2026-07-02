@@ -78,4 +78,11 @@ public class ReservaController {
             @Valid @RequestBody CalculoCostoRequestDto dto) {
         return ResponseEntity.ok(reservaService.calcularCosto(dto));
     }
+    @PreAuthorize("isAuthenticated()")
+@PatchMapping("/{id}/documentacion")
+public ResponseEntity<Void> confirmarDocumentacion(
+        @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id) {
+    reservaService.confirmarDocumentacion(id);
+    return ResponseEntity.noContent().build();
+}
 }

@@ -16,7 +16,6 @@ import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
-import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.shared.ZonaHoraria;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -50,7 +49,6 @@ public class ReservaService implements IReservaService {
     private final IRegistroParticularService registroParticularService;
     private final ReservaCreacionValidator reservaCreacionValidator;
     private final ReservaModificacionValidator reservaModificacionValidator;
-    private final IServicioRequiereDocumentacion servicioRequiereDocumentacion;
     private final IConsultaClienteDetalle consultaClienteDetalle;
     private final IConsultaServicioSimple consultaServicioSimple;
     private final ICalculoCostoService calculoCostoService;
@@ -60,7 +58,6 @@ public class ReservaService implements IReservaService {
             IRegistroParticularService registroParticularService,
             ReservaCreacionValidator reservaCreacionValidator,
             ReservaModificacionValidator reservaModificacionValidator,
-            IServicioRequiereDocumentacion servicioRequiereDocumentacion,
             IConsultaServicioSimple consultaServicioSimple,
             IConsultaClienteDetalle consultaClienteDetalle,
             ICalculoCostoService calculoCostoService
@@ -69,7 +66,6 @@ public class ReservaService implements IReservaService {
         this.registroParticularService = registroParticularService;
         this.reservaCreacionValidator = reservaCreacionValidator;
         this.reservaModificacionValidator = reservaModificacionValidator;
-        this.servicioRequiereDocumentacion = servicioRequiereDocumentacion;
         this.consultaClienteDetalle = consultaClienteDetalle;
         this.consultaServicioSimple = consultaServicioSimple;
         this.calculoCostoService = calculoCostoService;
@@ -123,7 +119,6 @@ public class ReservaService implements IReservaService {
     public ReservaCreacionResponseDto registrar(ReservaCreacionRequestDto dto) {
         reservaCreacionValidator.validar(dto);
 
-        // TODO: usar dto.getTipoCliente() para diferenciar el cálculo de costo según tipo de cliente (ticket pendiente)
         Long clienteId;
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
             RegistroParticularRequestDto nuevoCliente = new RegistroParticularRequestDto();
@@ -137,8 +132,6 @@ public class ReservaService implements IReservaService {
         } else {
             clienteId = dto.getClienteId();
         }
-
-        boolean requiereDocumentacion = servicioRequiereDocumentacion.requiereDocumentacion(dto.getServicioId());
 
         Reserva reserva = Reserva.crear(
                 dto.getTipoReserva(),
@@ -155,12 +148,11 @@ public class ReservaService implements IReservaService {
                 dto.getRut(),
                 dto.getNombre(),
                 dto.getNotas(),
-                requiereDocumentacion
+                Boolean.TRUE.equals(dto.getRequiereDocumentacion()),
+                Boolean.TRUE.equals(dto.getRequiereSena())
         );
 
-        // TODO: calcular y asignar importe llamando a ServicioCalculoImporte antes de guardar (ticket pendiente)
         Reserva guardada = reservaRepository.save(reserva);
-
         return new ReservaCreacionResponseDto(guardada.getId());
     }
 
@@ -216,13 +208,14 @@ public class ReservaService implements IReservaService {
         Page<ListadoReservasResponseDto> dtoPage = page.map(r -> new ListadoReservasResponseDto(
                 r.getId(),
                 r.getClienteId(),
-                // TODO: temporal - usar nombreRut como nombre de cliente para reservas sin fines de lucro hasta definir manejo de clientes RUT
                 r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : r.getNombreRut(),
                 r.getServicioId(),
                 nombresServicios.get(r.getServicioId()),
                 r.getFechaEntrada(),
                 r.getFechaSalida(),
-                r.getEstado()
+                r.getEstado(),
+                r.getRequiereDocumentacion(),
+                r.getTieneDocumentacion()
         ));
 
         return PaginationMapper.toPageResponse(dtoPage);
@@ -256,12 +249,20 @@ public class ReservaService implements IReservaService {
         );
 
         reservaRepository.save(reserva);
-
         return new ReservaModificacionResponseDto(reserva.getId());
     }
 
     @Override
     public CalculoCostoResponseDto calcularCosto(CalculoCostoRequestDto request) {
         return calculoCostoService.calcularCosto(request);
+    }
+
+    @Override
+    @Transactional
+    public void confirmarDocumentacion(Long id) {
+        Reserva reserva = reservaRepository.findById(id)
+                .orElseThrow(() -> new ReservaNotFoundException(id));
+        reserva.recibirDocumentacion();
+        reservaRepository.save(reserva);
     }
 }

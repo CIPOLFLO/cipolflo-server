@@ -1,0 +1,3 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/migrations/DEV-139/add_documentacion_sena_to_reserva.sql

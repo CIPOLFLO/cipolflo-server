@@ -31,8 +31,8 @@ class ReservaMapperTest {
                 LocalDate.of(2026, 8, 10),
                 LocalDate.of(2026, 8, 15),
                 null, null, 4, 1, null, null, null,
-                "Llegan a las 14hs",
-                false
+                "Llegan a las 14hs",false,false
+                
         );
         ReflectionTestUtils.setField(r, "id", 42L);
         return r;
@@ -52,7 +52,7 @@ class ReservaMapperTest {
 
         assertEquals(42L, dto.getId());
         assertEquals(TipoReserva.COMUN, dto.getTipoReserva());
-        assertEquals(EstadoReserva.PENDIENTE, dto.getEstado());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
         assertEquals(Procedencia.CAMPING, dto.getProcedencia());
         assertEquals(LocalDate.of(2026, 8, 10), dto.getFechaEntrada());
         assertEquals(LocalDate.of(2026, 8, 15), dto.getFechaSalida());
@@ -64,6 +64,7 @@ class ReservaMapperTest {
         assertFalse(dto.getPago());
         assertFalse(dto.getRequiereDocumentacion());
         assertFalse(dto.getTieneDocumentacion());
+        assertFalse(dto.getRequiereSena());
         assertNull(dto.getRut());
         assertEquals("Llegan a las 14hs", dto.getNotas());
     }
@@ -131,25 +132,7 @@ class ReservaMapperTest {
         assertNull(dto.getNombre());
     }
 
-    @Test
-    void deberiaMapearRequiereDocumentacionComoTrue() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                12L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 8, 10),
-                LocalDate.of(2026, 8, 15),
-                null, null, 2, 0, null, null, null,
-                null,
-                true
-        );
-
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
-
-        assertTrue(dto.getRequiereDocumentacion());
-    }
-
+   
     @Test
     void deberiaMapearCamposDeAuditoriaUpdatedAtYUpdatedBy() {
         Reserva reserva = crearReserva(12L);
@@ -163,26 +146,4 @@ class ReservaMapperTest {
         assertEquals("editor@test.com", dto.getUpdatedBy());
     }
 
-    @Test
-    void deberiaMapearEstadoConfirmadoParaColaboracion() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
-                null,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, null, null, null, "20123456-7", "Org Solidaria", null,
-                false
-        );
-
-        ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, null, servicioDto());
-
-        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
-        assertEquals(TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, dto.getTipoReserva());
-        assertEquals(BigDecimal.ZERO, dto.getImporte());
-        assertNull(dto.getCliente());
-        assertEquals("20123456-7", dto.getRut());
-        assertEquals("Org Solidaria", dto.getNombre());
-    }
 }

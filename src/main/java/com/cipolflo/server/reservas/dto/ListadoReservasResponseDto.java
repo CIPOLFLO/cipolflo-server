@@ -17,7 +17,8 @@ public class ListadoReservasResponseDto implements ResponseDto {
     private final LocalDate fechaEntrada;
     private final LocalDate fechaSalida;
     private final EstadoReserva estadoReserva;
-
+    private final boolean requiereDocumentacion;
+    private final boolean tieneDocumentacion;
     public ListadoReservasResponseDto(
             Long id,
             Long clienteId,
@@ -26,7 +27,10 @@ public class ListadoReservasResponseDto implements ResponseDto {
             String servicioNombre,
             LocalDate fechaEntrada,
             LocalDate fechaSalida,
-            EstadoReserva estadoReserva
+            EstadoReserva estadoReserva,
+            boolean requiereDocumentacion,
+            boolean tieneDocumentacion
+            
     ){
         this.id = id;
         this.clienteId = clienteId;
@@ -36,5 +40,8 @@ public class ListadoReservasResponseDto implements ResponseDto {
         this.fechaEntrada = fechaEntrada;
         this.fechaSalida = fechaSalida;
         this.estadoReserva = estadoReserva;
+        this.requiereDocumentacion = requiereDocumentacion;
+        this.tieneDocumentacion = tieneDocumentacion;
+        
     }
 }

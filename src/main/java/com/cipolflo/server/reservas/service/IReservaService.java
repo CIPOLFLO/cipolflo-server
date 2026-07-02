@@ -28,4 +28,6 @@ public interface IReservaService {
     PageResponse<ListadoReservasResponseDto> getListadoReservas(ListadoReservasRequestDto filtros,PageRequestDto pageRequest);
 
     ReservaModificacionResponseDto modificar(Long id, ReservaModificacionRequestDto dto);
+
+    void confirmarDocumentacion(Long id);
 }

@@ -66,10 +66,8 @@ public class Reserva extends AuditableEntity {
 
     private Integer cantidad;
 
-    // TODO: definir manejo del RUT (validación de formato, tabla de organizaciones, etc.)
     private String rut;
 
-    // TODO: temporal - nombre de la organización con RUT hasta definir manejo de clientes RUT
     private String nombreRut;
 
     @Column(nullable = false)
@@ -88,13 +86,17 @@ public class Reserva extends AuditableEntity {
     @Setter(AccessLevel.NONE)
     private Boolean tieneDocumentacion = false;
 
+    @Column(nullable = false)
+    @Setter(AccessLevel.NONE)
+    private Boolean requiereSena = false;
+
     private String notas;
 
     public static Reserva crear(TipoReserva tipoReserva, Long clienteId, Long servicioId, Procedencia procedencia,
                                 LocalDate fechaEntrada, LocalDate fechaSalida, LocalTime horaInicio, LocalTime horaFin,
                                 Integer cantidadTotal, Integer cantidadMenores,
                                 Integer cantidad, String rut, String nombre, String notas,
-                                boolean requiereDocumentacionPrevia) {
+                                boolean requiereDocumentacion, boolean requiereSena) {
         Reserva r = new Reserva();
         r.tipoReserva = tipoReserva;
         r.clienteId = clienteId;
@@ -112,8 +114,9 @@ public class Reserva extends AuditableEntity {
             r.nombreRut = nombre.trim();
         }
         r.notas = notas;
-        r.requiereDocumentacion = requiereDocumentacionPrevia;
-        r.estado = resolverEstado(r.tipoReserva);
+        r.requiereDocumentacion = requiereDocumentacion;
+        r.requiereSena = requiereSena;
+        r.estado = resolverEstado(tipoReserva, requiereDocumentacion, requiereSena);
         if (tipoReserva == TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO) {
             r.importe = BigDecimal.ZERO;
         }
@@ -162,7 +165,7 @@ public class Reserva extends AuditableEntity {
             case PENDIENTE   -> nuevoEstado == EstadoReserva.CONFIRMADA || nuevoEstado == EstadoReserva.CANCELADA;
             case CONFIRMADA  -> nuevoEstado == EstadoReserva.EN_CURSO || nuevoEstado == EstadoReserva.CANCELADA;
             case EN_CURSO    -> nuevoEstado == EstadoReserva.FINALIZADA;
-            case FINALIZADA,CANCELADA  -> false;
+            case FINALIZADA, CANCELADA -> false;
         };
     }
 
@@ -186,11 +189,13 @@ public class Reserva extends AuditableEntity {
 
     // TODO: agregar método confirmar() cuando se implemente el ticket de confirmación manual de reserva
 
-    private static EstadoReserva resolverEstado(TipoReserva tipoReserva) {
-        if(tipoReserva.equals(TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO)){
+    private static EstadoReserva resolverEstado(TipoReserva tipoReserva, boolean requiereDocumentacion, boolean requiereSena) {
+        if (TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(tipoReserva)) {
             return EstadoReserva.CONFIRMADA;
-        }else{
+        }
+        if (requiereDocumentacion || requiereSena) {
             return EstadoReserva.PENDIENTE;
         }
+        return EstadoReserva.CONFIRMADA;
     }
 }
