@@ -35,6 +35,7 @@ import com.cipolflo.server.shared.export.ExportProperties;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
+import com.cipolflo.server.shared.pdf.IPdfGeneratorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -88,6 +89,9 @@ class ReservaServiceTest {
 
     @Mock
     private IExportService exportService;
+
+    @Mock
+    private IPdfGeneratorService pdfGeneratorService;
     @InjectMocks
     private ReservaService reservaService;
 
@@ -859,5 +863,38 @@ class ReservaServiceTest {
 
         verify(consultaClienteDetalle).getNombresByIds(Set.of(1L));
         verify(consultaServicioSimple).getNombresByIds(Set.of(5L));
+    }
+
+    @Test
+    void deberiaGenerarComprobanteCorrectamente() {
+        Long clienteId = 5L;
+        Long servicioId = 10L;
+        Reserva reserva = crearReservaComun(clienteId, servicioId);
+
+        ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
+                clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO);
+        ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
+                servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
+
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(consultaClienteDetalle.getDetallClienteSimple(clienteId)).thenReturn(clienteDto);
+        when(consultaServicioSimple.getDetalleServicioSimple(servicioId)).thenReturn(servicioDto);
+        when(pdfGeneratorService.generar(any())).thenReturn(new byte[]{1, 2, 3});
+
+        ArchivoExportado archivo = reservaService.generarComprobante(1L);
+
+        assertNotNull(archivo);
+        assertTrue(archivo.getNombre().matches("comprobante-reserva-1_\\d{4}-\\d{2}-\\d{2}_\\d{4}\\.pdf"));
+        assertArrayEquals(new byte[]{1, 2, 3}, archivo.getContenido());
+        verify(pdfGeneratorService).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarNotFoundAlGenerarComprobanteCuandoReservaNoExiste() {
+        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ReservaNotFoundException.class, () -> reservaService.generarComprobante(99L));
+
+        verify(pdfGeneratorService, never()).generar(any());
     }
 }

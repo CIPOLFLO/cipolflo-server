@@ -1003,6 +1003,7 @@ Retorna el detalle completo de una reserva.
   "cantidadMenores": 1,
   "cantidad": null,
   "importe": 15000.00,
+  "montoImpago": 0.00,
   "pago": true,
   "requiereDocumentacion": false,
   "tieneDocumentacion": false,
@@ -1036,6 +1037,28 @@ Retorna el detalle completo de una reserva.
 > El campo `cliente` es `null` cuando la reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO` sin cliente asociado (solo `rut`). En ese caso el campo `nombre` contiene el nombre de la organización _(temporal — hasta definir manejo de clientes RUT)_.
 > `importe` y `formaPago` son `null` mientras la reserva no haya sido pagada.
 >>>>>>> origin/develop
+
+**Errores:**
+
+| HTTP Status | Código                    | Cuándo ocurre                         |
+|-------------|---------------------------|---------------------------------------|
+| 400         | `ID_INVALIDO`             | `id` no es un entero positivo         |
+| 404         | `RESERVA_NO_ENCONTRADA`   | No existe una reserva con ese `id`    |
+| 401         | —                         | Token ausente, inválido o expirado    |
+
+---
+
+### `GET /api/v1/reservas/{id}/comprobante`
+Descarga el comprobante en PDF de una reserva (para entregar al cliente o archivar). El PDF se genera en el backend con Apache PDFBox y contiene: tipo de reserva, estado, procedencia, fechas de entrada/salida, horario (si aplica), cantidades, importe, si está pago, cliente asociado (nombre, cédula, tipo de cliente), servicio asociado (nombre, procedencia, modalidad de precio) y notas. Todo comprobante incluye arriba, de forma automática, la fecha/hora de generación del documento.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:** cuerpo binario.
+
+| Header                | Valor                                                        |
+|-----------------------|--------------------------------------------------------------|
+| `Content-Type`        | `application/pdf`                                             |
+| `Content-Disposition` | `attachment; filename="comprobante-reserva-{id}_yyyy-MM-dd_HHmm.pdf"` |
 
 **Errores:**
 

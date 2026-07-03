@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.util.List;
 import org.springframework.http.HttpHeaders;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import org.springframework.http.MediaType;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -444,4 +445,55 @@ void deberiaDevolverErrorSiFallaElServiceAlExportarReservas() throws Exception {
                     .content("{}"))
             .andExpect(status().is5xxServerError());
 }
+
+    // ── GET /api/v1/reservas/{id}/comprobante ──────────────────────────────────
+
+    @Test
+    @WithMockUser
+    void deberiaDescargarComprobanteConHeadersCorrectos() throws Exception {
+        ArchivoExportado archivo = new ArchivoExportado(
+                "comprobante-reserva-1_2026-07-02_1030.pdf",
+                "pdf".getBytes()
+        );
+        when(reservaService.generarComprobante(1L)).thenReturn(archivo);
+
+        mockMvc.perform(get("/api/v1/reservas/1/comprobante"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"comprobante-reserva-1_2026-07-02_1030.pdf\""
+                ));
+
+        verify(reservaService).generarComprobante(1L);
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlDescargarComprobanteSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/1/comprobante"))
+                .andExpect(status().isUnauthorized());
+
+        verify(reservaService, never()).generarComprobante(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlDescargarComprobanteConIdCero() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/0/comprobante"))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).generarComprobante(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlDescargarComprobanteDeReservaInexistente() throws Exception {
+        when(reservaService.generarComprobante(99L))
+                .thenThrow(new ReservaNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/reservas/99/comprobante"))
+                .andExpect(status().isNotFound());
+
+        verify(reservaService).generarComprobante(99L);
+    }
 }

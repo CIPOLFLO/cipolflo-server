@@ -31,4 +31,6 @@ public interface IReservaService {
     ReservaModificacionResponseDto modificar(Long id, ReservaModificacionRequestDto dto);
 
     ArchivoExportado exportarReservas(ListadoReservasRequestDto filtros);
+
+    ArchivoExportado generarComprobante(Long id);
 }
