@@ -1049,7 +1049,7 @@ Retorna el detalle completo de una reserva.
 ---
 
 ### `GET /api/v1/reservas/{id}/comprobante`
-Descarga el comprobante en PDF de una reserva (para entregar al cliente o archivar). El PDF se genera en el backend con Apache PDFBox y contiene: tipo de reserva, estado, procedencia, fechas de entrada/salida, horario (si aplica), cantidades, importe, si está pago, cliente asociado (nombre, cédula, tipo de cliente), servicio asociado (nombre, procedencia, modalidad de precio) y notas. Todo comprobante incluye arriba, de forma automática, la fecha/hora de generación del documento.
+Descarga el comprobante en PDF de una reserva (para entregar al cliente o archivar). El PDF se genera en el backend con Apache PDFBox y contiene: tipo de reserva, estado, fechas de entrada/salida, horario (si aplica), cantidades, importe (costo total), si está pago y saldo a pagar (solo cuando la reserva no está paga), cliente asociado (nombre, documento, tipo de cliente), servicio asociado (nombre y procedencia) y notas. Todo comprobante incluye arriba, de forma automática, la fecha/hora de generación del documento.
 
 **Path param:** `id` — integer positivo
 

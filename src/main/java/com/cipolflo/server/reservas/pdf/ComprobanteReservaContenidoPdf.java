@@ -32,6 +32,7 @@ public class ComprobanteReservaContenidoPdf implements ContenidoPdf {
     @Override
     public void escribir(PdfWriter writer) {
         writer.escribirTitulo("Comprobante de Reserva");
+        writer.escribirTitulo("Asociación Civil Círculo Policial de Flores");
         writer.linea();
 
         escribirDatosReserva(writer);
@@ -59,7 +60,7 @@ public class ComprobanteReservaContenidoPdf implements ContenidoPdf {
         }
         writer.escribirCampo("Costo total", importe(detalle.getImporte()));
         writer.escribirCampo("Pago", booleano(detalle.getPago()));
-        if(!detalle.getPago()){
+        if(!Boolean.TRUE.equals(detalle.getPago())){
             writer.escribirCampo("Saldo a pagar",importe(detalle.getMontoImpago()));
         }
         writer.espacio(8f);

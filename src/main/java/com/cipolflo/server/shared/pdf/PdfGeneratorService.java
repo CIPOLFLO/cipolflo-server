@@ -25,7 +25,7 @@ public class PdfGeneratorService implements IPdfGeneratorService {
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
             PdfWriter writer = new PdfWriter(document);
-            writer.escribirFechaGeneracion();
+            writer.escribirEncabezado();
             contenido.escribir(writer);
             writer.cerrar();
 

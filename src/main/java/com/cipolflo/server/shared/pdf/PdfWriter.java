@@ -6,8 +6,10 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -36,6 +38,13 @@ public class PdfWriter {
     private static final float INTERLINEADO = 16f;
     private static final float SANGRIA = 12f;
 
+    /** 1 cm expresado en puntos PDF (unidad interna: 72 pt = 1 pulgada = 2.54 cm). */
+    private static final float CM = 28.3465f;
+    /** Lado del recuadro del logo institucional (~2 cm). El logo es cuadrado, no se deforma. */
+    private static final float LOGO_LADO = 2 * CM;
+    /** Ruta en el classpath del logo institucional que va en el encabezado de todo comprobante. */
+    private static final String LOGO_RUTA = "/assets/images/Logo_policia.png";
+
     private static final PDType1Font FUENTE_REGULAR =
             new PDType1Font(Standard14Fonts.FontName.HELVETICA);
     private static final PDType1Font FUENTE_NEGRITA =
@@ -61,17 +70,29 @@ public class PdfWriter {
     }
 
     /**
-     * Dibuja la fecha/hora actual (formato {@code dd/MM/yyyy HH:mm}, zona por defecto
-     * del sistema) como encabezado común. Pensado para invocarse desde la base, no
-     * desde cada documento.
+     * Dibuja el encabezado común a todo comprobante: el logo institucional en un
+     * recuadro de ~2 cm arriba a la izquierda y la fecha/hora de generación (formato
+     * {@code dd/MM/yyyy HH:mm}, zona por defecto del sistema) arriba a la derecha,
+     * centrada verticalmente respecto del logo. Luego posiciona el cursor debajo del
+     * elemento más alto (el logo) para que el cuerpo no lo pise. Pensado para invocarse
+     * desde la base, no desde cada documento.
      */
-    public void escribirFechaGeneracion() {
+    public void escribirEncabezado() {
         String fechaHora = LocalDateTime
                 .now(ZoneId.systemDefault())
                 .format(FORMATO_FECHA_GENERACION);
-        dibujarLinea(fechaHora, FUENTE_REGULAR, TAMANO_FECHA, MARGEN);
-        y -= INTERLINEADO;
-        espacio(INTERLINEADO / 2);
+
+        // Logo institucional: arriba a la izquierda, con el borde superior alineado al tope.
+        dibujarImagen(LOGO_RUTA, MARGEN, tope - LOGO_LADO, LOGO_LADO, LOGO_LADO);
+
+        // Fecha de generación: arriba a la derecha, alineada en altura con el centro del logo.
+        float anchoFecha = anchoTexto(fechaHora, FUENTE_REGULAR, TAMANO_FECHA);
+        float fechaX = MARGEN + anchoContenido - anchoFecha;
+        y = tope - LOGO_LADO / 2 - TAMANO_FECHA / 2;
+        dibujarLinea(fechaHora, FUENTE_REGULAR, TAMANO_FECHA, fechaX);
+
+        // El cuerpo arranca debajo del logo (el elemento más alto del encabezado).
+        y = tope - LOGO_LADO - INTERLINEADO;
     }
 
     /** Escribe un título centrado en negrita, con espacio antes y después. */
@@ -184,6 +205,19 @@ public class PdfWriter {
             stream.endText();
         } catch (IOException e) {
             throw new UncheckedIOException("Error al escribir texto en el PDF", e);
+        }
+    }
+
+    private void dibujarImagen(String rutaClasspath, float x, float y, float ancho, float alto) {
+        try (InputStream in = PdfWriter.class.getResourceAsStream(rutaClasspath)) {
+            if (in == null) {
+                throw new IOException("No se encontró el recurso en el classpath: " + rutaClasspath);
+            }
+            PDImageXObject imagen = PDImageXObject.createFromByteArray(
+                    document, in.readAllBytes(), rutaClasspath);
+            stream.drawImage(imagen, x, y, ancho, alto);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Error al dibujar la imagen en el PDF", e);
         }
     }
 
