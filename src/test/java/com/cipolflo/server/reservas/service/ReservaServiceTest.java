@@ -721,4 +721,56 @@ class ReservaServiceTest {
         inOrder.verify(reservaModificacionValidator).validar(eq(reserva), eq(dto));
         inOrder.verify(reservaRepository).save(reserva);
     }
+
+    // ── confirmarDocumentacion ────────────────────────────────────────────────
+
+    @Test
+    void deberiaConfirmarDocumentacionYPasarAConfirmadaCuandoNoRequiereSena() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, null,
+                true, false
+        );
+        assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(reserva)).thenReturn(reserva);
+
+        reservaService.confirmarDocumentacion(reservaId);
+
+        assertTrue(reserva.getTieneDocumentacion());
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+        verify(reservaRepository).save(reserva);
+    }
+
+    @Test
+    void noDeberiaConfirmarReservaSiRequiereSenaYNoFuePagadaAunConfirmandoDocumentacion() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, null,
+                true, true
+        );
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(reserva)).thenReturn(reserva);
+
+        reservaService.confirmarDocumentacion(reservaId);
+
+        assertTrue(reserva.getTieneDocumentacion());
+        assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
+    }
+
+    @Test
+    void deberiaLanzarNotFoundAlConfirmarDocumentacionDeReservaInexistente() {
+        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ReservaNotFoundException.class,
+                () -> reservaService.confirmarDocumentacion(99L));
+
+        verify(reservaRepository, never()).save(any());
+    }
 }

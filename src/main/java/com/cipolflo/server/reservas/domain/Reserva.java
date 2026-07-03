@@ -124,32 +124,42 @@ public class Reserva extends AuditableEntity {
     }
 
     public void confirmarPago(BigDecimal importe, FormaPago formaPago) {
-        if (this.pago) {
-            throw new IllegalStateException("La reserva ya tiene el pago confirmado");
-        }
-        if (importe == null) {
-            throw new IllegalArgumentException("El importe no puede ser nulo");
-        }
-        if (formaPago == null) {
-            throw new IllegalArgumentException("La forma de pago no puede ser nula");
-        }
-        if (importe.signum() <= 0) {
-            throw new IllegalArgumentException("El importe debe ser mayor que cero");
-        }
-        this.importe = importe;
-        this.formaPago = formaPago;
-        this.pago = true;
-        if (this.estado == EstadoReserva.PENDIENTE && this.tieneDocumentacion) {
-            cambiarEstado(EstadoReserva.CONFIRMADA);
-        }
+    if (this.pago) {
+        throw new IllegalStateException("La reserva ya tiene el pago confirmado");
     }
+    if (importe == null) {
+        throw new IllegalArgumentException("El importe no puede ser nulo");
+    }
+    if (formaPago == null) {
+        throw new IllegalArgumentException("La forma de pago no puede ser nula");
+    }
+    if (importe.signum() <= 0) {
+        throw new IllegalArgumentException("El importe debe ser mayor que cero");
+    }
+    this.importe = importe;
+    this.formaPago = formaPago;
+    this.pago = true;
+    confirmarSiCorresponde();
+}
 
-    public void recibirDocumentacion() {
-        this.tieneDocumentacion = true;
-        if (this.estado == EstadoReserva.PENDIENTE && this.pago) {
-            cambiarEstado(EstadoReserva.CONFIRMADA);
-        }
+public void recibirDocumentacion() {
+    this.tieneDocumentacion = true;
+    confirmarSiCorresponde();
+}
+
+private void confirmarSiCorresponde() {
+    if (this.estado == EstadoReserva.PENDIENTE && documentacionCumplida() && senaCumplida()) {
+        cambiarEstado(EstadoReserva.CONFIRMADA);
     }
+}
+
+private boolean documentacionCumplida() {
+    return !this.requiereDocumentacion || this.tieneDocumentacion;
+}
+
+private boolean senaCumplida() {
+    return !this.requiereSena || this.pago;
+}
 
     public void cambiarEstado(EstadoReserva nuevoEstado) {
         if (!esTransicionValida(nuevoEstado)) {
