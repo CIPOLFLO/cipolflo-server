@@ -8,5 +8,6 @@ public enum Concepto {
     PAGO_CUOTA,
     OSE,
     SUELDOS,
-    OTRO
+    OTRO,
+    DEVOLUCION_RESERVA
 }

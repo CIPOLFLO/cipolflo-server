@@ -1,11 +1,12 @@
 package com.cipolflo.server.reservas.controller;
 
-import com.cipolflo.server.reservas.dto.ListadoReservasRequestDto;
-import com.cipolflo.server.reservas.dto.ListadoReservasResponseDto;
-import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
-import com.cipolflo.server.reservas.dto.ReservaModificacionResponseDto;
+import com.cipolflo.server.reservas.dto.*;
+import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
+import com.cipolflo.server.reservas.exception.ReservaValidacionException;
+import com.cipolflo.server.reservas.service.ICancelacionReservaService;
 import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -19,10 +20,14 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+
 import org.springframework.http.MediaType;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -30,9 +35,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
         controllers = ReservaController.class,
@@ -50,6 +53,8 @@ class ReservaControllerTest {
     private JwtDecoder jwtDecoder;
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+    @MockitoBean
+    private ICancelacionReservaService cancelacionReservaService;
 
     @Test
     @WithMockUser
@@ -379,8 +384,8 @@ class ReservaControllerTest {
         verify(reservaService, never()).modificar(anyLong(), any());
     }
     @Test
-@WithMockUser
-void deberiaExportarReservasCorrectamente() throws Exception {
+    @WithMockUser
+    void deberiaExportarReservasCorrectamente() throws Exception {
     ArchivoExportado archivo = new ArchivoExportado(
             "reservas.xlsx",
             "excel".getBytes()
@@ -397,51 +402,206 @@ void deberiaExportarReservasCorrectamente() throws Exception {
                     HttpHeaders.CONTENT_DISPOSITION,
                     "attachment; filename=\"reservas.xlsx\""
             ));
-}
+    }
 
-@Test
-@WithMockUser
-void deberiaExportarReservasAunqueNoHayaResultados() throws Exception {
-    ArchivoExportado archivo = new ArchivoExportado(
+    @Test
+    @WithMockUser
+    void deberiaExportarReservasAunqueNoHayaResultados() throws Exception {
+        ArchivoExportado archivo = new ArchivoExportado(
             "reservas.xlsx",
             new byte[0]
-    );
+        );
 
-    when(reservaService.exportarReservas(any())).thenReturn(archivo);
+        when(reservaService.exportarReservas(any())).thenReturn(archivo);
 
-    mockMvc.perform(post("/api/v1/reservas/exportar")
+        mockMvc.perform(post("/api/v1/reservas/exportar")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}"))
             .andExpect(status().isOk())
             .andExpect(header().exists(HttpHeaders.CONTENT_DISPOSITION));
-}
+    }
 
-@Test
-@WithMockUser
-void deberiaLlamarAlServiceAlExportarReservas() throws Exception {
-    when(reservaService.exportarReservas(any()))
+    @Test
+    @WithMockUser
+    void deberiaLlamarAlServiceAlExportarReservas() throws Exception {
+        when(reservaService.exportarReservas(any()))
             .thenReturn(new ArchivoExportado("reservas.xlsx", new byte[0]));
 
-    mockMvc.perform(post("/api/v1/reservas/exportar")
+        mockMvc.perform(post("/api/v1/reservas/exportar")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}"))
             .andExpect(status().isOk());
 
-    verify(reservaService).exportarReservas(any());
-}
+        verify(reservaService).exportarReservas(any());
+    }
 
-@Test
-@WithMockUser
-void deberiaDevolverErrorSiFallaElServiceAlExportarReservas() throws Exception {
-    when(reservaService.exportarReservas(any()))
+    @Test
+    @WithMockUser
+    void deberiaDevolverErrorSiFallaElServiceAlExportarReservas() throws Exception {
+        when(reservaService.exportarReservas(any()))
             .thenThrow(new RuntimeException("Error exportando"));
 
-    mockMvc.perform(post("/api/v1/reservas/exportar")
+        mockMvc.perform(post("/api/v1/reservas/exportar")
                     .with(csrf())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("{}"))
             .andExpect(status().is5xxServerError());
-}
+    }
+    @Test
+    @WithMockUser
+    void deberiaVerificarCancelacionSinPagos() throws Exception {
+        ReservaCancelacionCheckResponseDto response = new ReservaCancelacionCheckResponseDto(
+                true,
+                List.of(),
+                BigDecimal.ZERO
+        );
+
+        when(cancelacionReservaService.verificarCancelacion(1L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.puedeCancelarseDirectamente").value(true))
+                .andExpect(jsonPath("$.importeTotalPagos").value(0));
+
+        verify(cancelacionReservaService).verificarCancelacion(1L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaVerificarCancelacionConPagos() throws Exception {
+        ReservaCancelacionCheckResponseDto response = new ReservaCancelacionCheckResponseDto(
+                false,
+                List.of(new PagoAsociadoReservaDto(
+                        1L,
+                        LocalDate.of(2026, 7, 1),
+                        BigDecimal.valueOf(500),
+                        FormaPago.EFECTIVO
+                )),
+                BigDecimal.valueOf(500)
+        );
+
+        when(cancelacionReservaService.verificarCancelacion(1L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.puedeCancelarseDirectamente").value(false))
+                .andExpect(jsonPath("$.pagosAsociados[0].id").value(1))
+                .andExpect(jsonPath("$.importeTotalPagos").value(500));
+
+        verify(cancelacionReservaService).verificarCancelacion(1L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlVerificarCancelacionDeReservaInexistente() throws Exception {
+        when(cancelacionReservaService.verificarCancelacion(99L))
+                .thenThrow(new ReservaNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/reservas/99/cancelacion"))
+                .andExpect(status().isNotFound());
+
+        verify(cancelacionReservaService).verificarCancelacion(99L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlVerificarCancelacionConReservaNoCancelable() throws Exception {
+        when(cancelacionReservaService.verificarCancelacion(1L))
+                .thenThrow(new ReservaValidacionException(
+                        ReservaCodigoError.RESERVA_NO_CANCELABLE,
+                        "No se puede cancelar una reserva en este estado"
+                ));
+
+        mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
+                .andExpect(status().isBadRequest());
+
+        verify(cancelacionReservaService).verificarCancelacion(1L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNoContentAlCancelarReserva() throws Exception {
+        String body = """
+            {
+              "generarDevolucion": false
+            }
+            """;
+
+        mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNoContent());
+
+        verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNoContentAlCancelarReservaConDevolucion() throws Exception {
+        String body = """
+        {
+          "generarDevolucion": true,
+          "formaPago": "EFECTIVO",
+          "importeDevolucion": 500
+        }
+        """;
+
+        mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNoContent());
+
+        verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlCancelarConIdCero() throws Exception {
+        mockMvc.perform(patch("/api/v1/reservas/0/cancelacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(cancelacionReservaService, never()).cancelar(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlCancelarReservaInexistente() throws Exception {
+        doThrow(new ReservaNotFoundException(99L))
+                .when(cancelacionReservaService)
+                .cancelar(eq(99L), any(ReservaCancelacionRequestDto.class));
+
+        mockMvc.perform(patch("/api/v1/reservas/99/cancelacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"generarDevolucion\":false,\"importeDevolucion\":null}"))
+                .andExpect(status().isNotFound());
+
+        verify(cancelacionReservaService).cancelar(eq(99L), any(ReservaCancelacionRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlCancelarReservaNoCancelable() throws Exception {
+        doThrow(new ReservaValidacionException(
+                ReservaCodigoError.RESERVA_NO_CANCELABLE,
+                "No se puede cancelar una reserva en este estado"
+        )).when(cancelacionReservaService)
+                .cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
+
+        mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"generarDevolucion\":false,\"importeDevolucion\":null}"))
+                .andExpect(status().isBadRequest());
+
+        verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
+    }
+
 }
