@@ -23,4 +23,5 @@ public interface IFinanzaService {
 
     void eliminarFinanza(Long id);
 
+    void registrarPagoCuota(FinanzaCrearRequestDto dto);
 }

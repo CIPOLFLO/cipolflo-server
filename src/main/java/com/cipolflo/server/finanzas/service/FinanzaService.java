@@ -174,4 +174,18 @@ public class FinanzaService implements IFinanzaService {
       .orElseThrow(() -> new FinanzaNotFoundException(id));
       finanzaRepository.delete(finanza);
     }
+
+    @Override
+    public void registrarPagoCuota(FinanzaCrearRequestDto dto) {
+        Finanza finanza = Ingreso.crearDesdePagoCuota(
+                dto.getFecha(),
+                dto.getImporte(),
+                dto.getFormaPago(),
+                dto.getProcedencia(),
+                dto.getNotas(),
+                dto.getPagoCuotaId()
+        );
+
+        FinanzaMapper.toResponseDto(finanzaRepository.save(finanza));
+    }
 }

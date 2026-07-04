@@ -11,6 +11,8 @@ import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.repository.PagoCuotaRepository;
+import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
+import com.cipolflo.server.finanzas.service.IFinanzaService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +37,8 @@ class PagoCuotaServiceTest {
 
     @Mock
     private ClienteRepository clienteRepository;
+    @Mock
+    private IFinanzaService finanzaService;
 
     @InjectMocks
     private PagoCuotaService pagoCuotaService;
@@ -211,6 +215,8 @@ class PagoCuotaServiceTest {
         verify(clienteRepository).findById(1L);
         verify(pagoCuotaRepository).findTopBySocioIdOrderByAnioDescMesDesc(1L);
         verify(pagoCuotaRepository).saveAll(anyList());
+        verify(finanzaService, times(request.cantidadCuotas()))
+                .registrarPagoCuota(any(FinanzaCrearRequestDto.class));
     }
 
 }
