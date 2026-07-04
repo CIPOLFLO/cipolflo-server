@@ -557,6 +557,52 @@ void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
                         && ingreso.getConcepto().equals(Concepto.PAGO_RESERVA)
         ));
     }
+    @Test
+    void deberiaCrearIngresoDesdePagoCuota() {
+        Ingreso ingreso = Ingreso.crearDesdePagoCuota(
+                LocalDate.of(2026, 7, 4),
+                BigDecimal.valueOf(1000),
+                FormaPago.EFECTIVO,
+                Procedencia.SEDE,
+                "Pago cuota",
+                15L
+        );
+
+        assertEquals(Concepto.PAGO_CUOTA, ingreso.getConcepto());
+        assertEquals(BigDecimal.valueOf(1000), ingreso.getImporte());
+        assertEquals(FormaPago.EFECTIVO, ingreso.getFormaPago());
+        assertEquals(Procedencia.SEDE, ingreso.getProcedencia());
+        assertEquals("Pago cuota", ingreso.getNotas());
+        assertEquals(15L, ingreso.getPagoCuotaId());
+        assertNull(ingreso.getReservaId());
+    }
+
+    @Test
+    void deberiaRegistrarPagoCuotaComoIngreso() {
+        FinanzaCrearRequestDto dto = new FinanzaCrearRequestDto();
+        dto.setFecha(LocalDate.of(2026, 7, 4));
+        dto.setImporte(BigDecimal.valueOf(1000));
+        dto.setFormaPago(FormaPago.EFECTIVO);
+        dto.setProcedencia(Procedencia.SEDE);
+        dto.setNotas("Pago cuota");
+        dto.setPagoCuotaId(15L);
+
+        when(finanzaRepository.save(any(Finanza.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        finanzaService.registrarPagoCuota(dto);
+
+        ArgumentCaptor<Finanza> captor = ArgumentCaptor.forClass(Finanza.class);
+        verify(finanzaRepository).save(captor.capture());
+
+        Ingreso ingreso = (Ingreso) captor.getValue();
+
+        assertEquals(Concepto.PAGO_CUOTA, ingreso.getConcepto());
+        assertEquals(BigDecimal.valueOf(1000), ingreso.getImporte());
+        assertEquals(FormaPago.EFECTIVO, ingreso.getFormaPago());
+        assertEquals(15L, ingreso.getPagoCuotaId());
+        assertNull(ingreso.getReservaId());
+    }
 
 
 

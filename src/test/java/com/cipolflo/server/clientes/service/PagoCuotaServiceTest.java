@@ -13,8 +13,10 @@ import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.repository.PagoCuotaRepository;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
 import com.cipolflo.server.finanzas.service.IFinanzaService;
+import com.cipolflo.server.shared.enums.FormaPago;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -71,6 +73,15 @@ class PagoCuotaServiceTest {
                 MetodoCobro.EFECTIVO,
                 "Pago en caja"
         );
+    }
+    private void mockRegistroPago() {
+        Socio socio = crearSocio();
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findTopBySocioIdOrderByAnioDescMesDesc(1L))
+                .thenReturn(Optional.empty());
+        when(pagoCuotaRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -218,5 +229,72 @@ class PagoCuotaServiceTest {
         verify(finanzaService, times(request.cantidadCuotas()))
                 .registrarPagoCuota(any(FinanzaCrearRequestDto.class));
     }
+    @Test
+    void deberiaRegistrarFinanzaConFormaPagoEfectivoCuandoMetodoEsCobradora() {
+        RegistroPagoCuotaRequestDto request = crearRequest(MetodoCobro.COBRADORA);
+        mockRegistroPago();
 
+        pagoCuotaService.registrarPago(1L, request);
+
+        ArgumentCaptor<FinanzaCrearRequestDto> captor =
+                ArgumentCaptor.forClass(FinanzaCrearRequestDto.class);
+
+        verify(finanzaService).registrarPagoCuota(captor.capture());
+
+        assertEquals(FormaPago.EFECTIVO, captor.getValue().getFormaPago());
+    }
+
+    private RegistroPagoCuotaRequestDto crearRequest(MetodoCobro metodoCobro) {
+        return new RegistroPagoCuotaRequestDto(
+                1,
+                BigDecimal.valueOf(1000),
+                metodoCobro,
+                LocalDate.now(),
+                "Pago de prueba"
+        );
+    }
+    @Test
+    void deberiaRegistrarFinanzaConFormaPagoTransferenciaCuandoMetodoEsTransferencia() {
+        RegistroPagoCuotaRequestDto request = crearRequest(MetodoCobro.TRANSFERENCIA);
+        mockRegistroPago();
+
+        pagoCuotaService.registrarPago(1L, request);
+
+        ArgumentCaptor<FinanzaCrearRequestDto> captor =
+                ArgumentCaptor.forClass(FinanzaCrearRequestDto.class);
+
+        verify(finanzaService).registrarPagoCuota(captor.capture());
+
+        assertEquals(FormaPago.TRANSFERENCIA, captor.getValue().getFormaPago());
+    }
+
+    @Test
+    void deberiaRegistrarFinanzaConFormaPagoDebitoCuandoMetodoEsDebito() {
+        RegistroPagoCuotaRequestDto request = crearRequest(MetodoCobro.DEBITO);
+        mockRegistroPago();
+
+        pagoCuotaService.registrarPago(1L, request);
+
+        ArgumentCaptor<FinanzaCrearRequestDto> captor =
+                ArgumentCaptor.forClass(FinanzaCrearRequestDto.class);
+
+        verify(finanzaService).registrarPagoCuota(captor.capture());
+
+        assertEquals(FormaPago.DEBITO, captor.getValue().getFormaPago());
+    }
+
+    @Test
+    void deberiaRegistrarFinanzaConFormaPagoTransferenciaCuandoMetodoEsDescuentoSalarial() {
+        RegistroPagoCuotaRequestDto request = crearRequest(MetodoCobro.DESCUENTO_SALARIAL);
+        mockRegistroPago();
+
+        pagoCuotaService.registrarPago(1L, request);
+
+        ArgumentCaptor<FinanzaCrearRequestDto> captor =
+                ArgumentCaptor.forClass(FinanzaCrearRequestDto.class);
+
+        verify(finanzaService).registrarPagoCuota(captor.capture());
+
+        assertEquals(FormaPago.TRANSFERENCIA, captor.getValue().getFormaPago());
+    }
 }
