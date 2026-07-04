@@ -5,5 +5,6 @@ package com.cipolflo.server.shared.email;
  * envio_emails_logs para poder rastrear/filtrar los correos por su origen.
  */
 public enum TipoEventoEmail {
-    RESERVA_CREADA
+    RESERVA_CREADA,
+    REPORTE_SEMANAL_RESERVAS
 }
