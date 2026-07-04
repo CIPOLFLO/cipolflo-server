@@ -83,8 +83,26 @@ class ReservaEmailListenerTest {
     }
 
     @Test
+    void emailNull_noEnvia() {
+        when(reservaService.getDetalle(10L)).thenReturn(detalleCon(cliente("Juan", null)));
+
+        listener.onReservaCreada(new ReservaCreadaEvent(10L));
+
+        verify(emailService, never()).enviar(any());
+    }
+
+    @Test
     void nombreNull_enviaIgual() {
         when(reservaService.getDetalle(10L)).thenReturn(detalleCon(cliente(null, "juan@mail.com")));
+
+        listener.onReservaCreada(new ReservaCreadaEvent(10L));
+
+        verify(emailService).enviar(any(SolicitudEmail.class));
+    }
+
+    @Test
+    void nombreEnBlanco_enviaIgual() {
+        when(reservaService.getDetalle(10L)).thenReturn(detalleCon(cliente("   ", "juan@mail.com")));
 
         listener.onReservaCreada(new ReservaCreadaEvent(10L));
 

@@ -4,6 +4,7 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.MailSendException;
@@ -11,12 +12,14 @@ import org.springframework.mail.javamail.JavaMailSender;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,14 +82,33 @@ class EmailServiceTest {
     }
 
     @Test
-    void envioFalla_registraFallidoYLanzaEmailException() {
+    void envioFalla_registraCategoriaSanitizadaSinElMensajeCrudoYLanzaEmailException() {
         when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
-        doThrow(new MailSendException("SMTP caído")).when(mailSender).send(any(MimeMessage.class));
+        doThrow(new MailSendException("Couldn't connect to host, port: smtp.gmail.com, 587"))
+                .when(mailSender).send(any(MimeMessage.class));
         EmailService emailService = emailServiceCon(propsConNombre());
         SolicitudEmail solicitud = solicitudTexto();
 
         assertThrows(EmailException.class, () -> emailService.enviar(solicitud));
 
-        verify(logRegistrar).registrar(eq(solicitud), eq(EstadoEnvioEmail.FALLIDO), anyString());
+        ArgumentCaptor<String> errorCaptor = ArgumentCaptor.forClass(String.class);
+        verify(logRegistrar).registrar(eq(solicitud), eq(EstadoEnvioEmail.FALLIDO), errorCaptor.capture());
+        // Sólo la categoría (nombre de la excepción); nunca el detalle SMTP con host/puerto.
+        assertEquals("MailSendException", errorCaptor.getValue());
+        assertFalse(errorCaptor.getValue().contains("smtp.gmail.com"));
+    }
+
+    @Test
+    void fallaAlConstruir_registraFallidoYLanzaEmailExceptionSinEnviar() {
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
+        EmailService emailService = emailServiceCon(propsConNombre());
+        // Destinatario inválido: MimeMessageHelper.setTo falla al parsear la dirección.
+        SolicitudEmail solicitud = SolicitudEmail.texto(
+                "destinatario invalido", "Asunto", "Cuerpo", TipoEventoEmail.RESERVA_CREADA, 1L);
+
+        assertThrows(EmailException.class, () -> emailService.enviar(solicitud));
+
+        verify(mailSender, never()).send(any(MimeMessage.class));
+        verify(logRegistrar).registrar(eq(solicitud), eq(EstadoEnvioEmail.FALLIDO), eq("EmailException"));
     }
 }
