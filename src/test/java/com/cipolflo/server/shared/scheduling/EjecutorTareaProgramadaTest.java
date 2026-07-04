@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -60,5 +62,22 @@ class EjecutorTareaProgramadaTest {
 
         assertTrue(error.getValue().contains("boom"), "el detalle debe incluir el mensaje de error");
         assertTrue(error.getValue().contains("IllegalStateException"), "el detalle debe incluir el tipo de excepción");
+    }
+
+    @Test
+    void ejecutar_tareaOkPeroFallaElRegistro_noPropagaYNoReRegistraComoFallido() {
+        doThrow(new RuntimeException("db caída")).when(registrar).registrar(
+                eq(TipoTareaProgramada.LIMPIEZA_LOGS_EMAIL),
+                eq(EstadoEjecucionTarea.EXITO),
+                any(Instant.class), any(Instant.class), any(), isNull());
+
+        assertDoesNotThrow(() -> ejecutor.ejecutar(
+                TipoTareaProgramada.LIMPIEZA_LOGS_EMAIL, () -> "3 registros eliminados"));
+
+        // La tarea corrió OK: el fallo al persistir el log no debe re-registrarse como FALLIDO.
+        verify(registrar, never()).registrar(
+                any(TipoTareaProgramada.class),
+                eq(EstadoEjecucionTarea.FALLIDO),
+                any(Instant.class), any(Instant.class), any(), any());
     }
 }

@@ -32,8 +32,14 @@ public class LimpiezaLogsEmailService implements ILimpiezaLogsEmailService {
     @Transactional
     public String purgarLogsVencidos() {
         int dias = properties.retencionDias();
+        if (dias <= 0) {
+            // Guarda defensiva: una config en 0/negativo borraría todo. Mejor abortar y que
+            // el ejecutor lo registre como FALLIDO que purgar la tabla entera por un typo.
+            throw new IllegalArgumentException(
+                    "retencion-dias debe ser > 0 (configurado: " + dias + "); se aborta la purga.");
+        }
         Instant limite = Instant.now().minus(Duration.ofDays(dias));
-        long borrados = envioEmailLogRepository.deleteByCreatedAtBefore(limite);
+        int borrados = envioEmailLogRepository.deleteByCreatedAtBefore(limite);
         log.info("Purga de logs de email: {} registros con más de {} días eliminados (anteriores a {}).",
                 borrados, dias, limite);
         return "%d logs de email eliminados (más de %d días, anteriores a %s).".formatted(borrados, dias, limite);

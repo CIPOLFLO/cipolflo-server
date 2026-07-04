@@ -29,18 +29,39 @@ public class EjecutorTareaProgramada {
     /**
      * Corre {@code accion} y persiste el resultado. La acción devuelve un resumen legible
      * de lo que hizo (ej. "5 registros eliminados"), que se guarda en el log.
+     *
+     * El registro de ÉXITO se hace fuera del try para no marcar como FALLIDO una tarea que
+     * en realidad se ejecutó bien (solo falló el guardado del log). Y ambos registros se
+     * escriben vía {@link #registrarSeguro}, que contiene sus propios errores: así una falla
+     * al persistir el log nunca tumba el hilo del scheduler.
      */
     public void ejecutar(TipoTareaProgramada tarea, Supplier<String> accion) {
         log.info("Iniciando tarea programada: {}", tarea);
         Instant inicio = Instant.now();
+        String resumen;
         try {
-            String resumen = accion.get();
-            registrar.registrar(tarea, EstadoEjecucionTarea.EXITO, inicio, Instant.now(), resumen, null);
-            log.info("Tarea programada {} finalizada OK: {}", tarea, resumen);
+            resumen = accion.get();
         } catch (Exception e) {
             String detalle = e.getClass().getSimpleName() + ": " + e.getMessage();
-            registrar.registrar(tarea, EstadoEjecucionTarea.FALLIDO, inicio, Instant.now(), null, detalle);
             log.error("Tarea programada {} falló: {}", tarea, e.getMessage(), e);
+            registrarSeguro(tarea, EstadoEjecucionTarea.FALLIDO, inicio, Instant.now(), null, detalle);
+            return;
+        }
+        registrarSeguro(tarea, EstadoEjecucionTarea.EXITO, inicio, Instant.now(), resumen, null);
+        log.info("Tarea programada {} finalizada OK: {}", tarea, resumen);
+    }
+
+    /**
+     * Persiste el log de la corrida sin propagar: si el guardado falla, se loguea el error
+     * pero no se relanza, para que el hilo del scheduler siga vivo pase lo que pase.
+     */
+    private void registrarSeguro(TipoTareaProgramada tarea, EstadoEjecucionTarea estado,
+                                 Instant inicio, Instant fin, String resumen, String error) {
+        try {
+            registrar.registrar(tarea, estado, inicio, fin, resumen, error);
+        } catch (Exception e) {
+            log.error("No se pudo registrar el log de la tarea {} (estado {}): {}",
+                    tarea, estado, e.getMessage(), e);
         }
     }
 }

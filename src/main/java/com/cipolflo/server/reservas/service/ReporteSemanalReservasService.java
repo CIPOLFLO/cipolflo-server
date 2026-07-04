@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -55,7 +54,7 @@ public class ReporteSemanalReservasService implements IReporteSemanalReservasSer
             EstadoReserva.EN_CURSO
     );
 
-    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy", new Locale("es"));
+    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private static final Comparator<Reserva> POR_FECHA =
             Comparator.comparing(Reserva::getFechaEntrada).thenComparing(Reserva::getFechaSalida);
@@ -131,12 +130,13 @@ public class ReporteSemanalReservasService implements IReporteSemanalReservasSer
                 continue;
             }
             EstadoReserva estado = r.getEstado();
+            // La query ya garantiza fechaSalida >= lunes (solape con la semana), así que basta
+            // con que la reserva haya empezado antes del lunes para ser "arrastre".
             boolean empiezaAntes = r.getFechaEntrada().isBefore(lunes);
-            boolean sigueActiva = !r.getFechaSalida().isBefore(lunes);
             boolean iniciaEnSemana = !r.getFechaEntrada().isBefore(lunes) && !r.getFechaEntrada().isAfter(domingo);
 
             if ((estado == EstadoReserva.CONFIRMADA || estado == EstadoReserva.EN_CURSO)
-                    && empiezaAntes && sigueActiva) {
+                    && empiezaAntes) {
                 enCurso.add(r);
             } else if (estado == EstadoReserva.CONFIRMADA && iniciaEnSemana) {
                 confirmadas.add(r);

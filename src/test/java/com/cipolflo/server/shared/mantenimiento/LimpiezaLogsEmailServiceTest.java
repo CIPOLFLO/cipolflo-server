@@ -10,8 +10,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Duration;
 import java.time.Instant;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +31,7 @@ class LimpiezaLogsEmailServiceTest {
 
     @Test
     void purgarLogsVencidos_borraAnterioresAlLimiteYReportaLaCantidad() {
-        when(envioEmailLogRepository.deleteByCreatedAtBefore(any())).thenReturn(5L);
+        when(envioEmailLogRepository.deleteByCreatedAtBefore(any())).thenReturn(5);
 
         String resumen = servicio(90).purgarLogsVencidos();
 
@@ -46,10 +48,16 @@ class LimpiezaLogsEmailServiceTest {
 
     @Test
     void purgarLogsVencidos_sinVencidos_reportaCero() {
-        when(envioEmailLogRepository.deleteByCreatedAtBefore(any())).thenReturn(0L);
+        when(envioEmailLogRepository.deleteByCreatedAtBefore(any())).thenReturn(0);
 
         String resumen = servicio(90).purgarLogsVencidos();
 
         assertTrue(resumen.contains("0"));
+    }
+
+    @Test
+    void purgarLogsVencidos_retencionNoPositiva_abortaSinBorrar() {
+        assertThrows(IllegalArgumentException.class, () -> servicio(0).purgarLogsVencidos());
+        verify(envioEmailLogRepository, never()).deleteByCreatedAtBefore(any());
     }
 }
