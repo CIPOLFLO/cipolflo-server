@@ -1,6 +1,7 @@
 package com.cipolflo.server.reservas.controller;
 
 import com.cipolflo.server.reservas.dto.*;
+import com.cipolflo.server.reservas.service.ICancelacionReservaService;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -29,9 +30,12 @@ public class ReservaController {
     );
 
     private final IReservaService reservaService;
+    private final ICancelacionReservaService cancelacionReservaService;
 
-    public ReservaController(IReservaService reservaService) {
+    public ReservaController(IReservaService reservaService, ICancelacionReservaService cancelacionReservaService) {
+
         this.reservaService = reservaService;
+        this.cancelacionReservaService = cancelacionReservaService;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -109,5 +113,23 @@ public class ReservaController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(archivo.getContenido());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/cancelacion")
+    public ResponseEntity<ReservaCancelacionCheckResponseDto> verificarCancelacion(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id
+    ) {
+        return ResponseEntity.ok(cancelacionReservaService.verificarCancelacion(id));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/cancelacion")
+    public ResponseEntity<Void> cancelar(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id,
+            @Valid @RequestBody ReservaCancelacionRequestDto dto
+    ) {
+        cancelacionReservaService.cancelar(id, dto);
+        return ResponseEntity.noContent().build();
     }
 }

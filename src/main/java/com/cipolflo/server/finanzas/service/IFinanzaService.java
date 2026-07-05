@@ -1,9 +1,13 @@
 package com.cipolflo.server.finanzas.service;
 
 import com.cipolflo.server.finanzas.dto.*;
+import com.cipolflo.server.shared.enums.FormaPago;
+import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
+
+import java.math.BigDecimal;
 
 
 public interface IFinanzaService {
@@ -23,4 +27,10 @@ public interface IFinanzaService {
 
     void eliminarFinanza(Long id);
 
+    void registrarDevolucionPorCancelacionReserva(
+            Long reservaId,
+            BigDecimal importeDevolucion,
+            FormaPago formaPago,
+            Procedencia procedencia
+    );
 }

@@ -207,6 +207,10 @@ public class Reserva extends AuditableEntity {
         cambiarEstado(EstadoReserva.CANCELADA);
     }
 
+    public boolean esCancelable() {
+        return this.estado == EstadoReserva.PENDIENTE
+                || this.estado == EstadoReserva.CONFIRMADA;
+    }
     // TODO: agregar método confirmar() cuando se implemente el ticket de confirmación manual de reserva
 
     private static EstadoReserva resolverEstado(TipoReserva tipoReserva, boolean requiereDocumentacion, boolean requiereSena) {
