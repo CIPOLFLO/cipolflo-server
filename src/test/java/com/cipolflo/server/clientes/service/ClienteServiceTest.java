@@ -1,6 +1,7 @@
 package com.cipolflo.server.clientes.service;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
@@ -114,6 +115,14 @@ private IExportService exportService;
         particular.setCedula(cedula);
         particular.setTelefono("099000000");
         return particular;
+    }
+
+    private Empresa crearEmpresa(Long id, String razonSocial, String rut) {
+        Empresa empresa = Empresa.registrar(
+                rut, razonSocial, "099000000", "empresa@mail.com",
+                "Uruguay", "Montevideo", "Montevideo", "Av. Libertador 500", null);
+        empresa.setId(id);
+        return empresa;
     }
 
     private ModificacionParticularRequestDto dtoParticular(String nombre, String telefono) {
@@ -272,6 +281,37 @@ private IExportService exportService;
         assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
         assertEquals("Uruguay", dto.getPais());
         verify(clienteRepository).findById(1L);
+    }
+
+    @Test
+    void deberiaRetornarDetalleDeUnaEmpresaConTipoYRut() {
+        Empresa empresa = crearEmpresa(3L, "Cipolatti S.A.", "210001230018");
+        when(clienteRepository.findById(3L)).thenReturn(Optional.of(empresa));
+
+        ClienteResponseDto dto = clienteService.getDetalleCliente(3L);
+
+        assertEquals(3L, dto.getId());
+        assertEquals("Cipolatti S.A.", dto.getNombre());
+        assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
+        assertEquals("210001230018", dto.getRut());
+        assertNull(dto.getCedula());
+        verify(pagoCuotaService, never()).calcularUltimaCuotaPaga(anyLong());
+    }
+
+    @Test
+    void deberiaMapearEmpresaEnListadoConTipoYRut() {
+        Empresa empresa = crearEmpresa(3L, "Cipolatti S.A.", "210001230018");
+        Page<Cliente> page = new PageImpl<>(List.of(empresa));
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        PageResponse<ListadoClientesResponseDto> resultado = clienteService.getListadoClientes(sinFiltros(), pageRequest());
+
+        ListadoClientesResponseDto dto = resultado.content().get(0);
+        assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
+        assertEquals("210001230018", dto.getRut());
+        assertNull(dto.getCedula());
+        assertNull(dto.getUltimaCuotaDto());
+        verify(pagoCuotaService, never()).calcularUltimaCuotaPaga(anyLong());
     }
 
     @Test
@@ -769,8 +809,8 @@ void deberiaExportarFilasConLabelsLegiblesDeEstadoYMetodoCobro() {
     verify(exportService).generarExcel(anyString(), anyList(), filasCaptor.capture(), any(int[].class));
 
     List<String> fila = filasCaptor.getValue().get(0);
-    assertEquals("Activo",   fila.get(4));   // estado usa label, no "ACTIVO"
-    assertEquals("Efectivo", fila.get(7));   // metodoCobro usa label, no "EFECTIVO"
+    assertEquals("Activo",   fila.get(5));   // estado usa label, no "ACTIVO"
+    assertEquals("Efectivo", fila.get(8));   // metodoCobro usa label, no "EFECTIVO"
 }
 
 @Test
@@ -812,5 +852,25 @@ void deberiaExportarClientesCorrectamente() {
             anyList(),
             any(int[].class)
     );
+}
+
+@Test
+@SuppressWarnings("unchecked")
+void deberiaIncluirColumnaRutEnLaExportacion() {
+    Empresa empresa = crearEmpresa(1L, "Cipolatti S.A.", "210001230018");
+
+    when(clienteRepository.findAll(any(Specification.class))).thenReturn(List.of(empresa));
+    when(exportProperties.maxFilas()).thenReturn(1000);
+    when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+            .thenReturn(new byte[0]);
+
+    clienteService.exportarClientes(sinFiltros());
+
+    ArgumentCaptor<List<String>> encabezadosCaptor = ArgumentCaptor.forClass((Class) List.class);
+    ArgumentCaptor<List<List<String>>> filasCaptor = ArgumentCaptor.forClass((Class) List.class);
+    verify(exportService).generarExcel(anyString(), encabezadosCaptor.capture(), filasCaptor.capture(), any(int[].class));
+
+    assertTrue(encabezadosCaptor.getValue().contains("RUT"));
+    assertEquals("210001230018", filasCaptor.getValue().get(0).get(3));
 }
 }

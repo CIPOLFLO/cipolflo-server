@@ -19,7 +19,7 @@ public abstract class Cliente extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true)
     private String cedula;
 
     @Column(nullable = false)

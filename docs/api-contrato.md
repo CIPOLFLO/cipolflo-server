@@ -48,7 +48,7 @@ PENDIENTE | CONFIRMADA | EN_CURSO | FINALIZADA | CANCELADA
 
 ### `TipoCliente`
 ```
-SOCIO | PARTICULAR
+SOCIO | PARTICULAR | EMPRESA
 ```
 
 ### `EstadoSocio`
@@ -473,7 +473,7 @@ Retorna el listado paginado de clientes con filtros opcionales.
 | `sortField`     | string         | `nombreCompleto`, `cedula`, `numeroSocio`                                                  |
 | `sortOrder`     | string         | `ASC` o `DESC`, default `ASC`                                                              |
 
-> El campo `identificador` busca por cédula o por número de socio usando el prefijo del valor ingresado (ej: `123` devuelve clientes cuya cédula o nro de socio comience con `123`). Los puntos y guiones del formato de cédula se normalizan automáticamente antes de la búsqueda.
+> El campo `identificador` busca por cédula, por número de socio o por RUT (clientes `EMPRESA`) usando el prefijo del valor ingresado (ej: `123` devuelve clientes cuya cédula, nro de socio o RUT comience con `123`). Los puntos y guiones del formato se normalizan automáticamente antes de la búsqueda.
 
 **Respuesta 200:**
 ```json
@@ -483,6 +483,7 @@ Retorna el listado paginado de clientes con filtros opcionales.
       "id": 1,
       "nombreCompleto": "Juan Pérez",
       "cedula": "12345678",
+      "rut": null,
       "email": "juan@mail.com",
       "tipoCliente": "SOCIO",
       "numeroSocio": 5,
@@ -492,8 +493,19 @@ Retorna el listado paginado de clientes con filtros opcionales.
       "id": 2,
       "nombreCompleto": "Laura Fernández",
       "cedula": "67890123",
+      "rut": null,
       "email": null,
       "tipoCliente": "PARTICULAR",
+      "numeroSocio": null,
+      "estado": null
+    },
+    {
+      "id": 3,
+      "nombreCompleto": "Cipolatti S.A.",
+      "cedula": null,
+      "rut": "210001230018",
+      "email": "empresa@mail.com",
+      "tipoCliente": "EMPRESA",
       "numeroSocio": null,
       "estado": null
     }
@@ -520,6 +532,7 @@ Retorna el detalle completo de un cliente.
   "id": 1,
   "nombre": "Juan Pérez",
   "cedula": "12345678",
+  "rut": null,
   "fechaNacimiento": "1990-01-01",
   "telefono": "099111111",
   "email": "juan@mail.com",
@@ -540,6 +553,8 @@ Retorna el detalle completo de un cliente.
 ```
 
 > Los campos `fechaNacimiento`, `metodoPago`, `pais`, `departamento`, `ciudad`, `direccion`, `numeroSocio` y `estado` son `null` para clientes de tipo `PARTICULAR`.
+>
+> El campo `rut` es `null` para clientes de tipo `SOCIO` y `PARTICULAR`, y contiene el RUT para clientes de tipo `EMPRESA`. Inversamente, `cedula` es `null` para clientes de tipo `EMPRESA` (que no tienen cédula).
 
 ---
 
@@ -808,7 +823,8 @@ Registra un nuevo cliente de tipo particular.
 {
   id: number
   nombre: string
-  cedula: string
+  cedula: string | null             // null para Empresas
+  rut: string | null                // null para Socios y Particulares; presente para Empresas
   fechaNacimiento: string | null    // LocalDate ISO-8601 (yyyy-MM-dd), null para Particulares
   telefono: string
   email: string | null
@@ -833,7 +849,8 @@ Registra un nuevo cliente de tipo particular.
 {
   id: number
   nombreCompleto: string
-  cedula: string
+  cedula: string | null        // null para Empresas
+  rut: string | null           // null para Socios y Particulares; presente para Empresas
   email: string | null
   tipoCliente: TipoCliente
   numeroSocio: number | null   // null para Particulares

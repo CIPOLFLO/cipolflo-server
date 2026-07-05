@@ -61,7 +61,7 @@ class ClienteControllerTest {
 
     private ClienteResponseDto detalleCliente() {
         return new ClienteResponseDto(
-                1L, "Juan Pérez", "12345678", LocalDate.of(1990, Month.JANUARY, 1),
+                1L, "Juan Pérez", "12345678", null, LocalDate.of(1990, Month.JANUARY, 1),
                 "099111111", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. 18 de Julio 100",
                 5, TipoCliente.SOCIO, EstadoSocio.ACTIVO, null,
@@ -74,6 +74,7 @@ class ClienteControllerTest {
                 1L,
                 "Juan Pérez",
                 "12345678",
+                null,
                 "juan@mail.com",
                 TipoCliente.SOCIO,
                 1,
@@ -723,7 +724,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
     @WithMockUser
     void deberiaRegistrarSocioCorrectamente() throws Exception {
         ClienteResponseDto response = new ClienteResponseDto(
-                1L, "Juan Pérez", "12345678",
+                1L, "Juan Pérez", "12345678", null,
                 LocalDate.of(1990, Month.MAY, 10),
                 "099123456", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. Italia 1234",
@@ -884,6 +885,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 1L,
                 "Juan Pérez",
                 "12345678",
+                null,
                 null,
                 "099123456",
                 "juan@mail.com",

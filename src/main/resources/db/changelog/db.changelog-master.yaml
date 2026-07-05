@@ -17,4 +17,6 @@ databaseChangeLog:
       file: db/changelog/migrations/DEV-111/db.changelog-DEV-111.yaml
   - include:
       file: db/changelog/migrations/DEV-133/db.changelog-DEV-133.yaml
+  - include:
+      file: db/changelog/migrations/DEV-141/db.changelog-DEV-141.yaml
 

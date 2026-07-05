@@ -1,5 +1,6 @@
 package com.cipolflo.server.clientes.mapper;
 
+import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
@@ -47,6 +48,20 @@ class ClienteMapperTest {
         particular.setTelefono("099666666");
         particular.setMail("laura@mail.com");
         return particular;
+    }
+
+    private Empresa crearEmpresa() {
+        return Empresa.registrar(
+                "210001230018",
+                "Cipolatti S.A.",
+                "099777777",
+                "empresa@mail.com",
+                "Uruguay",
+                "Montevideo",
+                "Montevideo",
+                "Av. Libertador 500",
+                null
+        );
     }
 
     @Test
@@ -289,20 +304,21 @@ class ClienteMapperTest {
 
         List<String> fila = ClienteMapper.toExportFila(socio);
 
-        assertEquals(13, fila.size());
+        assertEquals(14, fila.size());
         assertEquals("Juan Pérez",           fila.get(0));
         assertEquals("5",                    fila.get(1));
         assertEquals("12345678",             fila.get(2));
-        assertEquals("juan@mail.com",        fila.get(3));
-        assertEquals("Activo",               fila.get(4));
-        assertEquals("099111111",            fila.get(5));
-        assertEquals("",                     fila.get(6));   // notas null → ""
-        assertEquals("Efectivo",             fila.get(7));
-        assertEquals("Uruguay",              fila.get(8));
-        assertEquals("Montevideo",           fila.get(9));
-        assertEquals("Av. 18 de Julio 100", fila.get(10));
-        assertEquals("2022-01-01",           fila.get(11));
-        assertEquals("2026-05-10",           fila.get(12));
+        assertEquals("",                     fila.get(3));   // rut null (socio) → ""
+        assertEquals("juan@mail.com",        fila.get(4));
+        assertEquals("Activo",               fila.get(5));
+        assertEquals("099111111",            fila.get(6));
+        assertEquals("",                     fila.get(7));   // notas null → ""
+        assertEquals("Efectivo",             fila.get(8));
+        assertEquals("Uruguay",              fila.get(9));
+        assertEquals("Montevideo",           fila.get(10));
+        assertEquals("Av. 18 de Julio 100", fila.get(11));
+        assertEquals("2022-01-01",           fila.get(12));
+        assertEquals("2026-05-10",           fila.get(13));
     }
 
     @Test
@@ -312,7 +328,7 @@ class ClienteMapperTest {
 
         List<String> fila = ClienteMapper.toExportFila(socio);
 
-        assertEquals("De baja", fila.get(4));
+        assertEquals("De baja", fila.get(5));
     }
 
     @Test
@@ -322,7 +338,7 @@ class ClienteMapperTest {
 
         List<String> fila = ClienteMapper.toExportFila(socio);
 
-        assertEquals("Inactivo", fila.get(4));
+        assertEquals("Inactivo", fila.get(5));
     }
 
     @Test
@@ -335,17 +351,17 @@ class ClienteMapperTest {
 
         List<String> fila = ClienteMapper.toExportFila(socio);
 
-        assertEquals("", fila.get(3));   // mail
-        assertEquals("", fila.get(8));   // pais
-        assertEquals("", fila.get(9));   // departamento
-        assertEquals("", fila.get(10));  // direccion
+        assertEquals("", fila.get(4));   // mail
+        assertEquals("", fila.get(9));   // pais
+        assertEquals("", fila.get(10));  // departamento
+        assertEquals("", fila.get(11));  // direccion
     }
 
     @Test
     void toExportFila_socioConFechaUltimoPagoNula_devuelveVacio() {
         List<String> fila = ClienteMapper.toExportFila(crearSocio());
 
-        assertEquals("", fila.get(12));
+        assertEquals("", fila.get(13));
     }
 
     @Test
@@ -365,13 +381,14 @@ class ClienteMapperTest {
         assertEquals("Laura Fernández", fila.get(0));
         assertEquals("N/A", fila.get(1));    // numeroSocio
         assertEquals("67890123",  fila.get(2));
-        assertEquals("N/A", fila.get(4));    // estado
-        assertEquals("N/A", fila.get(7));    // metodoCobro
-        assertEquals("", fila.get(8));       // pais
-        assertEquals("", fila.get(9));       // departamento
-        assertEquals("", fila.get(10));      // direccion
-        assertEquals("", fila.get(11));      // fechaIngreso
-        assertEquals("", fila.get(12));      // fechaUltimoPago
+        assertEquals("", fila.get(3));       // rut (particular) → ""
+        assertEquals("N/A", fila.get(5));    // estado
+        assertEquals("N/A", fila.get(8));    // metodoCobro
+        assertEquals("", fila.get(9));       // pais
+        assertEquals("", fila.get(10));      // departamento
+        assertEquals("", fila.get(11));      // direccion
+        assertEquals("", fila.get(12));      // fechaIngreso
+        assertEquals("", fila.get(13));      // fechaUltimoPago
     }
 
     @Test
@@ -393,5 +410,67 @@ class ClienteMapperTest {
         assertEquals("67890123", dto.cedula());
         assertEquals("099666666", dto.telefono());
         assertEquals("laura@mail.com", dto.email());
+    }
+
+    // ── Empresa ─────────────────────────────────────────────────────────────────
+
+    @Test
+    void deberiaMapearRutNuloParaSocioYParticular() {
+        assertNull(ClienteMapper.toDetalleResponseDto(crearSocio(), null).getRut());
+        assertNull(ClienteMapper.toListadoResponseDto(crearSocio(), null).getRut());
+        assertNull(ClienteMapper.toDetalleResponseDto(crearParticular(), null).getRut());
+        assertNull(ClienteMapper.toListadoResponseDto(crearParticular(), null).getRut());
+    }
+
+    @Test
+    void deberiaMapearEmpresaEnDetalleConTipoYRut() {
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearEmpresa(), null);
+
+        assertEquals("Cipolatti S.A.", dto.getNombre());
+        assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
+        assertEquals("210001230018", dto.getRut());
+        assertNull(dto.getCedula());
+        assertNull(dto.getNumeroSocio());
+        assertNull(dto.getEstado());
+    }
+
+    @Test
+    void deberiaMapearEmpresaEnListadoConTipoYRut() {
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearEmpresa(), null);
+
+        assertEquals("Cipolatti S.A.", dto.getNombreCompleto());
+        assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
+        assertEquals("210001230018", dto.getRut());
+        assertNull(dto.getCedula());
+        assertNull(dto.getNumeroSocio());
+        assertNull(dto.getEstado());
+    }
+
+    @Test
+    void deberiaMapearTipoEmpresaEnBusquedaCedula() {
+        BusquedaCedulaResponseDto dto = ClienteMapper.toBusquedaCedulaResponseDto(crearEmpresa());
+
+        assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
+    }
+
+    @Test
+    void deberiaMapearTipoEmpresaEnClienteDetalleReservaDto() {
+        ClienteDetalleReservaDto dto = ClienteMapper.toClienteDetalleReservaDto(crearEmpresa());
+
+        assertEquals(TipoCliente.EMPRESA, dto.tipoCliente());
+        assertEquals("Cipolatti S.A.", dto.nombre());
+    }
+
+    @Test
+    void toExportFila_empresa_incluyeRutYNAParaCamposDeSocio() {
+        List<String> fila = ClienteMapper.toExportFila(crearEmpresa());
+
+        assertEquals(14, fila.size());
+        assertEquals("Cipolatti S.A.", fila.get(0));
+        assertEquals("N/A", fila.get(1));         // numeroSocio
+        assertEquals("", fila.get(2));            // cedula (empresa) → ""
+        assertEquals("210001230018", fila.get(3)); // rut
+        assertEquals("N/A", fila.get(5));         // estado
+        assertEquals("N/A", fila.get(8));         // metodoCobro
     }
 }
