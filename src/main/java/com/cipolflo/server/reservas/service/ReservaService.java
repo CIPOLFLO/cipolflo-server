@@ -379,7 +379,7 @@ public class ReservaService implements IReservaService {
 
         String nombre = NombreArchivoExport.generar("reservas");
         return new ArchivoExportado(nombre, contenido);
-}
+    }
 
     @Override
     public ArchivoExportado generarComprobante(Long id) {

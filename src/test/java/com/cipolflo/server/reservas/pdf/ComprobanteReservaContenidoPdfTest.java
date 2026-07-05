@@ -62,7 +62,7 @@ class ComprobanteReservaContenidoPdfTest {
                 BigDecimal.valueOf(15000),
                 BigDecimal.ZERO,
                 true,
-                false, false,
+                false, false, false,
                 null, null, "Llegan a las 14hs",
                 cliente, servicio,
                 null, null, null, null);
