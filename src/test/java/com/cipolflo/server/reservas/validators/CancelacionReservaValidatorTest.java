@@ -270,9 +270,10 @@ class CancelacionReservaValidatorTest {
                 null,
                 null,
                 null,
-                false,
-                BigDecimal.valueOf(1000),
                 null,
+                false,
+                true,
+                BigDecimal.valueOf(1000),
                 null
         );
 

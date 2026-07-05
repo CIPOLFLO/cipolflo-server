@@ -429,14 +429,6 @@ class ReservaControllerTest {
 
     @Test
     @WithMockUser
-    void deberiaExportarReservasCorrectamente() throws Exception {
-    ArchivoExportado archivo = new ArchivoExportado(
-            "reservas.xlsx",
-            "excel".getBytes()
-    );
-
-    @Test
-    @WithMockUser
     void deberiaRetornarNotFoundAlConfirmarDocumentacionDeReservaInexistente() throws Exception {
         doThrow(new ReservaNotFoundException(99L))
                 .when(reservaService).confirmarDocumentacion(99L);

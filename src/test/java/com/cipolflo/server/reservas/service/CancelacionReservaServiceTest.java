@@ -211,15 +211,16 @@ class CancelacionReservaServiceTest {
                 null,
                 null,
                 null,
+                null,
+                true,
                 false,
                 BigDecimal.valueOf(1500),
-                null,
                 null
         );
     }
 
     private Reserva crearReservaConfirmada() {
-        Reserva reserva = Reserva.crear(
+        return Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
                 null,
                 10L,
@@ -232,14 +233,13 @@ class CancelacionReservaServiceTest {
                 null,
                 null,
                 "20123456-7",
+                "Org Test",
                 null,
                 false,
+                false,
                 BigDecimal.ZERO,
-                null,
-                "Org Test"
+                null
         );
-
-        return reserva;
     }
 
     private Reserva crearReservaFinalizada() {
