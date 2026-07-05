@@ -2,6 +2,7 @@ package com.cipolflo.server.reservas.service;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.dto.*;
+import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import jakarta.validation.Valid;
@@ -30,4 +31,5 @@ public interface IReservaService {
     ReservaModificacionResponseDto modificar(Long id, ReservaModificacionRequestDto dto);
 
     void confirmarDocumentacion(Long id);
+    ArchivoExportado exportarReservas(ListadoReservasRequestDto filtros);
 }

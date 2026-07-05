@@ -4,7 +4,9 @@ import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.shared.dto.ResponseDto;
 import lombok.Getter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 public class ListadoReservasResponseDto implements ResponseDto {
@@ -19,6 +21,9 @@ public class ListadoReservasResponseDto implements ResponseDto {
     private final EstadoReserva estadoReserva;
     private final boolean requiereDocumentacion;
     private final boolean tieneDocumentacion;
+    private final BigDecimal montoImpago;
+    private final LocalDateTime fechaLimitePago;
+
     public ListadoReservasResponseDto(
             Long id,
             Long clienteId,
@@ -29,8 +34,9 @@ public class ListadoReservasResponseDto implements ResponseDto {
             LocalDate fechaSalida,
             EstadoReserva estadoReserva,
             boolean requiereDocumentacion,
-            boolean tieneDocumentacion
-            
+            boolean tieneDocumentacion,
+            BigDecimal montoImpago,
+            LocalDateTime fechaLimitePago
     ){
         this.id = id;
         this.clienteId = clienteId;
@@ -42,6 +48,7 @@ public class ListadoReservasResponseDto implements ResponseDto {
         this.estadoReserva = estadoReserva;
         this.requiereDocumentacion = requiereDocumentacion;
         this.tieneDocumentacion = tieneDocumentacion;
-        
+        this.montoImpago = montoImpago;
+        this.fechaLimitePago = fechaLimitePago;
     }
 }

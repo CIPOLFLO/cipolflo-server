@@ -12,6 +12,7 @@ import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.export.ExportProperties;
+import com.cipolflo.server.shared.export.ExportacionException;
 import com.cipolflo.server.shared.export.IExportService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -510,4 +511,53 @@ void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
 
     verify((CrudRepository<Finanza, Long>) finanzaRepository, never()).delete(any(Finanza.class));
 }
+    @Test
+    void deberiaLanzarExportacionExceptionCuandoNoHayRegistrosParaExportar() {
+        when(finanzaRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of());
+
+        ExportacionException exception = assertThrows(
+                ExportacionException.class,
+                () -> finanzaService.exportarFinanzas(
+                        new ListadoFinanzasRequestDto(null, null, null, null)
+                )
+        );
+
+        assertEquals(
+                "No hay registros que coincidan con los filtros aplicados",
+                exception.getMessage()
+        );
+
+        verify(exportService, never()).generarExcel(anyString(), anyList(), anyList(), any(int[].class));
+    }
+    @Test
+    void deberiaRegistrarPagoReserva() {
+        FinanzaCrearRequestDto dto = new FinanzaCrearRequestDto();
+        dto.setFecha(LocalDate.of(2026, 6, 28));
+        dto.setImporte(BigDecimal.valueOf(1500));
+        dto.setFormaPago(FormaPago.EFECTIVO);
+        dto.setProcedencia(Procedencia.CAMPING);
+        dto.setNotas("Pago de reserva");
+        dto.setReservaId(10L);
+
+        when(finanzaRepository.save(any(Finanza.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        finanzaService.registrarPagoReserva(dto);
+
+        verify(finanzaRepository).save(argThat(finanza ->
+                finanza instanceof Ingreso ingreso
+                        && ingreso.getFecha().equals(LocalDate.of(2026, 6, 28))
+                        && ingreso.getImporte().compareTo(BigDecimal.valueOf(1500)) == 0
+                        && ingreso.getFormaPago().equals(FormaPago.EFECTIVO)
+                        && ingreso.getProcedencia().equals(Procedencia.CAMPING)
+                        && ingreso.getNotas().equals("Pago de reserva")
+                        && ingreso.getReservaId().equals(10L)
+                        && ingreso.getPagoCuotaId() == null
+                        && ingreso.getConcepto().equals(Concepto.PAGO_RESERVA)
+        ));
+    }
+
+
+
 }

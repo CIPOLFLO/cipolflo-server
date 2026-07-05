@@ -38,6 +38,22 @@ public class Ingreso extends Finanza {
         ingreso.setPagoCuotaId(null);
         return ingreso;
     }
+
+    public static Ingreso crearDesdeReserva(
+            LocalDate fecha,
+            BigDecimal importe,
+            FormaPago formaPago,
+            Procedencia procedencia,
+            String notas,
+            Long reservaId
+    ) {
+        Ingreso ingreso = new Ingreso();
+        ingreso.inicializar(fecha, importe, Concepto.PAGO_RESERVA, formaPago, procedencia, notas);
+        ingreso.setReservaId(reservaId);
+        ingreso.setPagoCuotaId(null);
+        return ingreso;
+    }
+
     @Override
     public TipoMovimiento getTipoMovimiento() {
         return TipoMovimiento.INGRESO;
