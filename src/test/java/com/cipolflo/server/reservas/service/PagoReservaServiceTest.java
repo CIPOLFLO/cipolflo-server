@@ -145,48 +145,48 @@ class PagoReservaServiceTest {
     }
 
     private Reserva crearReservaComun(BigDecimal importe) {
-    return Reserva.crear(
-            TipoReserva.COMUN,
-            1L,
-            10L,
-            Procedencia.CAMPING,
-            LocalDate.now().plusDays(1),
-            LocalDate.now().plusDays(2),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            false,
-            false,
-            importe,
-            null
-    );
-}
+        return Reserva.crear(
+                TipoReserva.COMUN,
+                1L,
+                10L,
+                Procedencia.CAMPING,
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                false,
+                importe,
+                null
+        );
+    }
 
     private Reserva crearReservaComunConDocumentacion(BigDecimal importe) {
-    return Reserva.crear(
-            TipoReserva.COMUN,
-            1L,
-            10L,
-            Procedencia.CAMPING,
-            LocalDate.now().plusDays(1),
-            LocalDate.now().plusDays(2),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            true,
-            false,
-            importe,
-            null
-    );
-}
+        return Reserva.crear(
+                TipoReserva.COMUN,
+                1L,
+                10L,
+                Procedencia.CAMPING,
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                false,
+                importe,
+                null
+        );
+    }
 }
