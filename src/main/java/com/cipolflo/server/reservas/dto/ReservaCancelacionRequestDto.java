@@ -1,8 +1,6 @@
 package com.cipolflo.server.reservas.dto;
 
 import com.cipolflo.server.shared.enums.FormaPago;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jdk.jfr.Description;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,17 +1,20 @@
 package com.cipolflo.server.reservas.validators;
 
-import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.dto.ReservaCancelacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.validators.contexto.CancelacionReservaValidationContext;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 @Component
 public class CancelacionReservaValidator {
 
     public void validar(CancelacionReservaValidationContext context) {
-        validarEstadoReserva(context.getEstadoReserva());
+        validarReservaCancelable(context.getReserva());
+        validarImporteDevolucion(context);
 
         if (!context.getPagosAsociados().isEmpty()) {
             validarDecisionDevolucion(context.getDto().getGenerarDevolucion());
@@ -19,8 +22,8 @@ public class CancelacionReservaValidator {
         }
     }
 
-    private void validarEstadoReserva(EstadoReserva estado) {
-        if (estado.equals(EstadoReserva.FINALIZADA) || estado.equals(EstadoReserva.CANCELADA)) {
+    private void validarReservaCancelable(Reserva reserva) {
+        if (!reserva.esCancelable()) {
             throw new ReservaValidacionException(
                     ReservaCodigoError.RESERVA_NO_CANCELABLE,
                     "No se puede cancelar una reserva en este estado"
@@ -42,6 +45,29 @@ public class CancelacionReservaValidator {
             throw new ReservaValidacionException(
                     ReservaCodigoError.FORMA_PAGO_REQUERIDA_PARA_DEVOLUCION,
                     "Debe indicar la forma de pago para la devolución"
+            );
+        }
+    }
+
+    private void validarImporteDevolucion(CancelacionReservaValidationContext context) {
+        ReservaCancelacionRequestDto dto = context.getDto();
+
+        if (!Boolean.TRUE.equals(dto.getGenerarDevolucion())) {
+            return;
+        }
+
+        if (dto.getImporteDevolucion() == null
+                || dto.getImporteDevolucion().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.IMPORTE_DEVOLUCION_INVALIDO,
+                    "El importe de devolución debe ser mayor a cero"
+            );
+        }
+
+        if (dto.getImporteDevolucion().compareTo(context.getImporteTotalPagos()) > 0) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.IMPORTE_DEVOLUCION_SUPERA_TOTAL_PAGADO,
+                    "El importe de devolución no puede superar el total pagado"
             );
         }
     }

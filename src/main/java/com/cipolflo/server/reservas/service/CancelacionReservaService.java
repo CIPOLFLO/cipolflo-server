@@ -38,6 +38,7 @@ public class CancelacionReservaService implements ICancelacionReservaService {
         this.cancelacionReservaValidator = cancelacionReservaValidator;
     }
 
+    @Transactional(readOnly = true)
     @Override
     public ReservaCancelacionCheckResponseDto verificarCancelacion(Long reservaId) {
         Reserva reserva = reservaRepository.findById(reservaId)
@@ -71,10 +72,15 @@ public class CancelacionReservaService implements ICancelacionReservaService {
 
         List<PagoAsociadoReservaDto> pagos = consultaPagosAsociadosReserva.getPagosAsociados(reservaId);
 
+        BigDecimal importeTotalPagos = pagos.stream()
+                .map(PagoAsociadoReservaDto::importe)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         CancelacionReservaValidationContext contexto = new CancelacionReservaValidationContext(
                 dto,
-                reserva.getEstado(),
-                pagos
+                reserva,
+                pagos,
+                importeTotalPagos
         );
 
         cancelacionReservaValidator.validar(contexto);
