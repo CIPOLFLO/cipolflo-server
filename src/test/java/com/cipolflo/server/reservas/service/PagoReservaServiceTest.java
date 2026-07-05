@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -144,46 +145,48 @@ class PagoReservaServiceTest {
     }
 
     private Reserva crearReservaComun(BigDecimal importe) {
-        return Reserva.crear(
-                TipoReserva.COMUN,
-                1L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                importe,
-                null,
-                null
-        );
-    }
+    return Reserva.crear(
+            TipoReserva.COMUN,
+            1L,
+            10L,
+            Procedencia.CAMPING,
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(2),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            false,
+            importe,
+            null
+    );
+}
 
     private Reserva crearReservaComunConDocumentacion(BigDecimal importe) {
-        return Reserva.crear(
-                TipoReserva.COMUN,
-                1L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                true,
-                importe,
-                null,
-                null
-        );
-    }
+    return Reserva.crear(
+            TipoReserva.COMUN,
+            1L,
+            10L,
+            Procedencia.CAMPING,
+            LocalDate.now().plusDays(1),
+            LocalDate.now().plusDays(2),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            true,
+            false,
+            importe,
+            null
+    );
+}
 }

@@ -31,7 +31,7 @@ class ReservaMapperTest {
                 LocalDate.of(2026, 8, 10),
                 LocalDate.of(2026, 8, 15),
                 null, null, 4, 1, null, null, null,
-                "Llegan a las 14hs",false,false
+                "Llegan a las 14hs",false,false, null, null
                 
         );
         ReflectionTestUtils.setField(r, "id", 42L);
@@ -60,7 +60,6 @@ class ReservaMapperTest {
         assertEquals(1, dto.getCantidadMenores());
         assertNull(dto.getCantidad());
         assertNull(dto.getImporte());
-        assertNull(dto.getFormaPago());
         assertFalse(dto.getPago());
         assertFalse(dto.getRequiereDocumentacion());
         assertFalse(dto.getTieneDocumentacion());
@@ -103,12 +102,11 @@ class ReservaMapperTest {
     @Test
     void deberiaMapearImporteYFormaPagoCuandoReservaEsPaga() {
         Reserva reserva = crearReserva(12L);
-        reserva.confirmarPago(BigDecimal.valueOf(15000), FormaPago.EFECTIVO);
+        reserva.registrarPago(BigDecimal.valueOf(15000),true);
 
         ReservaDetalleResponseDto dto = ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
 
         assertEquals(BigDecimal.valueOf(15000), dto.getImporte());
-        assertEquals(FormaPago.EFECTIVO, dto.getFormaPago());
         assertTrue(dto.getPago());
     }
 

@@ -23,29 +23,30 @@ class ReservaMapperTest {
 
     private static final BigDecimal IMPORTE_RESERVA = BigDecimal.valueOf(15000);
 
-    private Reserva crearReserva(Long clienteId) {
-        Reserva r = Reserva.crear(
-                TipoReserva.COMUN,
-                clienteId,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 8, 10),
-                LocalDate.of(2026, 8, 15),
-                null,
-                null,
-                4,
-                1,
-                null,
-                null,
-                "Llegan a las 14hs",
-                false,
-                IMPORTE_RESERVA,
-                null,
-                null
-        );
-        ReflectionTestUtils.setField(r, "id", 42L);
-        return r;
-    }
+   private Reserva crearReserva(Long clienteId) {
+    Reserva r = Reserva.crear(
+            TipoReserva.COMUN,
+            clienteId,
+            10L,
+            Procedencia.CAMPING,
+            LocalDate.of(2026, 8, 10),
+            LocalDate.of(2026, 8, 15),
+            null,
+            null,
+            4,
+            1,
+            null,
+            null,
+            null,
+            "Llegan a las 14hs",
+            false,
+            false,
+            IMPORTE_RESERVA,
+            null
+    );
+    ReflectionTestUtils.setField(r, "id", 42L);
+    return r;
+}
 
     private ClienteDetalleReservaDto clienteDto() {
         return new ClienteDetalleReservaDto(
@@ -74,7 +75,7 @@ class ReservaMapperTest {
 
         assertEquals(42L, dto.getId());
         assertEquals(TipoReserva.COMUN, dto.getTipoReserva());
-        assertEquals(EstadoReserva.PENDIENTE, dto.getEstado());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
         assertEquals(Procedencia.CAMPING, dto.getProcedencia());
         assertEquals(LocalDate.of(2026, 8, 10), dto.getFechaEntrada());
         assertEquals(LocalDate.of(2026, 8, 15), dto.getFechaSalida());
@@ -161,25 +162,25 @@ class ReservaMapperTest {
     @Test
     void deberiaMapearRequiereDocumentacionComoTrue() {
         Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                12L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 8, 10),
-                LocalDate.of(2026, 8, 15),
-                null,
-                null,
-                2,
-                0,
-                null,
-                null,
-                null,
-                true,
-                IMPORTE_RESERVA,
-                null,
-                null
-        );
-
+        TipoReserva.COMUN,
+        12L,
+        10L,
+        Procedencia.CAMPING,
+        LocalDate.of(2026, 8, 10),
+        LocalDate.of(2026, 8, 15),
+        null,
+        null,
+        2,
+        0,
+        null,
+        null,
+        null,
+        null,
+        true,
+        false,
+        IMPORTE_RESERVA,
+        null
+);
         ReservaDetalleResponseDto dto =
                 ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
 
@@ -203,24 +204,25 @@ class ReservaMapperTest {
     @Test
     void deberiaMapearEstadoConfirmadoParaColaboracion() {
         Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
-                null,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null,
-                null,
-                null,
-                null,
-                null,
-                "20123456-7",
-                null,
-                false,
-                BigDecimal.ZERO,
-                null,
-                "Org Solidaria"
-        );
+        TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
+        null,
+        10L,
+        Procedencia.CAMPING,
+        LocalDate.of(2026, 9, 1),
+        LocalDate.of(2026, 9, 3),
+        null,
+        null,
+        null,
+        null,
+        null,
+        "20123456-7",
+        "Org Solidaria",
+        null,
+        false,
+        false,
+        BigDecimal.ZERO,
+        null
+);
 
         ReservaDetalleResponseDto dto =
                 ReservaMapper.toDetalleResponseDto(reserva, null, servicioDto());
@@ -242,7 +244,7 @@ class ReservaMapperTest {
         assertEquals(18, fila.size());
         assertEquals("42",                fila.get(0));   // id
         assertEquals("Común",             fila.get(1));   // tipoReserva
-        assertEquals("Pendiente",         fila.get(2));   // estado
+        assertEquals("Confirmada",         fila.get(2));   // estado
         assertEquals("Camping",           fila.get(3));   // procedencia
         assertEquals("Cabaña del río",    fila.get(4));   // nombreServicio
         assertEquals("Juan Pérez",        fila.get(5));   // nombreCliente
@@ -273,17 +275,26 @@ class ReservaMapperTest {
 
     @Test
     void toExportFila_colaboracionSinFinesLucro_usaNombreRutComoCliente() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
-                null,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, null, null, null, "20123456-7", null, false,
-                BigDecimal.ZERO, null, "Org Solidaria"
-        );
-
+       Reserva reserva = Reserva.crear(
+        TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
+        null,
+        10L,
+        Procedencia.CAMPING,
+        LocalDate.of(2026, 9, 1),
+        LocalDate.of(2026, 9, 3),
+        null,
+        null,
+        null,
+        null,
+        null,
+        "20123456-7",
+        "Org Solidaria",
+        null,
+        false,
+        false,
+        BigDecimal.ZERO,
+        null
+);
         List<String> fila = ReservaMapper.toExportFila(reserva, null, "Cabaña del río");
 
         assertEquals("Org Solidaria", fila.get(5));  // nombreRut como fallback
@@ -291,16 +302,26 @@ class ReservaMapperTest {
 
     @Test
     void toExportFila_clienteNullSinNombreRut_devuelveVacioEnCliente() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                null,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, null, false,
-                null, null, null
-        );
+      Reserva reserva = Reserva.crear(
+        TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
+        null,
+        10L,
+        Procedencia.CAMPING,
+        LocalDate.of(2026, 9, 1),
+        LocalDate.of(2026, 9, 3),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        false,
+        false,
+        BigDecimal.ZERO,
+        null
+);
 
         List<String> fila = ReservaMapper.toExportFila(reserva, null, "Cabaña del río");
 
@@ -309,16 +330,26 @@ class ReservaMapperTest {
 
     @Test
     void toExportFila_notasNulas_devuelveVacio() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                12L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, null, false,
-                null, null, null
-        );
+       Reserva reserva = Reserva.crear(
+        TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
+        null,
+        10L,
+        Procedencia.CAMPING,
+        LocalDate.of(2026, 9, 1),
+        LocalDate.of(2026, 9, 3),
+        null,
+        null,
+        null,
+        null,
+        null,
+        "20123456-7",
+        "Org Solidaria",
+        null,
+        false,
+        false,
+        BigDecimal.ZERO,
+        null
+);
 
         List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
 
@@ -327,16 +358,26 @@ class ReservaMapperTest {
 
     @Test
     void toExportFila_requiereDocumentacion_devuelveSi() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                12L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, null, true,
-                null, null, null
-        );
+       Reserva reserva = Reserva.crear(
+        TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
+        null,
+        10L,
+        Procedencia.CAMPING,
+        LocalDate.of(2026, 9, 1),
+        LocalDate.of(2026, 9, 3),
+        null,
+        null,
+        null,
+        null,
+        null,
+        "20123456-7",
+        "Org Solidaria",
+        null,
+        true,
+        false,
+        BigDecimal.ZERO,
+        null
+);
 
         List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
 
