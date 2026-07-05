@@ -17,7 +17,6 @@ import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
-import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.shared.ZonaHoraria;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.export.ExportProperties;
@@ -59,19 +58,18 @@ public class ReservaService implements IReservaService {
     private final IRegistroParticularService registroParticularService;
     private final ReservaCreacionValidator reservaCreacionValidator;
     private final ReservaModificacionValidator reservaModificacionValidator;
-    private final IServicioRequiereDocumentacion servicioRequiereDocumentacion;
     private final IConsultaClienteDetalle consultaClienteDetalle;
     private final IConsultaServicioSimple consultaServicioSimple;
     private final ICalculoCostoService calculoCostoService;
     private final ExportProperties exportProperties;
     private final IExportService exportService;
     private final IPdfGeneratorService pdfGeneratorService;
+
     public ReservaService(
             ReservaRepository reservaRepository,
             IRegistroParticularService registroParticularService,
             ReservaCreacionValidator reservaCreacionValidator,
             ReservaModificacionValidator reservaModificacionValidator,
-            IServicioRequiereDocumentacion servicioRequiereDocumentacion,
             IConsultaServicioSimple consultaServicioSimple,
             IConsultaClienteDetalle consultaClienteDetalle,
             ICalculoCostoService calculoCostoService,
@@ -83,7 +81,6 @@ public class ReservaService implements IReservaService {
         this.registroParticularService = registroParticularService;
         this.reservaCreacionValidator = reservaCreacionValidator;
         this.reservaModificacionValidator = reservaModificacionValidator;
-        this.servicioRequiereDocumentacion = servicioRequiereDocumentacion;
         this.consultaClienteDetalle = consultaClienteDetalle;
         this.consultaServicioSimple = consultaServicioSimple;
         this.calculoCostoService = calculoCostoService;
@@ -154,8 +151,6 @@ public class ReservaService implements IReservaService {
             clienteId = dto.getClienteId();
         }
 
-        boolean requiereDocumentacion = servicioRequiereDocumentacion.requiereDocumentacion(dto.getServicioId());
-
         CalculoCostoRequestDto calculoCostoRequest = getCalculoCostoRequestDto(dto);
         CalculoCostoResponseDto calculoCosto = calculoCostoService.calcularCosto(calculoCostoRequest);
 
@@ -172,16 +167,15 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
                 dto.getRut(),
+                dto.getNombre(),
                 dto.getNotas(),
-                requiereDocumentacion,
+                Boolean.TRUE.equals(dto.getRequiereDocumentacion()),
+                Boolean.TRUE.equals(dto.getRequiereSena()),
                 calculoCosto.costoTotal(),
-                dto.getFechaLimite(),
-                dto.getNombre()
-
+                dto.getFechaLimite()
         );
 
         Reserva guardada = reservaRepository.save(reserva);
-
         return new ReservaCreacionResponseDto(guardada.getId());
     }
 
@@ -244,9 +238,10 @@ public class ReservaService implements IReservaService {
                 r.getFechaEntrada(),
                 r.getFechaSalida(),
                 r.getEstado(),
+                r.getRequiereDocumentacion(),
+                r.getTieneDocumentacion(),
                 r.getMontoImpago(),
-                r.getFechaLimitePago(),
-                r.getRequiereDocumentacion() && !r.getTieneDocumentacion()
+                r.getFechaLimitePago()
         ));
 
         return PaginationMapper.toPageResponse(dtoPage);
@@ -280,13 +275,21 @@ public class ReservaService implements IReservaService {
         );
 
         reservaRepository.save(reserva);
-
         return new ReservaModificacionResponseDto(reserva.getId());
     }
 
     @Override
     public CalculoCostoResponseDto calcularCosto(CalculoCostoRequestDto request) {
         return calculoCostoService.calcularCosto(request);
+    }
+
+    @Override
+    @Transactional
+    public void confirmarDocumentacion(Long id) {
+        Reserva reserva = reservaRepository.findById(id)
+                .orElseThrow(() -> new ReservaNotFoundException(id));
+        reserva.recibirDocumentacion();
+        reservaRepository.save(reserva);
     }
 
     @Nonnull

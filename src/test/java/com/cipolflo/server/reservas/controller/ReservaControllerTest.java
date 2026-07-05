@@ -22,10 +22,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import org.springframework.http.MediaType;
-
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,7 +32,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
         controllers = ReservaController.class,
@@ -379,72 +378,126 @@ class ReservaControllerTest {
 
         verify(reservaService, never()).modificar(anyLong(), any());
     }
+
+    // ── PATCH /api/v1/reservas/{id}/documentacion (confirmar documentación) ────
+
     @Test
-@WithMockUser
-void deberiaExportarReservasCorrectamente() throws Exception {
-    ArchivoExportado archivo = new ArchivoExportado(
-            "reservas.xlsx",
-            "excel".getBytes()
-    );
+    @WithMockUser
+    void deberiaRetornarNoContentAlConfirmarDocumentacionConUsuarioAutenticado() throws Exception {
+        doNothing().when(reservaService).confirmarDocumentacion(1L);
 
-    when(reservaService.exportarReservas(any())).thenReturn(archivo);
+        mockMvc.perform(patch("/api/v1/reservas/1/documentacion").with(csrf()))
+                .andExpect(status().isNoContent());
 
-    mockMvc.perform(post("/api/v1/reservas/exportar")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-            .andExpect(status().isOk())
-            .andExpect(header().string(
-                    HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"reservas.xlsx\""
-            ));
-}
+        verify(reservaService).confirmarDocumentacion(1L);
+    }
 
-@Test
-@WithMockUser
-void deberiaExportarReservasAunqueNoHayaResultados() throws Exception {
-    ArchivoExportado archivo = new ArchivoExportado(
-            "reservas.xlsx",
-            new byte[0]
-    );
+    @Test
+    void deberiaRetornarUnauthorizedAlConfirmarDocumentacionSinAutenticacion() throws Exception {
+        mockMvc.perform(patch("/api/v1/reservas/1/documentacion").with(csrf()))
+                .andExpect(status().isUnauthorized());
 
-    when(reservaService.exportarReservas(any())).thenReturn(archivo);
+        verify(reservaService, never()).confirmarDocumentacion(anyLong());
+    }
 
-    mockMvc.perform(post("/api/v1/reservas/exportar")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-            .andExpect(status().isOk())
-            .andExpect(header().exists(HttpHeaders.CONTENT_DISPOSITION));
-}
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlConfirmarDocumentacionConIdCero() throws Exception {
+        mockMvc.perform(patch("/api/v1/reservas/0/documentacion").with(csrf()))
+                .andExpect(status().isBadRequest());
 
-@Test
-@WithMockUser
-void deberiaLlamarAlServiceAlExportarReservas() throws Exception {
-    when(reservaService.exportarReservas(any()))
-            .thenReturn(new ArchivoExportado("reservas.xlsx", new byte[0]));
+        verify(reservaService, never()).confirmarDocumentacion(anyLong());
+    }
 
-    mockMvc.perform(post("/api/v1/reservas/exportar")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-            .andExpect(status().isOk());
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlConfirmarDocumentacionConIdNegativo() throws Exception {
+        mockMvc.perform(patch("/api/v1/reservas/-1/documentacion").with(csrf()))
+                .andExpect(status().isBadRequest());
 
-    verify(reservaService).exportarReservas(any());
-}
+        verify(reservaService, never()).confirmarDocumentacion(anyLong());
+    }
 
-@Test
-@WithMockUser
-void deberiaDevolverErrorSiFallaElServiceAlExportarReservas() throws Exception {
-    when(reservaService.exportarReservas(any()))
-            .thenThrow(new RuntimeException("Error exportando"));
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlConfirmarDocumentacionDeReservaInexistente() throws Exception {
+        doThrow(new ReservaNotFoundException(99L))
+                .when(reservaService).confirmarDocumentacion(99L);
 
-    mockMvc.perform(post("/api/v1/reservas/exportar")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-            .andExpect(status().is5xxServerError());
-}
+        mockMvc.perform(patch("/api/v1/reservas/99/documentacion").with(csrf()))
+                .andExpect(status().isNotFound());
+
+        verify(reservaService).confirmarDocumentacion(99L);
+    }
+
+    // ── POST /api/v1/reservas/exportar (exportación a Excel) ───────────────────
+
+    @Test
+    @WithMockUser
+    void deberiaExportarReservasCorrectamente() throws Exception {
+        ArchivoExportado archivo = new ArchivoExportado(
+                "reservas.xlsx",
+                "excel".getBytes()
+        );
+
+        when(reservaService.exportarReservas(any())).thenReturn(archivo);
+
+        mockMvc.perform(post("/api/v1/reservas/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"reservas.xlsx\""
+                ));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaExportarReservasAunqueNoHayaResultados() throws Exception {
+        ArchivoExportado archivo = new ArchivoExportado(
+                "reservas.xlsx",
+                new byte[0]
+        );
+
+        when(reservaService.exportarReservas(any())).thenReturn(archivo);
+
+        mockMvc.perform(post("/api/v1/reservas/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.CONTENT_DISPOSITION));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaLlamarAlServiceAlExportarReservas() throws Exception {
+        when(reservaService.exportarReservas(any()))
+                .thenReturn(new ArchivoExportado("reservas.xlsx", new byte[0]));
+
+        mockMvc.perform(post("/api/v1/reservas/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
+
+        verify(reservaService).exportarReservas(any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaDevolverErrorSiFallaElServiceAlExportarReservas() throws Exception {
+        when(reservaService.exportarReservas(any()))
+                .thenThrow(new RuntimeException("Error exportando"));
+
+        mockMvc.perform(post("/api/v1/reservas/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().is5xxServerError());
+    }
 
     // ── GET /api/v1/reservas/{id}/comprobante ──────────────────────────────────
 

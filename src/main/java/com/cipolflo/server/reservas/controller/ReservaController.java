@@ -81,16 +81,24 @@ public class ReservaController {
             @Valid @RequestBody CalculoCostoRequestDto dto) {
         return ResponseEntity.ok(reservaService.calcularCosto(dto));
     }
-   @PreAuthorize("isAuthenticated()")
-@PostMapping("/exportar")
-public ResponseEntity<byte[]> exportarReservas(
-        @Valid @RequestBody ListadoReservasRequestDto filtros) {
-    ArchivoExportado archivo = reservaService.exportarReservas(filtros);
-    return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
-            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-            .body(archivo.getContenido());
-}
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/exportar")
+    public ResponseEntity<byte[]> exportarReservas(
+            @Valid @RequestBody ListadoReservasRequestDto filtros) {
+        ArchivoExportado archivo = reservaService.exportarReservas(filtros);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo.getContenido());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/documentacion")
+    public ResponseEntity<Void> confirmarDocumentacion(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id) {
+        reservaService.confirmarDocumentacion(id);
+        return ResponseEntity.noContent().build();
+    }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/comprobante")
