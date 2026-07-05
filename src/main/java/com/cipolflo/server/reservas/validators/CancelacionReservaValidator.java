@@ -10,8 +10,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class CancelacionReservaValidator {
 
-    public CancelacionReservaValidator() {}
-
     public void validar(CancelacionReservaValidationContext context) {
         validarEstadoReserva(context.getEstadoReserva());
 

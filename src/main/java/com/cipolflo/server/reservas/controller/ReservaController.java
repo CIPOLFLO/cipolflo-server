@@ -96,7 +96,6 @@ public class ReservaController {
             .body(archivo.getContenido());
     }
 
-
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/cancelacion")
     public ResponseEntity<ReservaCancelacionCheckResponseDto> verificarCancelacion(
@@ -114,7 +113,5 @@ public class ReservaController {
         cancelacionReservaService.cancelar(id, dto);
         return ResponseEntity.noContent().build();
     }
-
-
 
 }

@@ -199,12 +199,6 @@ public class FinanzaService implements IFinanzaService, IConsultaPagosAsociadosR
             FormaPago formaPago,
             Procedencia procedencia
     ) {
-        List<Ingreso> pagos = finanzaRepository.findIngresosByReservaId(reservaId);
-
-        if (pagos.isEmpty()) {
-            return;
-        }
-
         Egreso egreso = Egreso.crearDesdeCancelacionReserva(
                 LocalDate.now(),
                 importeDevolucion,

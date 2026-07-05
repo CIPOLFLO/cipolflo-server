@@ -79,13 +79,10 @@ public class CancelacionReservaService implements ICancelacionReservaService {
 
         cancelacionReservaValidator.validar(contexto);
 
-        if (pagos.isEmpty()) {
-            reserva.cancelar();
-            reservaRepository.save(reserva);
-            return;
-        }
+        boolean debeGenerarDevolucion = !pagos.isEmpty()
+                && Boolean.TRUE.equals(dto.getGenerarDevolucion());
 
-        if (Boolean.TRUE.equals(dto.getGenerarDevolucion())) {
+        if (debeGenerarDevolucion) {
             finanzaService.registrarDevolucionPorCancelacionReserva(
                     reservaId,
                     dto.getImporteDevolucion(),
@@ -93,6 +90,7 @@ public class CancelacionReservaService implements ICancelacionReservaService {
                     reserva.getProcedencia()
             );
         }
+
         reserva.cancelar();
         reservaRepository.save(reserva);
     }

@@ -224,6 +224,4 @@ public class Reserva extends AuditableEntity {
 
         return montoPagado.compareTo(mitad) >= 0;
     }
-
-
 }

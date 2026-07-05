@@ -11,7 +11,6 @@ import java.util.List;
 
 public interface FinanzaRepository extends JpaRepository<Finanza, Long>, JpaSpecificationExecutor<Finanza> {
 
-
     @Query("SELECT i FROM Ingreso i WHERE i.reservaId = :reservaId")
     List<Ingreso> findIngresosByReservaId(@Param("reservaId") Long reservaId);
 
