@@ -64,5 +64,8 @@ public class ReservaCreacionRequestDto {
 
     private String notas;
 
+    private Boolean requiereDocumentacion;
+
+    private Boolean requiereSena;
     private LocalDateTime fechaLimite;
 }

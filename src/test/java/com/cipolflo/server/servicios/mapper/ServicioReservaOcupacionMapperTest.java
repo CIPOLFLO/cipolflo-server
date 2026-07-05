@@ -32,9 +32,10 @@ class ServicioReservaOcupacionMapperTest {
                 null,
                 null,
                 null,
+                null,
+                false,
                 false,
                 BigDecimal.ZERO,
-                null,
                 null
         );
         ReflectionTestUtils.setField(reserva, "id", id);
@@ -52,7 +53,7 @@ class ServicioReservaOcupacionMapperTest {
         ServicioReservaOcupacionDto dto = ServicioReservaOcupacionMapper.toOcupacionDto(reserva);
 
         assertEquals(5L, dto.reservaId());
-        assertEquals(EstadoReserva.PENDIENTE, dto.estado());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.estado());
         assertEquals(LocalDate.of(2026, 6, 10), dto.fechaInicio());
         assertEquals(LocalDate.of(2026, 6, 12), dto.fechaFin());
     }
