@@ -29,12 +29,16 @@ import org.springframework.http.HttpHeaders;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import org.springframework.http.MediaType;
-
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
@@ -383,6 +387,46 @@ class ReservaControllerTest {
 
         verify(reservaService, never()).modificar(anyLong(), any());
     }
+
+    // ── PATCH /api/v1/reservas/{id}/documentacion (confirmar documentación) ────
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNoContentAlConfirmarDocumentacionConUsuarioAutenticado() throws Exception {
+        doNothing().when(reservaService).confirmarDocumentacion(1L);
+
+        mockMvc.perform(patch("/api/v1/reservas/1/documentacion").with(csrf()))
+                .andExpect(status().isNoContent());
+
+        verify(reservaService).confirmarDocumentacion(1L);
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlConfirmarDocumentacionSinAutenticacion() throws Exception {
+        mockMvc.perform(patch("/api/v1/reservas/1/documentacion").with(csrf()))
+                .andExpect(status().isUnauthorized());
+
+        verify(reservaService, never()).confirmarDocumentacion(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlConfirmarDocumentacionConIdCero() throws Exception {
+        mockMvc.perform(patch("/api/v1/reservas/0/documentacion").with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).confirmarDocumentacion(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlConfirmarDocumentacionConIdNegativo() throws Exception {
+        mockMvc.perform(patch("/api/v1/reservas/-1/documentacion").with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).confirmarDocumentacion(anyLong());
+    }
+
     @Test
     @WithMockUser
     void deberiaExportarReservasCorrectamente() throws Exception {
@@ -391,48 +435,70 @@ class ReservaControllerTest {
             "excel".getBytes()
     );
 
-    when(reservaService.exportarReservas(any())).thenReturn(archivo);
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlConfirmarDocumentacionDeReservaInexistente() throws Exception {
+        doThrow(new ReservaNotFoundException(99L))
+                .when(reservaService).confirmarDocumentacion(99L);
 
-    mockMvc.perform(post("/api/v1/reservas/exportar")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-            .andExpect(status().isOk())
-            .andExpect(header().string(
-                    HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"reservas.xlsx\""
-            ));
+        mockMvc.perform(patch("/api/v1/reservas/99/documentacion").with(csrf()))
+                .andExpect(status().isNotFound());
+
+        verify(reservaService).confirmarDocumentacion(99L);
+    }
+
+    // ── POST /api/v1/reservas/exportar (exportación a Excel) ───────────────────
+
+    @Test
+    @WithMockUser
+    void deberiaExportarReservasCorrectamente() throws Exception {
+        ArchivoExportado archivo = new ArchivoExportado(
+                "reservas.xlsx",
+                "excel".getBytes()
+        );
+
+        when(reservaService.exportarReservas(any())).thenReturn(archivo);
+
+        mockMvc.perform(post("/api/v1/reservas/exportar")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"reservas.xlsx\""
+                ));
     }
 
     @Test
     @WithMockUser
     void deberiaExportarReservasAunqueNoHayaResultados() throws Exception {
         ArchivoExportado archivo = new ArchivoExportado(
-            "reservas.xlsx",
-            new byte[0]
+                "reservas.xlsx",
+                new byte[0]
         );
 
         when(reservaService.exportarReservas(any())).thenReturn(archivo);
 
         mockMvc.perform(post("/api/v1/reservas/exportar")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-            .andExpect(status().isOk())
-            .andExpect(header().exists(HttpHeaders.CONTENT_DISPOSITION));
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.CONTENT_DISPOSITION));
     }
 
     @Test
     @WithMockUser
     void deberiaLlamarAlServiceAlExportarReservas() throws Exception {
         when(reservaService.exportarReservas(any()))
-            .thenReturn(new ArchivoExportado("reservas.xlsx", new byte[0]));
+                .thenReturn(new ArchivoExportado("reservas.xlsx", new byte[0]));
 
         mockMvc.perform(post("/api/v1/reservas/exportar")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-            .andExpect(status().isOk());
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk());
 
         verify(reservaService).exportarReservas(any());
     }
@@ -441,107 +507,159 @@ class ReservaControllerTest {
     @WithMockUser
     void deberiaDevolverErrorSiFallaElServiceAlExportarReservas() throws Exception {
         when(reservaService.exportarReservas(any()))
-            .thenThrow(new RuntimeException("Error exportando"));
+                .thenThrow(new RuntimeException("Error exportando"));
 
         mockMvc.perform(post("/api/v1/reservas/exportar")
-                    .with(csrf())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-            .andExpect(status().is5xxServerError());
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().is5xxServerError());
     }
+
+    // ── GET /api/v1/reservas/{id}/comprobante ──────────────────────────────────
+
     @Test
     @WithMockUser
-    void deberiaVerificarCancelacionSinPagos() throws Exception {
-        ReservaCancelacionCheckResponseDto response = new ReservaCancelacionCheckResponseDto(
-                true,
-                List.of(),
-                BigDecimal.ZERO
+    void deberiaDescargarComprobanteConHeadersCorrectos() throws Exception {
+        ArchivoExportado archivo = new ArchivoExportado(
+                "comprobante-reserva-1_2026-07-02_1030.pdf",
+                "pdf".getBytes()
         );
+        when(reservaService.generarComprobante(1L)).thenReturn(archivo);
 
-        when(cancelacionReservaService.verificarCancelacion(1L)).thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
+        mockMvc.perform(get("/api/v1/reservas/1/comprobante"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.puedeCancelarseDirectamente").value(true))
-                .andExpect(jsonPath("$.importeTotalPagos").value(0));
-
-        verify(cancelacionReservaService).verificarCancelacion(1L);
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaVerificarCancelacionConPagos() throws Exception {
-        ReservaCancelacionCheckResponseDto response = new ReservaCancelacionCheckResponseDto(
-                false,
-                List.of(new PagoAsociadoReservaDto(
-                        1L,
-                        LocalDate.of(2026, 7, 1),
-                        BigDecimal.valueOf(500),
-                        FormaPago.EFECTIVO
-                )),
-                BigDecimal.valueOf(500)
-        );
-
-        when(cancelacionReservaService.verificarCancelacion(1L)).thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.puedeCancelarseDirectamente").value(false))
-                .andExpect(jsonPath("$.pagosAsociados[0].id").value(1))
-                .andExpect(jsonPath("$.importeTotalPagos").value(500));
-
-        verify(cancelacionReservaService).verificarCancelacion(1L);
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarNotFoundAlVerificarCancelacionDeReservaInexistente() throws Exception {
-        when(cancelacionReservaService.verificarCancelacion(99L))
-                .thenThrow(new ReservaNotFoundException(99L));
-
-        mockMvc.perform(get("/api/v1/reservas/99/cancelacion"))
-                .andExpect(status().isNotFound());
-
-        verify(cancelacionReservaService).verificarCancelacion(99L);
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestAlVerificarCancelacionConReservaNoCancelable() throws Exception {
-        when(cancelacionReservaService.verificarCancelacion(1L))
-                .thenThrow(new ReservaValidacionException(
-                        ReservaCodigoError.RESERVA_NO_CANCELABLE,
-                        "No se puede cancelar una reserva en este estado"
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"comprobante-reserva-1_2026-07-02_1030.pdf\""
                 ));
 
-        mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
-                .andExpect(status().isBadRequest());
+        verify(reservaService).generarComprobante(1L);
+    }
 
-        verify(cancelacionReservaService).verificarCancelacion(1L);
+    @Test
+    void deberiaRetornarUnauthorizedAlDescargarComprobanteSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/1/comprobante"))
+                .andExpect(status().isUnauthorized());
+
+        verify(reservaService, never()).generarComprobante(anyLong());
     }
 
     @Test
     @WithMockUser
-    void deberiaRetornarNoContentAlCancelarReserva() throws Exception {
-        String body = """
+    void deberiaRetornarBadRequestAlDescargarComprobanteConIdCero() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/0/comprobante"))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).generarComprobante(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlDescargarComprobanteDeReservaInexistente() throws Exception {
+        when(reservaService.generarComprobante(99L))
+                .thenThrow(new ReservaNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/reservas/99/comprobante"))
+                .andExpect(status().isNotFound());
+
+        verify(reservaService).generarComprobante(99L);
+    }
+
+        @Test
+        @WithMockUser
+        void deberiaVerificarCancelacionSinPagos() throws Exception {
+            ReservaCancelacionCheckResponseDto response = new ReservaCancelacionCheckResponseDto(
+                    true,
+                    List.of(),
+                    BigDecimal.ZERO
+            );
+
+            when(cancelacionReservaService.verificarCancelacion(1L)).thenReturn(response);
+
+            mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.puedeCancelarseDirectamente").value(true))
+                    .andExpect(jsonPath("$.importeTotalPagos").value(0));
+
+            verify(cancelacionReservaService).verificarCancelacion(1L);
+        }
+
+        @Test
+        @WithMockUser
+        void deberiaVerificarCancelacionConPagos() throws Exception {
+            ReservaCancelacionCheckResponseDto response = new ReservaCancelacionCheckResponseDto(
+                    false,
+                    List.of(new PagoAsociadoReservaDto(
+                            1L,
+                            LocalDate.of(2026, 7, 1),
+                            BigDecimal.valueOf(500),
+                            FormaPago.EFECTIVO
+                    )),
+                    BigDecimal.valueOf(500)
+            );
+
+            when(cancelacionReservaService.verificarCancelacion(1L)).thenReturn(response);
+
+            mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.puedeCancelarseDirectamente").value(false))
+                    .andExpect(jsonPath("$.pagosAsociados[0].id").value(1))
+                    .andExpect(jsonPath("$.importeTotalPagos").value(500));
+
+            verify(cancelacionReservaService).verificarCancelacion(1L);
+        }
+
+        @Test
+        @WithMockUser
+        void deberiaRetornarNotFoundAlVerificarCancelacionDeReservaInexistente() throws Exception {
+            when(cancelacionReservaService.verificarCancelacion(99L))
+                    .thenThrow(new ReservaNotFoundException(99L));
+
+            mockMvc.perform(get("/api/v1/reservas/99/cancelacion"))
+                    .andExpect(status().isNotFound());
+
+            verify(cancelacionReservaService).verificarCancelacion(99L);
+        }
+
+        @Test
+        @WithMockUser
+        void deberiaRetornarBadRequestAlVerificarCancelacionConReservaNoCancelable() throws Exception {
+            when(cancelacionReservaService.verificarCancelacion(1L))
+                    .thenThrow(new ReservaValidacionException(
+                            ReservaCodigoError.RESERVA_NO_CANCELABLE,
+                            "No se puede cancelar una reserva en este estado"
+                    ));
+
+            mockMvc.perform(get("/api/v1/reservas/1/cancelacion"))
+                    .andExpect(status().isBadRequest());
+
+            verify(cancelacionReservaService).verificarCancelacion(1L);
+        }
+
+        @Test
+        @WithMockUser
+        void deberiaRetornarNoContentAlCancelarReserva() throws Exception {
+            String body = """
             {
               "generarDevolucion": false
             }
             """;
 
-        mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isNoContent());
+            mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isNoContent());
 
-        verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
-    }
+            verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
+        }
 
-    @Test
-    @WithMockUser
-    void deberiaRetornarNoContentAlCancelarReservaConDevolucion() throws Exception {
-        String body = """
+        @Test
+        @WithMockUser
+        void deberiaRetornarNoContentAlCancelarReservaConDevolucion() throws Exception {
+            String body = """
         {
           "generarDevolucion": true,
           "formaPago": "EFECTIVO",
@@ -549,59 +667,58 @@ class ReservaControllerTest {
         }
         """;
 
-        mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isNoContent());
+            mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isNoContent());
 
-        verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
-    }
+            verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
+        }
 
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestAlCancelarConIdCero() throws Exception {
-        mockMvc.perform(patch("/api/v1/reservas/0/cancelacion")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
+        @Test
+        @WithMockUser
+        void deberiaRetornarBadRequestAlCancelarConIdCero() throws Exception {
+            mockMvc.perform(patch("/api/v1/reservas/0/cancelacion")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest());
 
-        verify(cancelacionReservaService, never()).cancelar(anyLong(), any());
-    }
+            verify(cancelacionReservaService, never()).cancelar(anyLong(), any());
+        }
 
-    @Test
-    @WithMockUser
-    void deberiaRetornarNotFoundAlCancelarReservaInexistente() throws Exception {
-        doThrow(new ReservaNotFoundException(99L))
-                .when(cancelacionReservaService)
-                .cancelar(eq(99L), any(ReservaCancelacionRequestDto.class));
+        @Test
+        @WithMockUser
+        void deberiaRetornarNotFoundAlCancelarReservaInexistente() throws Exception {
+            doThrow(new ReservaNotFoundException(99L))
+                    .when(cancelacionReservaService)
+                    .cancelar(eq(99L), any(ReservaCancelacionRequestDto.class));
 
-        mockMvc.perform(patch("/api/v1/reservas/99/cancelacion")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"generarDevolucion\":false,\"importeDevolucion\":null}"))
-                .andExpect(status().isNotFound());
+            mockMvc.perform(patch("/api/v1/reservas/99/cancelacion")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"generarDevolucion\":false,\"importeDevolucion\":null}"))
+                    .andExpect(status().isNotFound());
 
-        verify(cancelacionReservaService).cancelar(eq(99L), any(ReservaCancelacionRequestDto.class));
-    }
+            verify(cancelacionReservaService).cancelar(eq(99L), any(ReservaCancelacionRequestDto.class));
+        }
 
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestAlCancelarReservaNoCancelable() throws Exception {
-        doThrow(new ReservaValidacionException(
-                ReservaCodigoError.RESERVA_NO_CANCELABLE,
-                "No se puede cancelar una reserva en este estado"
-        )).when(cancelacionReservaService)
-                .cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
+        @Test
+        @WithMockUser
+        void deberiaRetornarBadRequestAlCancelarReservaNoCancelable() throws Exception {
+            doThrow(new ReservaValidacionException(
+                    ReservaCodigoError.RESERVA_NO_CANCELABLE,
+                    "No se puede cancelar una reserva en este estado"
+            )).when(cancelacionReservaService)
+                    .cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
 
-        mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"generarDevolucion\":false,\"importeDevolucion\":null}"))
-                .andExpect(status().isBadRequest());
+            mockMvc.perform(patch("/api/v1/reservas/1/cancelacion")
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"generarDevolucion\":false,\"importeDevolucion\":null}"))
+                    .andExpect(status().isBadRequest());
 
-        verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
-    }
-
+            verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
+        }
 }

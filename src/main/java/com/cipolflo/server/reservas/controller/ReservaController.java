@@ -88,12 +88,31 @@ public class ReservaController {
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/exportar")
     public ResponseEntity<byte[]> exportarReservas(
-        @Valid @RequestBody ListadoReservasRequestDto filtros) {
+            @Valid @RequestBody ListadoReservasRequestDto filtros) {
         ArchivoExportado archivo = reservaService.exportarReservas(filtros);
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
-            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-            .body(archivo.getContenido());
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo.getContenido());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/documentacion")
+    public ResponseEntity<Void> confirmarDocumentacion(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id) {
+        reservaService.confirmarDocumentacion(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/comprobante")
+    public ResponseEntity<byte[]> descargarComprobante(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id) {
+        ArchivoExportado archivo = reservaService.generarComprobante(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(archivo.getContenido());
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -113,5 +132,4 @@ public class ReservaController {
         cancelacionReservaService.cancelar(id, dto);
         return ResponseEntity.noContent().build();
     }
-
 }

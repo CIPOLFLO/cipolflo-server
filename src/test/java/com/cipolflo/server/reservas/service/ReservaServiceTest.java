@@ -26,15 +26,14 @@ import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
-import com.cipolflo.server.servicios.service.IServicioRequiereDocumentacion;
 import com.cipolflo.server.reservas.service.ICalculoCostoService;
-import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.export.ExportProperties;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
+import com.cipolflo.server.shared.pdf.IPdfGeneratorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -72,9 +71,6 @@ class ReservaServiceTest {
     private ReservaModificacionValidator reservaModificacionValidator;
 
     @Mock
-    private IServicioRequiereDocumentacion servicioRequiereDocumentacion;
-
-    @Mock
     private IConsultaClienteDetalle consultaClienteDetalle;
 
     @Mock
@@ -88,6 +84,10 @@ class ReservaServiceTest {
 
     @Mock
     private IExportService exportService;
+
+    @Mock
+    private IPdfGeneratorService pdfGeneratorService;
+
     @InjectMocks
     private ReservaService reservaService;
 
@@ -106,9 +106,10 @@ class ReservaServiceTest {
                 null,
                 null,
                 null,
+                null,
+                false,
                 false,
                 BigDecimal.valueOf(1500),
-                null,
                 null
         );
     }
@@ -127,10 +128,11 @@ class ReservaServiceTest {
                 1,
                 null,
                 null,
+                null,
                 notas,
                 false,
+                false,
                 BigDecimal.valueOf(1500),
-                null,
                 null
         );
     }
@@ -149,11 +151,26 @@ class ReservaServiceTest {
                 null,
                 null,
                 rut,
+                nombre,
                 null,
                 false,
+                false,
                 BigDecimal.ZERO,
+                null
+        );
+    }
+
+    private Reserva crearReservaExport() {
+        return Reserva.crear(
+                TipoReserva.COMUN, 1L, 5L, Procedencia.CAMPING,
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5),
+                null, null, 4, 1, null, null,
                 null,
-                nombre
+                "Nota",
+                false,
+                false,
+                BigDecimal.valueOf(1500),
+                null
         );
     }
 
@@ -249,7 +266,6 @@ class ReservaServiceTest {
         when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(1));
         when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(3));
 
-        when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
         mockCalculoCosto();
 
         Reserva reservaMock = mock(Reserva.class);
@@ -281,7 +297,6 @@ class ReservaServiceTest {
         ClienteResponseDto clienteCreado = mock(ClienteResponseDto.class);
         when(clienteCreado.getId()).thenReturn(7L);
         when(registroParticularService.registrarParticular(any())).thenReturn(clienteCreado);
-        when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
         mockCalculoCosto();
 
         Reserva reservaMock = mock(Reserva.class);
@@ -308,7 +323,6 @@ class ReservaServiceTest {
         when(dto.getRut()).thenReturn("20123456-7");
         when(dto.getNombre()).thenReturn("Org Solidaria");
 
-        when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
         mockCalculoCosto();
 
         Reserva reservaMock = mock(Reserva.class);
@@ -415,7 +429,7 @@ class ReservaServiceTest {
         assertEquals(clienteDto, resultado.getCliente());
         assertEquals(servicioDto, resultado.getServicio());
         assertEquals(TipoReserva.COMUN, resultado.getTipoReserva());
-        assertEquals(EstadoReserva.PENDIENTE, resultado.getEstado());
+        assertEquals(EstadoReserva.CONFIRMADA, resultado.getEstado());
         assertEquals("Nota", resultado.getNotas());
     }
 
@@ -444,7 +458,7 @@ class ReservaServiceTest {
         assertEquals("Cabaña", dto.getServicioNombre());
         assertEquals(LocalDate.of(2026, 7, 1), dto.getFechaEntrada());
         assertEquals(LocalDate.of(2026, 7, 5), dto.getFechaSalida());
-        assertEquals(EstadoReserva.PENDIENTE, dto.getEstadoReserva());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstadoReserva());
     }
 
     @Test
@@ -548,7 +562,6 @@ class ReservaServiceTest {
         when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(1));
         when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(3));
 
-        when(servicioRequiereDocumentacion.requiereDocumentacion(10L)).thenReturn(false);
         mockCalculoCosto();
 
         Reserva reservaMock = mock(Reserva.class);
@@ -700,6 +713,61 @@ class ReservaServiceTest {
         inOrder.verify(reservaModificacionValidator).validar(eq(reserva), eq(dto));
         inOrder.verify(reservaRepository).save(reserva);
     }
+
+    // ── confirmarDocumentacion ────────────────────────────────────────────────
+
+    @Test
+    void deberiaConfirmarDocumentacionYPasarAConfirmadaCuandoNoRequiereSena() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, null,
+                true, false,
+                BigDecimal.valueOf(1500), null
+        );
+        assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(reserva)).thenReturn(reserva);
+
+        reservaService.confirmarDocumentacion(reservaId);
+
+        assertTrue(reserva.getTieneDocumentacion());
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+        verify(reservaRepository).save(reserva);
+    }
+
+    @Test
+    void noDeberiaConfirmarReservaSiRequiereSenaYNoFuePagadaAunConfirmandoDocumentacion() {
+        Long reservaId = 1L;
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                null, null, null, null, null, null, null, null,
+                true, true,
+                BigDecimal.valueOf(1500), null
+        );
+
+        when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.save(reserva)).thenReturn(reserva);
+
+        reservaService.confirmarDocumentacion(reservaId);
+
+        assertTrue(reserva.getTieneDocumentacion());
+        assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
+    }
+
+    @Test
+    void deberiaLanzarNotFoundAlConfirmarDocumentacionDeReservaInexistente() {
+        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ReservaNotFoundException.class,
+                () -> reservaService.confirmarDocumentacion(99L));
+
+        verify(reservaRepository, never()).save(any());
+    }
+
     @Test
     void deberiaObtenerProximasPorServicioEnRango() {
         Long servicioId = 10L;
@@ -725,6 +793,7 @@ class ReservaServiceTest {
                 eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA))
         );
     }
+
     @Test
     void deberiaOrdenarListadoPorNombreCliente() {
         ListadoReservasRequestDto filtros =
@@ -751,6 +820,7 @@ class ReservaServiceTest {
 
         verify(reservaRepository).findAll(any(Specification.class), any(Pageable.class));
     }
+
     @Test
     void deberiaCalcularCosto() {
         CalculoCostoRequestDto request = new CalculoCostoRequestDto();
@@ -763,15 +833,6 @@ class ReservaServiceTest {
 
         assertEquals(response, resultado);
         verify(calculoCostoService).calcularCosto(request);
-    }
-
-    private Reserva crearReservaExport() {
-        return Reserva.crear(
-                TipoReserva.COMUN, 1L, 5L, Procedencia.CAMPING,
-                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5),
-                null, null, 4, 1, null, null, "Nota", false,
-                BigDecimal.valueOf(1500), null, null
-        );
     }
 
     @Test
@@ -859,5 +920,38 @@ class ReservaServiceTest {
 
         verify(consultaClienteDetalle).getNombresByIds(Set.of(1L));
         verify(consultaServicioSimple).getNombresByIds(Set.of(5L));
+    }
+
+    @Test
+    void deberiaGenerarComprobanteCorrectamente() {
+        Long clienteId = 5L;
+        Long servicioId = 10L;
+        Reserva reserva = crearReservaComun(clienteId, servicioId);
+
+        ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
+                clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO);
+        ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
+                servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
+
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(consultaClienteDetalle.getDetallClienteSimple(clienteId)).thenReturn(clienteDto);
+        when(consultaServicioSimple.getDetalleServicioSimple(servicioId)).thenReturn(servicioDto);
+        when(pdfGeneratorService.generar(any())).thenReturn(new byte[]{1, 2, 3});
+
+        ArchivoExportado archivo = reservaService.generarComprobante(1L);
+
+        assertNotNull(archivo);
+        assertTrue(archivo.getNombre().matches("comprobante-reserva-1_\\d{4}-\\d{2}-\\d{2}_\\d{4}\\.pdf"));
+        assertArrayEquals(new byte[]{1, 2, 3}, archivo.getContenido());
+        verify(pdfGeneratorService).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarNotFoundAlGenerarComprobanteCuandoReservaNoExiste() {
+        when(reservaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ReservaNotFoundException.class, () -> reservaService.generarComprobante(99L));
+
+        verify(pdfGeneratorService, never()).generar(any());
     }
 }
