@@ -1015,6 +1015,7 @@ Retorna el detalle completo de una reserva.
   "cantidadMenores": 1,
   "cantidad": null,
   "importe": 15000.00,
+  "montoImpago": 0.00,
   "pago": true,
   "requiereDocumentacion": false,
   "tieneDocumentacion": false,
@@ -1062,6 +1063,28 @@ Confirma que se recibió la documentación de una reserva. Marca `tieneDocumenta
 **Path param:** `id` — integer positivo
 
 **Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código                    | Cuándo ocurre                         |
+|-------------|---------------------------|---------------------------------------|
+| 400         | `ID_INVALIDO`             | `id` no es un entero positivo         |
+| 404         | `RESERVA_NO_ENCONTRADA`   | No existe una reserva con ese `id`    |
+| 401         | —                         | Token ausente, inválido o expirado    |
+
+---
+
+### `GET /api/v1/reservas/{id}/comprobante`
+Descarga el comprobante en PDF de una reserva (para entregar al cliente o archivar). El PDF se genera en el backend con Apache PDFBox y contiene: tipo de reserva, estado, fechas de entrada/salida, horario (si aplica), cantidades, importe (costo total), si está pago y saldo a pagar (solo cuando la reserva no está paga), cliente asociado (nombre, documento, tipo de cliente), servicio asociado (nombre y procedencia) y notas. Todo comprobante incluye arriba, de forma automática, la fecha/hora de generación del documento.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:** cuerpo binario.
+
+| Header                | Valor                                                        |
+|-----------------------|--------------------------------------------------------------|
+| `Content-Type`        | `application/pdf`                                             |
+| `Content-Disposition` | `attachment; filename="comprobante-reserva-{id}_yyyy-MM-dd_HHmm.pdf"` |
 
 **Errores:**
 

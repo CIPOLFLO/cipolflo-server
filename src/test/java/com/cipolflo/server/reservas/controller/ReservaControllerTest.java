@@ -22,8 +22,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import org.springframework.http.MediaType;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
         controllers = ReservaController.class,
@@ -497,5 +497,56 @@ class ReservaControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().is5xxServerError());
+    }
+
+    // ── GET /api/v1/reservas/{id}/comprobante ──────────────────────────────────
+
+    @Test
+    @WithMockUser
+    void deberiaDescargarComprobanteConHeadersCorrectos() throws Exception {
+        ArchivoExportado archivo = new ArchivoExportado(
+                "comprobante-reserva-1_2026-07-02_1030.pdf",
+                "pdf".getBytes()
+        );
+        when(reservaService.generarComprobante(1L)).thenReturn(archivo);
+
+        mockMvc.perform(get("/api/v1/reservas/1/comprobante"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"comprobante-reserva-1_2026-07-02_1030.pdf\""
+                ));
+
+        verify(reservaService).generarComprobante(1L);
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlDescargarComprobanteSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/1/comprobante"))
+                .andExpect(status().isUnauthorized());
+
+        verify(reservaService, never()).generarComprobante(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlDescargarComprobanteConIdCero() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/0/comprobante"))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).generarComprobante(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlDescargarComprobanteDeReservaInexistente() throws Exception {
+        when(reservaService.generarComprobante(99L))
+                .thenThrow(new ReservaNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/reservas/99/comprobante"))
+                .andExpect(status().isNotFound());
+
+        verify(reservaService).generarComprobante(99L);
     }
 }

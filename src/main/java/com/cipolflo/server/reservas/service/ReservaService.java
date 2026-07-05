@@ -5,6 +5,7 @@ import com.cipolflo.server.clientes.dto.RegistroParticularRequestDto;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.reservas.mapper.ReservaMapper;
+import com.cipolflo.server.reservas.pdf.ComprobanteReservaContenidoPdf;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.dto.*;
@@ -22,6 +23,8 @@ import com.cipolflo.server.shared.export.ExportProperties;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.cipolflo.server.shared.export.IExportService;
 import com.cipolflo.server.shared.export.NombreArchivoExport;
+import com.cipolflo.server.shared.pdf.IPdfGeneratorService;
+import com.cipolflo.server.shared.pdf.NombreArchivoPdf;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import com.cipolflo.server.shared.pagination.PaginationMapper;
@@ -60,6 +63,7 @@ public class ReservaService implements IReservaService {
     private final ICalculoCostoService calculoCostoService;
     private final ExportProperties exportProperties;
     private final IExportService exportService;
+    private final IPdfGeneratorService pdfGeneratorService;
 
     public ReservaService(
             ReservaRepository reservaRepository,
@@ -70,7 +74,8 @@ public class ReservaService implements IReservaService {
             IConsultaClienteDetalle consultaClienteDetalle,
             ICalculoCostoService calculoCostoService,
             ExportProperties exportProperties,
-            IExportService exportService
+            IExportService exportService,
+            IPdfGeneratorService pdfGeneratorService
     ) {
         this.reservaRepository = reservaRepository;
         this.registroParticularService = registroParticularService;
@@ -81,6 +86,7 @@ public class ReservaService implements IReservaService {
         this.calculoCostoService = calculoCostoService;
         this.exportProperties = exportProperties;
         this.exportService = exportService;
+        this.pdfGeneratorService = pdfGeneratorService;
     }
 
     @Override
@@ -225,6 +231,7 @@ public class ReservaService implements IReservaService {
         Page<ListadoReservasResponseDto> dtoPage = page.map(r -> new ListadoReservasResponseDto(
                 r.getId(),
                 r.getClienteId(),
+                // TODO: temporal - usar nombreRut como nombre de cliente para reservas sin fines de lucro hasta definir manejo de clientes RUT
                 r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : r.getNombreRut(),
                 r.getServicioId(),
                 nombresServicios.get(r.getServicioId()),
@@ -371,6 +378,17 @@ public class ReservaService implements IReservaService {
         byte[] contenido = exportService.generarExcel("Reservas", encabezados, filas, anchos);
 
         String nombre = NombreArchivoExport.generar("reservas");
+        return new ArchivoExportado(nombre, contenido);
+    }
+
+    @Override
+    public ArchivoExportado generarComprobante(Long id) {
+        ReservaDetalleResponseDto detalle = getDetalle(id);
+
+        ComprobanteReservaContenidoPdf comprobante = new ComprobanteReservaContenidoPdf(detalle);
+        byte[] contenido = pdfGeneratorService.generar(comprobante);
+
+        String nombre = NombreArchivoPdf.generar("comprobante-reserva-" + id);
         return new ArchivoExportado(nombre, contenido);
     }
 }

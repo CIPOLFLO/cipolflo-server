@@ -33,4 +33,6 @@ public interface IReservaService {
     void confirmarDocumentacion(Long id);
 
     ArchivoExportado exportarReservas(ListadoReservasRequestDto filtros);
+
+    ArchivoExportado generarComprobante(Long id);
 }

@@ -99,4 +99,15 @@ public class ReservaController {
         reservaService.confirmarDocumentacion(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/comprobante")
+    public ResponseEntity<byte[]> descargarComprobante(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id) {
+        ArchivoExportado archivo = reservaService.generarComprobante(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(archivo.getContenido());
+    }
 }
