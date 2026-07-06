@@ -14,6 +14,7 @@ import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.repository.ReservaSpecification;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
+import com.cipolflo.server.reservas.events.ReservaCreadaEvent;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
@@ -33,6 +34,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -64,6 +66,7 @@ public class ReservaService implements IReservaService {
     private final ExportProperties exportProperties;
     private final IExportService exportService;
     private final IPdfGeneratorService pdfGeneratorService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ReservaService(
             ReservaRepository reservaRepository,
@@ -75,7 +78,8 @@ public class ReservaService implements IReservaService {
             ICalculoCostoService calculoCostoService,
             ExportProperties exportProperties,
             IExportService exportService,
-            IPdfGeneratorService pdfGeneratorService
+            IPdfGeneratorService pdfGeneratorService,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.reservaRepository = reservaRepository;
         this.registroParticularService = registroParticularService;
@@ -87,6 +91,7 @@ public class ReservaService implements IReservaService {
         this.exportProperties = exportProperties;
         this.exportService = exportService;
         this.pdfGeneratorService = pdfGeneratorService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -176,6 +181,11 @@ public class ReservaService implements IReservaService {
         );
 
         Reserva guardada = reservaRepository.save(reserva);
+
+        // El listener procesa el evento recién tras el commit (ver ReservaEmailListener):
+        // si la transacción falla, no se envía ningún mail.
+        eventPublisher.publishEvent(new ReservaCreadaEvent(guardada.getId()));
+
         return new ReservaCreacionResponseDto(guardada.getId());
     }
 
@@ -275,6 +285,7 @@ public class ReservaService implements IReservaService {
         );
 
         reservaRepository.save(reserva);
+
         return new ReservaModificacionResponseDto(reserva.getId());
     }
 

@@ -26,7 +26,6 @@ import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
-import com.cipolflo.server.reservas.service.ICalculoCostoService;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.export.ExportProperties;
@@ -39,7 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -87,6 +86,10 @@ class ReservaServiceTest {
 
     @Mock
     private IPdfGeneratorService pdfGeneratorService;
+
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ReservaService reservaService;
