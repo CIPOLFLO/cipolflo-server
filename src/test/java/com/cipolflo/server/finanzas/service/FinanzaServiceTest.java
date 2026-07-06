@@ -516,11 +516,11 @@ void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
         when(finanzaRepository.findAll(any(Specification.class)))
                 .thenReturn(List.of());
 
+        ListadoFinanzasRequestDto filtros = new ListadoFinanzasRequestDto(null, null, null, null);
+
         ExportacionException exception = assertThrows(
                 ExportacionException.class,
-                () -> finanzaService.exportarFinanzas(
-                        new ListadoFinanzasRequestDto(null, null, null, null)
-                )
+                () -> finanzaService.exportarFinanzas(filtros)
         );
 
         assertEquals(
@@ -533,7 +533,7 @@ void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
     @Test
     void deberiaRegistrarPagoReserva() {
         FinanzaCrearRequestDto dto = new FinanzaCrearRequestDto();
-        dto.setFecha(LocalDate.of(2026, 6, 28));
+        dto.setFecha(LocalDate.of(2026, Month.JUNE, 28));
         dto.setImporte(BigDecimal.valueOf(1500));
         dto.setFormaPago(FormaPago.EFECTIVO);
         dto.setProcedencia(Procedencia.CAMPING);
@@ -547,7 +547,7 @@ void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
 
         verify(finanzaRepository).save(argThat(finanza ->
                 finanza instanceof Ingreso ingreso
-                        && ingreso.getFecha().equals(LocalDate.of(2026, 6, 28))
+                        && ingreso.getFecha().equals(LocalDate.of(2026, Month.JUNE, 28))
                         && ingreso.getImporte().compareTo(BigDecimal.valueOf(1500)) == 0
                         && ingreso.getFormaPago().equals(FormaPago.EFECTIVO)
                         && ingreso.getProcedencia().equals(Procedencia.CAMPING)
@@ -560,7 +560,7 @@ void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
     @Test
     void deberiaCrearIngresoDesdePagoCuota() {
         Ingreso ingreso = Ingreso.crearDesdePagoCuota(
-                LocalDate.of(2026, 7, 4),
+                LocalDate.of(2026, Month.JULY, 4),
                 BigDecimal.valueOf(1000),
                 FormaPago.EFECTIVO,
                 Procedencia.SEDE,
@@ -580,7 +580,7 @@ void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
     @Test
     void deberiaRegistrarPagoCuotaComoIngreso() {
         FinanzaCrearRequestDto dto = new FinanzaCrearRequestDto();
-        dto.setFecha(LocalDate.of(2026, 7, 4));
+        dto.setFecha(LocalDate.of(2026, Month.JULY, 4));
         dto.setImporte(BigDecimal.valueOf(1000));
         dto.setFormaPago(FormaPago.EFECTIVO);
         dto.setProcedencia(Procedencia.SEDE);
