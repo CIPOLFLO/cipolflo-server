@@ -41,4 +41,6 @@ public class FinanzaCrearRequestDto {
     private String notas;
 
     private Long reservaId;
+
+    private Long pagoCuotaId;
 }

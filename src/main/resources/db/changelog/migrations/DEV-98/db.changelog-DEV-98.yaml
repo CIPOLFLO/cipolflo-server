@@ -1,0 +1,5 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/migrations/DEV-98/add_requiere_sena_to_reserva.sql
+  - include:
+      file: db/changelog/migrations/DEV-98/drop_requiere_documentacion_from_servicio.sql
