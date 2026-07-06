@@ -179,6 +179,7 @@ public class FinanzaService implements IFinanzaService, IConsultaPagosAsociadosR
       finanzaRepository.delete(finanza);
     }
 
+    @Transactional
     @Override
     public void registrarPagoCuota(FinanzaCrearRequestDto dto) {
         Finanza finanza = Ingreso.crearDesdePagoCuota(
@@ -190,7 +191,7 @@ public class FinanzaService implements IFinanzaService, IConsultaPagosAsociadosR
                 dto.getPagoCuotaId()
         );
 
-        FinanzaMapper.toResponseDto(finanzaRepository.save(finanza));
+        finanzaRepository.save(finanza);
     }
 
 

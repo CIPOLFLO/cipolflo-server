@@ -3,7 +3,6 @@ package com.cipolflo.server.clientes.service;
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.PagoCuota;
 import com.cipolflo.server.clientes.domain.Socio;
-import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.dto.PagoCuotaResponseDto;
 import com.cipolflo.server.clientes.dto.PeriodoCuotaDto;
 import com.cipolflo.server.clientes.dto.RegistroPagoCuotaRequestDto;
@@ -18,12 +17,11 @@ import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
 import com.cipolflo.server.finanzas.service.IFinanzaService;
 import com.cipolflo.server.shared.ZonaHoraria;
-import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.cipolflo.server.clientes.helper.MetodoCobroFormaPagoHelper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -104,7 +102,7 @@ public class PagoCuotaService implements IPagoCuotaService {
                 dtoFinanza.setConcepto(Concepto.PAGO_CUOTA);
                 dtoFinanza.setFecha(LocalDate.ofInstant(pago.getFechaPago(), ZonaHoraria.URUGUAY));
                 dtoFinanza.setImporte(pago.getImporte());
-                dtoFinanza.setFormaPago(toFormaPago(pago.getMetodoCobro()));
+                dtoFinanza.setFormaPago(MetodoCobroFormaPagoHelper.toFormaPago(request.metodoCobro()));
                 dtoFinanza.setNotas(pago.getObservaciones());
                 dtoFinanza.setPagoCuotaId(pago.getId());
 
@@ -121,16 +119,6 @@ public class PagoCuotaService implements IPagoCuotaService {
             );
         }
     }
-    private FormaPago toFormaPago(MetodoCobro metodoCobro) {
-        return switch (metodoCobro) {
-            case EFECTIVO, COBRADORA -> FormaPago.EFECTIVO;
-            case TRANSFERENCIA -> FormaPago.TRANSFERENCIA;
-            case DEBITO -> FormaPago.DEBITO;
-            case DESCUENTO_SALARIAL -> FormaPago.TRANSFERENCIA;
-            case EN_SEDE -> FormaPago.EFECTIVO;
-        };
-    }
-
 
     private Socio validarSocio(Long socioId) {
         Cliente cliente = clienteRepository.findById(socioId)
