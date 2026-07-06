@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -159,9 +160,10 @@ class PagoReservaServiceTest {
                 null,
                 null,
                 null,
+                null,
+                false,
                 false,
                 importe,
-                null,
                 null
         );
     }
@@ -181,9 +183,10 @@ class PagoReservaServiceTest {
                 null,
                 null,
                 null,
-                true,
-                importe,
                 null,
+                true,
+                false,
+                importe,
                 null
         );
     }

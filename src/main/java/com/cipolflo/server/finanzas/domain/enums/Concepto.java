@@ -9,4 +9,5 @@ public enum Concepto {
     OSE,
     SUELDOS,
     OTRO,
+    DEVOLUCION_RESERVA
 }

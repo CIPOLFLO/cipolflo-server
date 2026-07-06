@@ -20,6 +20,8 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class Egreso extends Finanza {
 
+    private Long reservaId;
+
     public static Egreso crearManual(
             LocalDate fecha,
             BigDecimal importe,
@@ -30,6 +32,28 @@ public class Egreso extends Finanza {
     ) {
         Egreso egreso = new Egreso();
         egreso.inicializar(fecha, importe, concepto, formaPago, procedencia, notas);
+        egreso.setReservaId(null);
+        return egreso;
+    }
+
+    public static Egreso crearDesdeCancelacionReserva(
+            LocalDate fecha,
+            BigDecimal importeTotal,
+            FormaPago formaPago,
+            Procedencia procedencia,
+            String notas,
+            Long reservaId
+    ) {
+        Egreso egreso = new Egreso();
+        egreso.inicializar(
+                fecha,
+                importeTotal,
+                Concepto.DEVOLUCION_RESERVA,
+                formaPago,
+                procedencia,
+                notas
+        );
+        egreso.setReservaId(reservaId);
         return egreso;
     }
     @Override
