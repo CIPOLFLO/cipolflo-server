@@ -40,7 +40,8 @@ class ReservaEmailListenerTest {
                 10L, null, null, null,
                 null, null, null, null,
                 null, null, null,
-                null, null, null, null,
+                null, null, null,
+                null, null, null,
                 null, null, null,
                 cliente, null,
                 null, null, null, null);

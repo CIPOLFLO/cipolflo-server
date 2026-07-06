@@ -78,7 +78,7 @@ public class ReservaService implements IReservaService {
             ICalculoCostoService calculoCostoService,
             ExportProperties exportProperties,
             IExportService exportService,
-            IPdfGeneratorService pdfGeneratorService
+            IPdfGeneratorService pdfGeneratorService,
             ApplicationEventPublisher eventPublisher
     ) {
         this.reservaRepository = reservaRepository;
