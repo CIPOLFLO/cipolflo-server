@@ -179,7 +179,22 @@ public class FinanzaService implements IFinanzaService, IConsultaPagosAsociadosR
       finanzaRepository.delete(finanza);
     }
 
+    @Transactional
     @Override
+    public void registrarPagoCuota(FinanzaCrearRequestDto dto) {
+        Finanza finanza = Ingreso.crearDesdePagoCuota(
+                dto.getFecha(),
+                dto.getImporte(),
+                dto.getFormaPago(),
+                dto.getProcedencia(),
+                dto.getNotas(),
+                dto.getPagoCuotaId()
+        );
+
+        finanzaRepository.save(finanza);
+    }
+
+
     public List<PagoAsociadoReservaDto> getPagosAsociados(Long reservaId) {
         return finanzaRepository.findIngresosByReservaId(reservaId).stream()
                 .map(ingreso -> new PagoAsociadoReservaDto(
