@@ -9,6 +9,9 @@ import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.mapper.FinanzaMapper;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import com.cipolflo.server.finanzas.repository.FinanzaSpecification;
+import com.cipolflo.server.reservas.dto.PagoAsociadoReservaDto;
+import com.cipolflo.server.shared.enums.FormaPago;
+import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.*;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -18,11 +21,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
-public class FinanzaService implements IFinanzaService {
+public class FinanzaService implements IFinanzaService, IConsultaPagosAsociadosReserva {
 
     private final FinanzaRepository finanzaRepository;
     private final IExportService exportService;
@@ -173,5 +177,52 @@ public class FinanzaService implements IFinanzaService {
       Finanza finanza = finanzaRepository.findById(id)
       .orElseThrow(() -> new FinanzaNotFoundException(id));
       finanzaRepository.delete(finanza);
+    }
+
+    @Transactional
+    @Override
+    public void registrarPagoCuota(FinanzaCrearRequestDto dto) {
+        Finanza finanza = Ingreso.crearDesdePagoCuota(
+                dto.getFecha(),
+                dto.getImporte(),
+                dto.getFormaPago(),
+                dto.getProcedencia(),
+                dto.getNotas(),
+                dto.getPagoCuotaId()
+        );
+
+        finanzaRepository.save(finanza);
+    }
+
+
+    public List<PagoAsociadoReservaDto> getPagosAsociados(Long reservaId) {
+        return finanzaRepository.findIngresosByReservaId(reservaId).stream()
+                .map(ingreso -> new PagoAsociadoReservaDto(
+                        ingreso.getId(),
+                        ingreso.getFecha(),
+                        ingreso.getImporte(),
+                        ingreso.getFormaPago()
+                ))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void registrarDevolucionPorCancelacionReserva(
+            Long reservaId,
+            BigDecimal importeDevolucion,
+            FormaPago formaPago,
+            Procedencia procedencia
+    ) {
+        Egreso egreso = Egreso.crearDesdeCancelacionReserva(
+                LocalDate.now(),
+                importeDevolucion,
+                formaPago,
+                procedencia,
+                "Devolución por cancelación de reserva #" + reservaId,
+                reservaId
+        );
+
+        finanzaRepository.save(egreso);
     }
 }
