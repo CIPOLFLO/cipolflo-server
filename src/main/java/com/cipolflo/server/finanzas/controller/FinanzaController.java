@@ -82,9 +82,10 @@ public class FinanzaController {
 @PreAuthorize("isAuthenticated()")
 @DeleteMapping("/{id}")
 public ResponseEntity<Void> eliminarFinanza(
-    @PathVariable @Positive(message = "El id de la finanza debe ser un número positivo") Long id
+    @PathVariable @Positive(message = "El id de la finanza debe ser un número positivo") Long id,
+    @RequestParam(defaultValue = "false") boolean confirmar
 ) {
- finanzaService.eliminarFinanza(id);
+ finanzaService.eliminarFinanza(id, confirmar);
 
     return ResponseEntity.noContent().build();
 

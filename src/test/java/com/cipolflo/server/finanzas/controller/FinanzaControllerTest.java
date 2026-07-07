@@ -3,6 +3,9 @@ package com.cipolflo.server.finanzas.controller;
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.*;
+import com.cipolflo.server.finanzas.exception.ConfirmacionEliminacionReservaRequeridaException;
+import com.cipolflo.server.finanzas.exception.EliminacionEgresoReservaNoPermitidaException;
+import com.cipolflo.server.finanzas.exception.EliminacionPagoCuotaNoPermitidaException;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.service.IFinanzaService;
 import com.cipolflo.server.shared.enums.FormaPago;
@@ -31,6 +34,9 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -592,21 +598,34 @@ class FinanzaControllerTest {
     }
 
 @Test
-void deberiaEliminarFinanzaExistente() throws Exception {
-    doNothing().when(finanzaService).eliminarFinanza(1L);
+void deberiaEliminarFinanzaManualSinConfirmar() throws Exception {
+    doNothing().when(finanzaService).eliminarFinanza(1L, false);
 
     mockMvc.perform(delete("/api/v1/finanzas/1")
                     .with(jwt())
                     .with(csrf()))
             .andExpect(status().isNoContent());
 
-    verify(finanzaService).eliminarFinanza(1L);
+    verify(finanzaService).eliminarFinanza(1L, false);
+}
+
+@Test
+void deberiaEliminarConConfirmarTrue() throws Exception {
+    doNothing().when(finanzaService).eliminarFinanza(1L, true);
+
+    mockMvc.perform(delete("/api/v1/finanzas/1")
+                    .param("confirmar", "true")
+                    .with(jwt())
+                    .with(csrf()))
+            .andExpect(status().isNoContent());
+
+    verify(finanzaService).eliminarFinanza(1L, true);
 }
 
 @Test
 void deberiaRetornar404AlEliminarFinanzaInexistente() throws Exception {
     doThrow(new FinanzaNotFoundException(99L))
-            .when(finanzaService).eliminarFinanza(99L);
+            .when(finanzaService).eliminarFinanza(99L, false);
 
     mockMvc.perform(delete("/api/v1/finanzas/99")
                     .with(jwt())
@@ -614,7 +633,62 @@ void deberiaRetornar404AlEliminarFinanzaInexistente() throws Exception {
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.codigo").value("FINANZA_NO_ENCONTRADA"));
 
-    verify(finanzaService).eliminarFinanza(99L);
+    verify(finanzaService).eliminarFinanza(99L, false);
+}
+
+@Test
+void deberiaRetornar400AlEliminarIngresoDePagoCuota() throws Exception {
+    doThrow(new EliminacionPagoCuotaNoPermitidaException())
+            .when(finanzaService).eliminarFinanza(1L, false);
+
+    mockMvc.perform(delete("/api/v1/finanzas/1")
+                    .with(jwt())
+                    .with(csrf()))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.codigo").value("ELIMINACION_PAGO_CUOTA_NO_PERMITIDA"));
+
+    verify(finanzaService).eliminarFinanza(1L, false);
+}
+
+@Test
+void deberiaRetornar400AlEliminarEgresoAsociadoAReserva() throws Exception {
+    doThrow(new EliminacionEgresoReservaNoPermitidaException())
+            .when(finanzaService).eliminarFinanza(1L, false);
+
+    mockMvc.perform(delete("/api/v1/finanzas/1")
+                    .with(jwt())
+                    .with(csrf()))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.codigo").value("ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA"));
+
+    verify(finanzaService).eliminarFinanza(1L, false);
+}
+
+@Test
+void deberiaRetornar428CuandoLaReservaEstaCerradaYNoSeConfirma() throws Exception {
+    doThrow(new ConfirmacionEliminacionReservaRequeridaException())
+            .when(finanzaService).eliminarFinanza(1L, false);
+
+    mockMvc.perform(delete("/api/v1/finanzas/1")
+                    .with(jwt())
+                    .with(csrf()))
+            .andExpect(status().isPreconditionRequired())
+            .andExpect(jsonPath("$.codigo").value("CONFIRMACION_ELIMINACION_REQUERIDA"));
+
+    verify(finanzaService).eliminarFinanza(1L, false);
+}
+
+@Test
+void deberiaRetornar204AlEliminarReservaCerradaConConfirmar() throws Exception {
+    doNothing().when(finanzaService).eliminarFinanza(1L, true);
+
+    mockMvc.perform(delete("/api/v1/finanzas/1")
+                    .param("confirmar", "true")
+                    .with(jwt())
+                    .with(csrf()))
+            .andExpect(status().isNoContent());
+
+    verify(finanzaService).eliminarFinanza(1L, true);
 }
 
 @Test
@@ -624,7 +698,7 @@ void deberiaRetornar400AlEliminarConIdNegativo() throws Exception {
                     .with(csrf()))
             .andExpect(status().isBadRequest());
 
-    verify(finanzaService, never()).eliminarFinanza(any());
+    verify(finanzaService, never()).eliminarFinanza(anyLong(), anyBoolean());
 }
 
 @Test
@@ -633,6 +707,6 @@ void deberiaRetornar401AlEliminarSinAutenticacion() throws Exception {
                     .with(csrf()))
             .andExpect(status().isUnauthorized());
 
-    verify(finanzaService, never()).eliminarFinanza(any());
+    verify(finanzaService, never()).eliminarFinanza(anyLong(), anyBoolean());
 }
 }

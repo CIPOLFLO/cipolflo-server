@@ -146,6 +146,31 @@ public class Reserva extends AuditableEntity {
         confirmarSiCorresponde();
     }
 
+    /**
+     * Revierte un pago previamente registrado sobre la reserva, típicamente al eliminarse el ingreso
+     * asociado en finanzas.
+     * <p>
+     * Devuelve el {@code importe} eliminado al {@code montoImpago} (acotado al importe total de la
+     * reserva como salvaguarda), baja el flag {@code pago} si estaba en {@code true} y, si la reserva
+     * está {@code CONFIRMADA}, requiere seña y tras la devolución ya no cumple el mínimo del 50%,
+     * la vuelve a {@code PENDIENTE}.
+     * <p>
+     * Edge case: cuando el pago original se registró como pago total, el {@code importe} de la reserva
+     * se sobrescribió al valor pagado y el {@code montoImpago} quedó en cero; al revertir, el
+     * {@code montoImpago} vuelve al importe eliminado.
+     *
+     * @param importe importe del ingreso eliminado que se devuelve al saldo impago
+     */
+    public void revertirPago(BigDecimal importe) {
+        this.montoImpago = this.montoImpago.add(importe).min(this.importe);
+        if (Boolean.TRUE.equals(this.pago)) {
+            this.pago = false;
+        }
+        if (this.estado == EstadoReserva.CONFIRMADA && this.requiereSena && !tienePagadoAlMenosLaMitad()) {
+            cambiarEstado(EstadoReserva.PENDIENTE);
+        }
+    }
+
     public void recibirDocumentacion() {
         this.tieneDocumentacion = true;
         confirmarSiCorresponde();
@@ -183,7 +208,9 @@ public class Reserva extends AuditableEntity {
     private boolean esTransicionValida(EstadoReserva nuevoEstado) {
         return switch (this.estado) {
             case PENDIENTE   -> nuevoEstado == EstadoReserva.CONFIRMADA || nuevoEstado == EstadoReserva.CANCELADA;
-            case CONFIRMADA  -> nuevoEstado == EstadoReserva.EN_CURSO || nuevoEstado == EstadoReserva.CANCELADA;
+            case CONFIRMADA  -> nuevoEstado == EstadoReserva.EN_CURSO
+                    || nuevoEstado == EstadoReserva.CANCELADA
+                    || nuevoEstado == EstadoReserva.PENDIENTE;
             case EN_CURSO    -> nuevoEstado == EstadoReserva.FINALIZADA;
             case FINALIZADA, CANCELADA -> false;
         };

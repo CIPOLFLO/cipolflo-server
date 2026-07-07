@@ -6,8 +6,12 @@ import com.cipolflo.server.finanzas.domain.Ingreso;
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.*;
+import com.cipolflo.server.finanzas.exception.ConfirmacionEliminacionReservaRequeridaException;
+import com.cipolflo.server.finanzas.exception.EliminacionEgresoReservaNoPermitidaException;
+import com.cipolflo.server.finanzas.exception.EliminacionPagoCuotaNoPermitidaException;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
+import com.cipolflo.server.reservas.service.IReversionPagoReservaService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.ArchivoExportado;
@@ -51,6 +55,8 @@ class FinanzaServiceTest {
     private IExportService exportService;
     @Mock
     private ExportProperties exportProperties;
+    @Mock
+    private IReversionPagoReservaService reversionPagoReservaService;
     @InjectMocks
     private FinanzaService finanzaService;
 
@@ -479,7 +485,7 @@ class FinanzaServiceTest {
         assertEquals(TipoMovimiento.EGRESO, response.content().get(1).getTipoMovimiento());
     }
 @Test
-void deberiaEliminarFinanzaExistente() {
+void deberiaEliminarFinanzaManualSinLogicaAdicional() {
     Ingreso ingreso = Ingreso.crearManual(
             LocalDate.of(2026, Month.JUNE, 15),
             BigDecimal.valueOf(1500),
@@ -493,10 +499,32 @@ void deberiaEliminarFinanzaExistente() {
     when(finanzaRepository.findById(1L))
             .thenReturn(Optional.of(ingreso));
 
-    finanzaService.eliminarFinanza(1L);
+    finanzaService.eliminarFinanza(1L, false);
 
     verify(finanzaRepository).findById(1L);
     verify(finanzaRepository).delete(ingreso);
+    verifyNoInteractions(reversionPagoReservaService);
+}
+
+@Test
+void deberiaEliminarEgresoManualSinLogicaAdicional() {
+    Egreso egreso = Egreso.crearManual(
+            LocalDate.of(2026, Month.JUNE, 15),
+            BigDecimal.valueOf(2000),
+            Concepto.UTE,
+            FormaPago.TRANSFERENCIA,
+            Procedencia.CAMPING,
+            "Pago UTE"
+    );
+    egreso.setId(2L);
+
+    when(finanzaRepository.findById(2L))
+            .thenReturn(Optional.of(egreso));
+
+    finanzaService.eliminarFinanza(2L, false);
+
+    verify(finanzaRepository).delete(egreso);
+    verifyNoInteractions(reversionPagoReservaService);
 }
 
 @Test
@@ -506,7 +534,125 @@ void deberiaLanzarFinanzaNotFoundExceptionAlEliminar() {
 
     assertThrows(
             FinanzaNotFoundException.class,
-            () -> finanzaService.eliminarFinanza(99L)
+            () -> finanzaService.eliminarFinanza(99L, false)
+    );
+
+    verify((CrudRepository<Finanza, Long>) finanzaRepository, never()).delete(any(Finanza.class));
+}
+
+@Test
+void deberiaBloquearEliminacionDeIngresoDePagoCuota() {
+    Ingreso ingreso = Ingreso.crearDesdePagoCuota(
+            LocalDate.of(2026, Month.JULY, 4),
+            BigDecimal.valueOf(1000),
+            FormaPago.EFECTIVO,
+            Procedencia.SEDE,
+            "Pago cuota",
+            15L
+    );
+    ingreso.setId(3L);
+
+    when(finanzaRepository.findById(3L))
+            .thenReturn(Optional.of(ingreso));
+
+    assertThrows(
+            EliminacionPagoCuotaNoPermitidaException.class,
+            () -> finanzaService.eliminarFinanza(3L, false)
+    );
+
+    verify((CrudRepository<Finanza, Long>) finanzaRepository, never()).delete(any(Finanza.class));
+    verifyNoInteractions(reversionPagoReservaService);
+}
+
+@Test
+void deberiaBloquearEliminacionDeEgresoAsociadoAReserva() {
+    Egreso egreso = Egreso.crearDesdeCancelacionReserva(
+            LocalDate.of(2026, Month.JUNE, 15),
+            BigDecimal.valueOf(1000),
+            FormaPago.EFECTIVO,
+            Procedencia.CAMPING,
+            "Devolución",
+            50L
+    );
+    egreso.setId(4L);
+
+    when(finanzaRepository.findById(4L))
+            .thenReturn(Optional.of(egreso));
+
+    assertThrows(
+            EliminacionEgresoReservaNoPermitidaException.class,
+            () -> finanzaService.eliminarFinanza(4L, false)
+    );
+
+    verify((CrudRepository<Finanza, Long>) finanzaRepository, never()).delete(any(Finanza.class));
+    verifyNoInteractions(reversionPagoReservaService);
+}
+
+@Test
+void deberiaRevertirYEliminarIngresoDePagoReserva() {
+    Ingreso ingreso = Ingreso.crearDesdeReserva(
+            LocalDate.of(2026, Month.JUNE, 28),
+            BigDecimal.valueOf(1500),
+            FormaPago.EFECTIVO,
+            Procedencia.CAMPING,
+            "Pago de reserva",
+            10L
+    );
+    ingreso.setId(5L);
+
+    when(finanzaRepository.findById(5L))
+            .thenReturn(Optional.of(ingreso));
+
+    finanzaService.eliminarFinanza(5L, false);
+
+    verify(reversionPagoReservaService).revertirPorEliminacion(
+            eq(10L), eq(BigDecimal.valueOf(1500)), eq(false));
+    verify(finanzaRepository).delete(ingreso);
+}
+
+@Test
+void deberiaPropagarConfirmarAlServicioDeReversion() {
+    Ingreso ingreso = Ingreso.crearDesdeReserva(
+            LocalDate.of(2026, Month.JUNE, 28),
+            BigDecimal.valueOf(1500),
+            FormaPago.EFECTIVO,
+            Procedencia.CAMPING,
+            "Pago de reserva",
+            10L
+    );
+    ingreso.setId(6L);
+
+    when(finanzaRepository.findById(6L))
+            .thenReturn(Optional.of(ingreso));
+
+    finanzaService.eliminarFinanza(6L, true);
+
+    verify(reversionPagoReservaService).revertirPorEliminacion(
+            eq(10L), eq(BigDecimal.valueOf(1500)), eq(true));
+    verify(finanzaRepository).delete(ingreso);
+}
+
+@Test
+void noDeberiaEliminarCuandoLaReversionRequiereConfirmacion() {
+    Ingreso ingreso = Ingreso.crearDesdeReserva(
+            LocalDate.of(2026, Month.JUNE, 28),
+            BigDecimal.valueOf(1500),
+            FormaPago.EFECTIVO,
+            Procedencia.CAMPING,
+            "Pago de reserva",
+            10L
+    );
+    ingreso.setId(7L);
+
+    when(finanzaRepository.findById(7L))
+            .thenReturn(Optional.of(ingreso));
+    doThrow(new ConfirmacionEliminacionReservaRequeridaException())
+            .when(reversionPagoReservaService)
+            .revertirPorEliminacion(eq(10L), any(BigDecimal.class), eq(false));
+
+    assertThrows(
+            ConfirmacionEliminacionReservaRequeridaException.class,
+            () -> finanzaService.eliminarFinanza(7L, false)
     );
 
     verify((CrudRepository<Finanza, Long>) finanzaRepository, never()).delete(any(Finanza.class));

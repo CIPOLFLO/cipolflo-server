@@ -25,7 +25,7 @@ public interface IFinanzaService {
 
     void registrarPagoReserva(FinanzaCrearRequestDto dto);
 
-    void eliminarFinanza(Long id);
+    void eliminarFinanza(Long id, boolean confirmar);
 
     void registrarPagoCuota(FinanzaCrearRequestDto dto);
 

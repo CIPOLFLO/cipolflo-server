@@ -3,6 +3,9 @@ package com.cipolflo.server.shared.exception;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.finanzas.exception.ConfirmacionEliminacionReservaRequeridaException;
+import com.cipolflo.server.finanzas.exception.EliminacionEgresoReservaNoPermitidaException;
+import com.cipolflo.server.finanzas.exception.EliminacionPagoCuotaNoPermitidaException;
 import com.cipolflo.server.finanzas.exception.FinanzaCodigoError;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
@@ -219,6 +222,36 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(EliminacionPagoCuotaNoPermitidaException.class)
+    public ResponseEntity<ErrorResponse> handleEliminacionPagoCuotaNoPermitidaException(
+            EliminacionPagoCuotaNoPermitidaException ex) {
+        log.warn("Eliminación de pago de cuota no permitida: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        FinanzaCodigoError.ELIMINACION_PAGO_CUOTA_NO_PERMITIDA.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(EliminacionEgresoReservaNoPermitidaException.class)
+    public ResponseEntity<ErrorResponse> handleEliminacionEgresoReservaNoPermitidaException(
+            EliminacionEgresoReservaNoPermitidaException ex) {
+        log.warn("Eliminación de egreso asociado a reserva no permitida: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        FinanzaCodigoError.ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConfirmacionEliminacionReservaRequeridaException.class)
+    public ResponseEntity<ErrorResponse> handleConfirmacionEliminacionReservaRequeridaException(
+            ConfirmacionEliminacionReservaRequeridaException ex) {
+        log.warn("Confirmación de eliminación requerida: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.PRECONDITION_REQUIRED)
+                .body(new ErrorResponse(
+                        FinanzaCodigoError.CONFIRMACION_ELIMINACION_REQUERIDA.name(), ex.getMessage()));
     }
 
     @ExceptionHandler(ExportacionException.class)
