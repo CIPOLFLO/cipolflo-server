@@ -29,6 +29,17 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
             LocalDate desde
     );
 
+    /**
+     * Reservas en los estados dados que solapan el rango {@code [desde, hasta]}:
+     * empezaron antes o durante el rango ({@code fechaEntrada <= hasta}) y siguen activas
+     * dentro de él ({@code fechaSalida >= desde}). Usado por el reporte semanal.
+     */
+    List<Reserva> findByEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+            Collection<EstadoReserva> estados,
+            LocalDate hasta,
+            LocalDate desde
+    );
+
     boolean existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
             Long servicioId,
             Collection<EstadoReserva> estados,
