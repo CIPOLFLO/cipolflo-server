@@ -70,6 +70,9 @@ private CedulaFormatoValidator cedulaFormatoValidator;
 private RegistroParticularValidator registroParticularValidator;
 
 @Mock
+private RegistroEmpresaValidator registroEmpresaValidator;
+
+@Mock
 private IPagoCuotaService pagoCuotaService;
 
 @Mock
@@ -159,6 +162,20 @@ private IExportService exportService;
         dto.setDepartamento("Montevideo");
         dto.setCiudad("Montevideo");
         dto.setDireccion("Av. Italia 1234");
+        dto.setObservaciones("Sin observaciones");
+        return dto;
+    }
+
+    private RegistroEmpresaRequestDto crearRegistroEmpresaRequest() {
+        RegistroEmpresaRequestDto dto = new RegistroEmpresaRequestDto();
+        dto.setRazonSocial("Antel S.A.");
+        dto.setRut("21.100342.001-7");
+        dto.setPais("Uruguay");
+        dto.setDepartamento("Montevideo");
+        dto.setCiudad("Montevideo");
+        dto.setDireccion("Guatemala 1075");
+        dto.setTelefono("099123456");
+        dto.setMail("empresa@mail.com");
         dto.setObservaciones("Sin observaciones");
         return dto;
     }
@@ -606,6 +623,80 @@ private IExportService exportService;
 
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
         verify(clienteRepository).save(any(Socio.class));
+    }
+
+    // --- registrarEmpresa ---
+
+    @Test
+    void deberiaRegistrarEmpresaCorrectamente() {
+        RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
+
+        when(clienteRepository.save(any(Empresa.class))).thenAnswer(invocation -> {
+            Empresa empresa = invocation.getArgument(0);
+            empresa.setId(1L);
+            return empresa;
+        });
+
+        ClienteResponseDto response = clienteService.registrarEmpresa(dto);
+
+        assertNotNull(response);
+        assertEquals("Antel S.A.", response.getNombre());
+        assertEquals("211003420017", response.getRut());
+        assertEquals(TipoCliente.EMPRESA, response.getTipoCliente());
+        assertNull(response.getCedula());
+
+        verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), anyString());
+        verify(clienteRepository).save(any(Empresa.class));
+    }
+
+    @Test
+    void deberiaRegistrarEmpresaSinMail() {
+        RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
+        dto.setMail(null);
+
+        when(clienteRepository.save(any(Empresa.class))).thenAnswer(invocation -> {
+            Empresa empresa = invocation.getArgument(0);
+            empresa.setId(1L);
+            return empresa;
+        });
+
+        ClienteResponseDto response = clienteService.registrarEmpresa(dto);
+
+        assertNotNull(response);
+        assertNull(response.getEmail());
+
+        verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), isNull());
+        verify(clienteRepository).save(any(Empresa.class));
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoRutEsInvalidoAlRegistrarEmpresa() {
+        RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.RUT_INVALIDO.name(),
+                "El RUT ingresado no es válido"
+        )).when(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), any());
+
+        assertThrows(ClienteValidacionException.class, () -> clienteService.registrarEmpresa(dto));
+
+        verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), any());
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoRutEstaDuplicadoAlRegistrarEmpresa() {
+        RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.RUT_DUPLICADO.name(),
+                "Ya existe un cliente con ese RUT"
+        )).when(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), any());
+
+        assertThrows(ClienteValidacionException.class, () -> clienteService.registrarEmpresa(dto));
+
+        verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), any());
+        verify(clienteRepository, never()).save(any());
     }
 
     // --- buscarPorCedula ---

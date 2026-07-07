@@ -1092,4 +1092,129 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                         .content("{}"))
                 .andExpect(status().is5xxServerError());
     }
+
+    // --- registrarEmpresa ---
+
+    @Test
+    @WithMockUser
+    void deberiaRegistrarEmpresaCorrectamente() throws Exception {
+        ClienteResponseDto response = new ClienteResponseDto(
+                1L, "Antel S.A.", null, "211003420017",
+                null,
+                "099123456", "empresa@mail.com", null,
+                "Uruguay", "Montevideo", "Montevideo", "Guatemala 1075",
+                null, TipoCliente.EMPRESA, null, "Sin observaciones",
+                null, null, null, null, null
+        );
+
+        when(clienteService.registrarEmpresa(any(RegistroEmpresaRequestDto.class)))
+                .thenReturn(response);
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/empresas")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "razonSocial": "Antel S.A.",
+                                      "rut": "21.100342.001-7",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Guatemala 1075",
+                                      "telefono": "099123456",
+                                      "mail": "empresa@mail.com",
+                                      "observaciones": "Sin observaciones"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipoCliente").value("EMPRESA"))
+                .andExpect(jsonPath("$.rut").value("211003420017"));
+
+        verify(clienteService).registrarEmpresa(any(RegistroEmpresaRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltaCampoRequeridoEnRegistroEmpresa() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/clientes/empresas")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "razonSocial": "",
+                                      "rut": "21.100342.001-7",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Guatemala 1075",
+                                      "telefono": "099123456"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(clienteService, never()).registrarEmpresa(any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoRutEsInvalidoEnRegistroEmpresa() throws Exception {
+        when(clienteService.registrarEmpresa(any(RegistroEmpresaRequestDto.class)))
+                .thenThrow(new ClienteValidacionException(
+                        ClienteCodigoError.RUT_INVALIDO.name(),
+                        "El RUT ingresado no es válido"
+                ));
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/empresas")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "razonSocial": "Antel S.A.",
+                                      "rut": "123",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Guatemala 1075",
+                                      "telefono": "099123456"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("RUT_INVALIDO"));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoRutDuplicadoEnRegistroEmpresa() throws Exception {
+        when(clienteService.registrarEmpresa(any(RegistroEmpresaRequestDto.class)))
+                .thenThrow(new ClienteValidacionException(
+                        ClienteCodigoError.RUT_DUPLICADO.name(),
+                        "Ya existe un cliente con ese RUT"
+                ));
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/empresas")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "razonSocial": "Antel S.A.",
+                                      "rut": "21.100342.001-7",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Guatemala 1075",
+                                      "telefono": "099123456"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("RUT_DUPLICADO"));
+    }
 }

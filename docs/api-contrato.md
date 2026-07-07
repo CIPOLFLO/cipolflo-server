@@ -756,7 +756,52 @@ Registra un nuevo cliente de tipo particular.
 | 400         | `CEDULA_DUPLICADA`    | Ya existe un cliente con esa cédula         |
 | 401         | —                     | Token ausente, inválido o expirado          |
 ---
+### `POST /api/v1/clientes/empresas`
+Registra un nuevo cliente de tipo empresa.
 
+**Body** (`application/json`):
+```json
+{
+  "razonSocial": "Antel S.A.",
+  "rut": "21.100342.001-7",
+  "pais": "Uruguay",
+  "departamento": "Montevideo",
+  "ciudad": "Montevideo",
+  "direccion": "Guatemala 1075",
+  "telefono": "099123456",
+  "mail": "empresa@mail.com",
+  "observaciones": "Sin observaciones"
+}
+```
+
+| Campo           | Tipo   | Obligatorio | Validación                                  |
+|-----------------|--------|-------------|----------------------------------------------|
+| `razonSocial`   | string | Sí          | no vacío                                     |
+| `rut`           | string | Sí          | no vacío, algoritmo de RUT uruguayo, único   |
+| `pais`          | string | Sí          | no vacío                                     |
+| `departamento`  | string | Sí          | no vacío                                     |
+| `ciudad`        | string | Sí          | no vacío                                     |
+| `direccion`     | string | Sí          | no vacío                                     |
+| `telefono`      | string | Sí          | no vacío                                     |
+| `mail`          | string | No          | formato email válido si se envía, único      |
+| `observaciones` | string | No          | —                                             |
+
+> El RUT se normaliza automáticamente (se eliminan puntos y guiones).
+
+**Respuesta 201:** mismo body que `GET /api/v1/clientes/{id}`
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                                                 |
+|-------------|----------------------|-----------------------------------------------------------------|
+| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o vacío                              |
+| 400         | `RUT_INVALIDO`       | El RUT no cumple el algoritmo de validación uruguayo            |
+| 400         | `RUT_DUPLICADO`      | Ya existe un cliente con ese RUT                                |
+| 400         | `EMAIL_INVALIDO`     | El email no tiene formato válido                                |
+| 400         | `EMAIL_DUPLICADO`    | Ya existe un cliente con ese email                              |
+| 401         | —                    | Token ausente, inválido o expirado                              |
+
+---
 ## Clientes — DTOs
 
 ### Request DTOs
@@ -777,7 +822,20 @@ Registra un nuevo cliente de tipo particular.
   observaciones?: string      // opcional
 }
 ```
-
+#### `RegistroEmpresaRequestDto` — body en `POST /api/v1/clientes/empresas`
+```typescript
+{
+  razonSocial: string     // obligatorio, no vacío
+  rut: string              // obligatorio, algoritmo de RUT uruguayo, único
+  pais: string             // obligatorio, no vacío
+  departamento: string     // obligatorio, no vacío
+  ciudad: string           // obligatorio, no vacío
+  direccion: string        // obligatorio, no vacío
+  telefono: string         // obligatorio, no vacío
+  mail?: string            // opcional, formato email válido si se envía, único
+  observaciones?: string   // opcional
+}
+```
 #### `ModificacionParticularRequestDto` — body en `PUT /api/v1/clientes/particulares/{id}`
 ```typescript
 {
@@ -1047,12 +1105,9 @@ Retorna el detalle completo de una reserva.
 }
 ```
 
-<<<<<<< HEAD
 > El campo `cliente` es `null` cuando la reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO` sin cliente asociado (solo `rut`).
-=======
 > El campo `cliente` es `null` cuando la reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO` sin cliente asociado (solo `rut`). En ese caso el campo `nombre` contiene el nombre de la organización _(temporal — hasta definir manejo de clientes RUT)_.
 > `importe` y `formaPago` son `null` mientras la reserva no haya sido pagada.
->>>>>>> origin/develop
 
 **Errores:**
 
