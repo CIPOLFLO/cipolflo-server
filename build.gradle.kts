@@ -28,10 +28,12 @@ repositories {
 
 dependencies {
 	implementation("org.apache.poi:poi-ooxml:5.4.0")
+	implementation("org.apache.pdfbox:pdfbox:3.0.4")
 	implementation ("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation ("org.springframework.boot:spring-boot-starter-security")
 	implementation ("org.springframework.boot:spring-boot-starter-validation")
 	implementation ("org.springframework.boot:spring-boot-starter-web")
+	implementation ("org.springframework.boot:spring-boot-starter-mail")
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	implementation ("org.springframework.boot:spring-boot-starter-actuator")
 	compileOnly ("org.projectlombok:lombok")
