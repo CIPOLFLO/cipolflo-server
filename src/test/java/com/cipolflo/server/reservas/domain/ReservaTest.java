@@ -292,4 +292,49 @@ class ReservaTest {
 
         assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
     }
+    // ── estaPaga ────────────────────────────────────────────────────────────────
+
+    @Test
+    void estaPagaDeberiaRetornarTrueCuandoMontoImpagoEsCero() {
+        Reserva reserva = crearComun(false, true);
+
+        reserva.registrarPago(BigDecimal.valueOf(2000), true);
+
+        assertTrue(reserva.estaPaga());
+    }
+
+    @Test
+    void estaPagaDeberiaRetornarFalseCuandoTieneMontoImpagoPendiente() {
+        Reserva reserva = crearComun(false, true);
+
+        reserva.registrarPago(BigDecimal.valueOf(500), false);
+
+        assertFalse(reserva.estaPaga());
+    }
+
+    @Test
+    void estaPagaDeberiaRetornarTrueCuandoEsColaboracionRecienCreada() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
+                null,
+                10L,
+                Procedencia.CAMPING,
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(3),
+                null,
+                null,
+                null,
+                null,
+                null,
+                "20123456-7",
+                "Org Test",
+                null,
+                true,
+                true,
+                null,
+                null
+        );
+
+        assertTrue(reserva.estaPaga());
+    }
 }

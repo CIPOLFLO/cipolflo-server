@@ -2,6 +2,7 @@ package com.cipolflo.server.reservas.controller;
 
 import com.cipolflo.server.reservas.dto.*;
 import com.cipolflo.server.reservas.service.ICancelacionReservaService;
+import com.cipolflo.server.reservas.service.IFinalizacionReservaService;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -31,11 +32,13 @@ public class ReservaController {
 
     private final IReservaService reservaService;
     private final ICancelacionReservaService cancelacionReservaService;
+    private final IFinalizacionReservaService finalizacionReservaService;
 
-    public ReservaController(IReservaService reservaService, ICancelacionReservaService cancelacionReservaService) {
+    public ReservaController(IReservaService reservaService, ICancelacionReservaService cancelacionReservaService, IFinalizacionReservaService finalizacionReservaService) {
 
         this.reservaService = reservaService;
         this.cancelacionReservaService = cancelacionReservaService;
+        this.finalizacionReservaService = finalizacionReservaService;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -130,6 +133,24 @@ public class ReservaController {
             @Valid @RequestBody ReservaCancelacionRequestDto dto
     ) {
         cancelacionReservaService.cancelar(id, dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/finalizacion")
+    public ResponseEntity<ReservaFinalizacionCheckResponseDto> verificarFinalizacion(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id
+    ) {
+        return ResponseEntity.ok(finalizacionReservaService.verificarFinalizacion(id));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/finalizacion")
+    public ResponseEntity<Void> finalizar(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id,
+            @Valid @RequestBody ReservaFinalizacionRequestDto dto
+    ) {
+        finalizacionReservaService.finalizar(id, dto);
         return ResponseEntity.noContent().build();
     }
 }

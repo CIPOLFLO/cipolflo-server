@@ -5,6 +5,7 @@ import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.service.ICancelacionReservaService;
+import com.cipolflo.server.reservas.service.IFinalizacionReservaService;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.export.ArchivoExportado;
@@ -53,12 +54,18 @@ class ReservaControllerTest {
 
     @MockitoBean
     private IReservaService reservaService;
+
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
+
     @MockitoBean
     private ICancelacionReservaService cancelacionReservaService;
+
+    @MockitoBean
+    private IFinalizacionReservaService finalizacionReservaService;
 
     @Test
     @WithMockUser
@@ -713,4 +720,168 @@ class ReservaControllerTest {
 
             verify(cancelacionReservaService).cancelar(eq(1L), any(ReservaCancelacionRequestDto.class));
         }
+    @Test
+    @WithMockUser
+    void deberiaVerificarFinalizacionCuandoReservaEstaPaga() throws Exception {
+        ReservaFinalizacionCheckResponseDto response =
+                new ReservaFinalizacionCheckResponseDto(
+                        true,
+                        BigDecimal.ZERO
+                );
+
+        when(finalizacionReservaService.verificarFinalizacion(1L))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/reservas/1/finalizacion"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.puedeFinalizarseDirectamente").value(true))
+                .andExpect(jsonPath("$.montoImpago").value(0));
+
+        verify(finalizacionReservaService).verificarFinalizacion(1L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaVerificarFinalizacionCuandoReservaTieneSaldoPendiente() throws Exception {
+        ReservaFinalizacionCheckResponseDto response =
+                new ReservaFinalizacionCheckResponseDto(
+                        false,
+                        BigDecimal.valueOf(1200)
+                );
+
+        when(finalizacionReservaService.verificarFinalizacion(1L))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/v1/reservas/1/finalizacion"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.puedeFinalizarseDirectamente").value(false))
+                .andExpect(jsonPath("$.montoImpago").value(1200));
+
+        verify(finalizacionReservaService).verificarFinalizacion(1L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlVerificarFinalizacionDeReservaInexistente() throws Exception {
+
+        when(finalizacionReservaService.verificarFinalizacion(99L))
+                .thenThrow(new ReservaNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/reservas/99/finalizacion"))
+                .andExpect(status().isNotFound());
+
+        verify(finalizacionReservaService).verificarFinalizacion(99L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlVerificarFinalizacionDeReservaNoFinalizable() throws Exception {
+
+        when(finalizacionReservaService.verificarFinalizacion(1L))
+                .thenThrow(new ReservaValidacionException(
+                        ReservaCodigoError.RESERVA_NO_FINALIZABLE,
+                        "No se puede finalizar una reserva en este estado"
+                ));
+
+        mockMvc.perform(get("/api/v1/reservas/1/finalizacion"))
+                .andExpect(status().isBadRequest());
+
+        verify(finalizacionReservaService).verificarFinalizacion(1L);
+    }
+    @Test
+    @WithMockUser
+    void deberiaRetornarNoContentAlFinalizarReservaSinCompletarPago() throws Exception {
+
+        String body = """
+    {
+      "completarPago": false
+    }
+    """;
+
+        mockMvc.perform(patch("/api/v1/reservas/1/finalizacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNoContent());
+
+        verify(finalizacionReservaService)
+                .finalizar(eq(1L), any(ReservaFinalizacionRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNoContentAlFinalizarReservaCompletandoPago() throws Exception {
+
+        String body = """
+    {
+      "completarPago": true,
+      "formaPago": "EFECTIVO",
+      "notas": "Pago al finalizar"
+    }
+    """;
+
+        mockMvc.perform(patch("/api/v1/reservas/1/finalizacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNoContent());
+
+        verify(finalizacionReservaService)
+                .finalizar(eq(1L), any(ReservaFinalizacionRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlFinalizarConIdCero() throws Exception {
+
+        mockMvc.perform(patch("/api/v1/reservas/0/finalizacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        verify(finalizacionReservaService, never())
+                .finalizar(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlFinalizarReservaInexistente() throws Exception {
+
+        doThrow(new ReservaNotFoundException(99L))
+                .when(finalizacionReservaService)
+                .finalizar(eq(99L), any());
+
+        mockMvc.perform(patch("/api/v1/reservas/99/finalizacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"completarPago\":false}"))
+                .andExpect(status().isNotFound());
+
+        verify(finalizacionReservaService)
+                .finalizar(eq(99L), any());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlFinalizarReservaNoFinalizable() throws Exception {
+
+        doThrow(new ReservaValidacionException(
+                ReservaCodigoError.RESERVA_NO_FINALIZABLE,
+                "No se puede finalizar una reserva en este estado"
+        ))
+                .when(finalizacionReservaService)
+                .finalizar(eq(1L), any());
+
+        mockMvc.perform(patch("/api/v1/reservas/1/finalizacion")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"completarPago\":false}"))
+                .andExpect(status().isBadRequest());
+
+        verify(finalizacionReservaService)
+                .finalizar(eq(1L), any());
+    }
+
+
 }

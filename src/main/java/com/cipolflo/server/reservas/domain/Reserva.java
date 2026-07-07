@@ -230,4 +230,8 @@ public class Reserva extends AuditableEntity {
         }
         return imp;
     }
+
+    public boolean estaPaga() {
+        return montoImpago.compareTo(BigDecimal.ZERO) == 0;
+    }
 }
