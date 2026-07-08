@@ -15,7 +15,6 @@ import com.cipolflo.server.servicios.repository.ServicioRepository;
 import com.cipolflo.server.servicios.validator.ModificacionServicioValidator;
 import com.cipolflo.server.servicios.validator.ModificacionValidationContext;
 import com.cipolflo.server.servicios.validator.ServicioRegistroValidator;
-import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
@@ -133,9 +132,10 @@ class ServicioServiceTest {
                 null,
                 null,
                 null,
+                null,
+                false,
                 false,
                 importe,
-                null,
                 null
         );
     }
@@ -945,7 +945,7 @@ class ServicioServiceTest {
         assertEquals(fechaEntrada, dto.getFechaEntrada());
         assertEquals(fechaSalida, dto.getFechaSalida());
         assertFalse(dto.getPago());
-        assertEquals(EstadoReserva.PENDIENTE, dto.getEstado());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
     }
 
     @Test
@@ -1018,7 +1018,7 @@ class ServicioServiceTest {
         ServicioReservaOcupacionDto dto = resultado.get(0);
 
         assertEquals(5L, dto.reservaId());
-        assertEquals(EstadoReserva.PENDIENTE, dto.estado());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.estado());
         assertEquals(LocalDate.of(2026, 6, 17), dto.fechaInicio());
         assertEquals(LocalDate.of(2026, 6, 19), dto.fechaFin());
 

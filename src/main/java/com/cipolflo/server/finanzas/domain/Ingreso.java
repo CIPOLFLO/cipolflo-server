@@ -58,4 +58,20 @@ public class Ingreso extends Finanza {
     public TipoMovimiento getTipoMovimiento() {
         return TipoMovimiento.INGRESO;
     }
+
+    public static Ingreso crearDesdePagoCuota(
+            LocalDate fecha,
+            BigDecimal importe,
+            FormaPago formaPago,
+            Procedencia procedencia,
+            String notas,
+            Long pagoCuotaId
+    ) {
+        Ingreso ingreso = new Ingreso();
+        ingreso.inicializar(fecha, importe, Concepto.PAGO_CUOTA, formaPago, procedencia, notas);
+        ingreso.setReservaId(null);
+        ingreso.setPagoCuotaId(pagoCuotaId);
+        return ingreso;
+    }
+
 }
