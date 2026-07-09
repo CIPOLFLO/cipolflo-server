@@ -1,7 +1,7 @@
 package com.cipolflo.server.reservas.dto;
 
 import com.cipolflo.server.shared.enums.FormaPago;
-import jdk.jfr.Description;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -13,10 +13,10 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class ReservaCancelacionRequestDto {
 
-    @Description(value = "Indica si se debe generar una devolución por los pagos asociados")
+    @Schema(description = "Indica si se debe generar una devolución por los pagos asociados")
     private Boolean generarDevolucion;
 
-    @Description(value = "Forma de pago utilizada para registrar la devolución")
+    @Schema(description = "Forma de pago utilizada para registrar la devolución")
     private FormaPago formaPago;
 
     private BigDecimal importeDevolucion;

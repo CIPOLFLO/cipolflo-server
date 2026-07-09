@@ -181,9 +181,10 @@ class ReservaTest {
 
         reserva.registrarPago(BigDecimal.valueOf(2000), true);
 
+        BigDecimal importe = BigDecimal.valueOf(100);
         assertThrows(
                 IllegalStateException.class,
-                () -> reserva.registrarPago(BigDecimal.valueOf(100), true)
+                () -> reserva.registrarPago(importe, true)
         );
     }
 
@@ -291,5 +292,67 @@ class ReservaTest {
         reserva.cancelar();
 
         assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
+    }
+    // ── estaPaga ────────────────────────────────────────────────────────────────
+
+    @Test
+    void estaPagaDeberiaRetornarTrueCuandoMontoImpagoEsCero() {
+        Reserva reserva = crearComun(false, true);
+
+        reserva.registrarPago(BigDecimal.valueOf(2000), true);
+
+        assertTrue(reserva.estaPaga());
+    }
+
+    @Test
+    void estaPagaDeberiaRetornarFalseCuandoTieneMontoImpagoPendiente() {
+        Reserva reserva = crearComun(false, true);
+
+        reserva.registrarPago(BigDecimal.valueOf(500), false);
+
+        assertFalse(reserva.estaPaga());
+    }
+
+    @Test
+    void completarSaldoConPagoParcialNoDeberiaAlterarElImporteTotal() {
+        // Reserva COMÚN de importe 2000: se paga una seña y luego se salda el resto.
+        // Al saldar el monto impago (esPagoTotal=false) el importe total debe mantenerse.
+        Reserva reserva = crearComun(false, true);
+
+        reserva.registrarPago(BigDecimal.valueOf(500), false);
+        assertEquals(BigDecimal.valueOf(1500), reserva.getMontoImpago());
+
+        reserva.registrarPago(BigDecimal.valueOf(1500), false);
+
+        assertTrue(reserva.getPago());
+        assertTrue(reserva.estaPaga());
+        assertEquals(BigDecimal.ZERO, reserva.getMontoImpago());
+        assertEquals(BigDecimal.valueOf(2000), reserva.getImporte());
+    }
+
+    @Test
+    void estaPagaDeberiaRetornarTrueCuandoEsColaboracionRecienCreada() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
+                null,
+                10L,
+                Procedencia.CAMPING,
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(3),
+                null,
+                null,
+                null,
+                null,
+                null,
+                "20123456-7",
+                "Org Test",
+                null,
+                true,
+                true,
+                null,
+                null
+        );
+
+        assertTrue(reserva.estaPaga());
     }
 }
