@@ -107,6 +107,18 @@ public class ClienteController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @PostMapping("/empresas")
+    public ResponseEntity<ClienteResponseDto> registrarEmpresa(
+            @Valid @RequestBody RegistroEmpresaRequestDto dto) {
+
+        ClienteResponseDto response = clienteService.registrarEmpresa(dto);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/cedula/{cedula}")
     public ResponseEntity<BusquedaCedulaResponseDto> buscarPorCedula(@PathVariable String cedula) {
         return ResponseEntity.ok(

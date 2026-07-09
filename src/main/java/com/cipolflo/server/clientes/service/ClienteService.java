@@ -1,6 +1,7 @@
 package com.cipolflo.server.clientes.service;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.dto.*;
@@ -12,6 +13,7 @@ import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteSpecification;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
+import com.cipolflo.server.clientes.utils.RutNormalizador;
 import com.cipolflo.server.clientes.validator.*;
 import com.cipolflo.server.shared.export.*;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -42,6 +44,7 @@ public class ClienteService implements IClienteService {
     private final RegistroSocioValidator registroSocioValidator;
     private final CedulaFormatoValidator cedulaFormatoValidator;
     private final RegistroParticularValidator registroParticularValidator;
+    private final RegistroEmpresaValidator registroEmpresaValidator;
     private final ExportProperties exportProperties;
     private final IExportService exportService;
     private final IPagoCuotaService pagoCuotaService;
@@ -53,6 +56,7 @@ public class ClienteService implements IClienteService {
                           ModificacionSocioValidator modificacionSocioValidator,
                           RegistroSocioValidator registroSocioValidator,
                           RegistroParticularValidator registroParticularValidator,
+                          RegistroEmpresaValidator registroEmpresaValidator,
                           ExportProperties exportProperties,
                           IExportService exportService,
                           IPagoCuotaService pagoCuotaService) {
@@ -63,6 +67,7 @@ public class ClienteService implements IClienteService {
         this.registroSocioValidator = registroSocioValidator;
         this.cedulaFormatoValidator = cedulaFormatoValidator;
         this.registroParticularValidator = registroParticularValidator;
+        this.registroEmpresaValidator = registroEmpresaValidator;
         this.exportProperties = exportProperties;
         this.exportService = exportService;
         this.pagoCuotaService = pagoCuotaService;
@@ -209,7 +214,41 @@ public class ClienteService implements IClienteService {
         socio.setEstado(EstadoSocio.ACTIVO);
         socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
         socio.setMesesSinPagar(0);
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio), null);
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null);
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                    "Ya existe un cliente con esa cédula"
+            );
+        }
+    }
+
+    @Override
+    @Transactional
+    public ClienteResponseDto registrarEmpresa(RegistroEmpresaRequestDto dto) {
+        String rutNormalizado = RutNormalizador.normalizar(dto.getRut());
+        String mailNormalizado = dto.getMail() != null ? dto.getMail().trim() : null;
+        registroEmpresaValidator.validar(dto, rutNormalizado, mailNormalizado);
+        Empresa empresa = Empresa.registrar(
+                rutNormalizado,
+                dto.getRazonSocial(),
+                dto.getTelefono(),
+                mailNormalizado,
+                dto.getPais(),
+                dto.getDepartamento(),
+                dto.getCiudad(),
+                dto.getDireccion(),
+                dto.getObservaciones()
+        );
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(empresa), null);
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.RUT_DUPLICADO.name(),
+                    "Ya existe un cliente con ese RUT"
+            );
+        }
     }
 
     @Override
@@ -262,6 +301,7 @@ public class ClienteService implements IClienteService {
                 "Nombre",
                 "Número de socio",
                 "Cédula",
+                "RUT",
                 "Email",
                 "Estado",
                 "Telefono",
@@ -277,7 +317,7 @@ public class ClienteService implements IClienteService {
             .map(ClienteMapper::toExportFila)
             .toList();
 
-        int[] anchos = {8000,5000,5000,10000,5000,5000,5000,5000,5000,5000,5000};
+        int[] anchos = {8000,5000,5000,5000,10000,5000,5000,5000,5000,5000,5000,5000,5000,5000};
         byte[] contenido = exportService.generarExcel(
                 "Clientes",
                 encabezados,

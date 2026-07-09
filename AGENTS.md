@@ -71,10 +71,10 @@ Todas las entidades usan Lombok. El patrón estándar en entidades es:
 
 Hay dos jerarquías con `SINGLE_TABLE`:
 
-| Tabla | Discriminador | Subtipos |
-|---|---|---|
-| `cliente` | `tipo` | `PARTICULAR`, `SOCIO` |
-| `finanza` | `tipo` | `INGRESO`, `EGRESO` |
+| Tabla     | Discriminador | Subtipos              |
+| --------- | ------------- | --------------------- |
+| `cliente` | `tipo`        | `PARTICULAR`, `SOCIO` |
+| `finanza` | `tipo`        | `INGRESO`, `EGRESO`   |
 
 Si se agrega un nuevo subtipo, debe anotarse con `@DiscriminatorValue("NOMBRE")` y extender la clase abstracta correspondiente. No crear una tabla nueva salvo que la herencia cambie de estrategia.
 
@@ -180,12 +180,12 @@ Regla: el test de `Foo.java` vive en el mismo paquete que `Foo.java`, pero bajo 
 
 ### Qué testear y cómo
 
-| Capa | Tipo de test | Notas |
-|---|---|---|
-| `domain/` | Unitario (sin Spring) | Instanciar directamente, sin mocks. Foco en invariantes y lógica de negocio. |
-| `service/` | Unitario con mocks | Mockear el repositorio. Verificar llamadas y transformaciones. |
-| `controller/` | Integración parcial (`@WebMvcTest`) | Solo si hay lógica de mapeo o validación no trivial en el controller. |
-| Contexto completo | `@SpringBootTest` | Solo para smoke tests o tests end-to-end puntuales. |
+| Capa              | Tipo de test                        | Notas                                                                        |
+| ----------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
+| `domain/`         | Unitario (sin Spring)               | Instanciar directamente, sin mocks. Foco en invariantes y lógica de negocio. |
+| `service/`        | Unitario con mocks                  | Mockear el repositorio. Verificar llamadas y transformaciones.               |
+| `controller/`     | Integración parcial (`@WebMvcTest`) | Solo si hay lógica de mapeo o validación no trivial en el controller.        |
+| Contexto completo | `@SpringBootTest`                   | Solo para smoke tests o tests end-to-end puntuales.                          |
 
 ### Prioridades
 
