@@ -16,7 +16,7 @@ public class FinalizacionReservaValidator {
     }
 
     private void validarEstadoFinalizable(EstadoReserva estadoReserva) {
-        if (estadoReserva != EstadoReserva.EN_CURSO) {
+        if (!estadoReserva.esFinalizable()) {
             throw new ReservaValidacionException(
                     ReservaCodigoError.RESERVA_NO_FINALIZABLE,
                     "Solo se pueden finalizar reservas en curso"

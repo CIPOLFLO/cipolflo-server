@@ -24,22 +24,21 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpHeaders;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-
 import org.springframework.http.MediaType;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(
@@ -314,78 +313,48 @@ class ReservaControllerTest {
         verify(reservaService).modificar(eq(99L), any());
     }
 
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestAlModificarSinServicioId() throws Exception {
-        String body = """
+    static Stream<String> bodiesInvalidosDeModificacion() {
+        return Stream.of(
+                // sin servicioId
+                """
                 {
                   "procedencia": "CAMPING",
                   "fechaInicio": "2026-07-01",
                   "fechaFin": "2026-07-05"
                 }
-                """;
-
-        mockMvc.perform(put("/api/v1/reservas/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body)
-                        .with(csrf()))
-                .andExpect(status().isBadRequest());
-
-        verify(reservaService, never()).modificar(anyLong(), any());
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestAlModificarSinFechaInicio() throws Exception {
-        String body = """
+                """,
+                // sin fechaInicio
+                """
                 {
                   "servicioId": 10,
                   "procedencia": "CAMPING",
                   "fechaFin": "2026-07-05"
                 }
-                """;
-
-        mockMvc.perform(put("/api/v1/reservas/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body)
-                        .with(csrf()))
-                .andExpect(status().isBadRequest());
-
-        verify(reservaService, never()).modificar(anyLong(), any());
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestAlModificarSinFechaFin() throws Exception {
-        String body = """
+                """,
+                // sin fechaFin
+                """
                 {
                   "servicioId": 10,
                   "procedencia": "CAMPING",
                   "fechaInicio": "2026-07-01"
                 }
-                """;
-
-        mockMvc.perform(put("/api/v1/reservas/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body)
-                        .with(csrf()))
-                .andExpect(status().isBadRequest());
-
-        verify(reservaService, never()).modificar(anyLong(), any());
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestAlModificarConServicioIdCero() throws Exception {
-        String body = """
+                """,
+                // servicioId en cero (no positivo)
+                """
                 {
                   "servicioId": 0,
                   "procedencia": "CAMPING",
                   "fechaInicio": "2026-07-01",
                   "fechaFin": "2026-07-05"
                 }
-                """;
+                """
+        );
+    }
 
+    @ParameterizedTest
+    @MethodSource("bodiesInvalidosDeModificacion")
+    @WithMockUser
+    void deberiaRetornarBadRequestAlModificarConBodyInvalido(String body) throws Exception {
         mockMvc.perform(put("/api/v1/reservas/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body)
@@ -592,7 +561,7 @@ class ReservaControllerTest {
                     false,
                     List.of(new PagoAsociadoReservaDto(
                             1L,
-                            LocalDate.of(2026, 7, 1),
+                            LocalDate.of(2026, Month.JULY, 1),
                             BigDecimal.valueOf(500),
                             FormaPago.EFECTIVO
                     )),
@@ -734,7 +703,7 @@ class ReservaControllerTest {
 
         mockMvc.perform(get("/api/v1/reservas/1/finalizacion"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.puedeFinalizarseDirectamente").value(true))
+                .andExpect(jsonPath("$.puedeFinalizarSinPago").value(true))
                 .andExpect(jsonPath("$.montoImpago").value(0));
 
         verify(finalizacionReservaService).verificarFinalizacion(1L);
@@ -754,7 +723,7 @@ class ReservaControllerTest {
 
         mockMvc.perform(get("/api/v1/reservas/1/finalizacion"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.puedeFinalizarseDirectamente").value(false))
+                .andExpect(jsonPath("$.puedeFinalizarSinPago").value(false))
                 .andExpect(jsonPath("$.montoImpago").value(1200));
 
         verify(finalizacionReservaService).verificarFinalizacion(1L);

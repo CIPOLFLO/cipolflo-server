@@ -181,9 +181,10 @@ class ReservaTest {
 
         reserva.registrarPago(BigDecimal.valueOf(2000), true);
 
+        BigDecimal importe = BigDecimal.valueOf(100);
         assertThrows(
                 IllegalStateException.class,
-                () -> reserva.registrarPago(BigDecimal.valueOf(100), true)
+                () -> reserva.registrarPago(importe, true)
         );
     }
 
@@ -310,6 +311,23 @@ class ReservaTest {
         reserva.registrarPago(BigDecimal.valueOf(500), false);
 
         assertFalse(reserva.estaPaga());
+    }
+
+    @Test
+    void completarSaldoConPagoParcialNoDeberiaAlterarElImporteTotal() {
+        // Reserva COMÚN de importe 2000: se paga una seña y luego se salda el resto.
+        // Al saldar el monto impago (esPagoTotal=false) el importe total debe mantenerse.
+        Reserva reserva = crearComun(false, true);
+
+        reserva.registrarPago(BigDecimal.valueOf(500), false);
+        assertEquals(BigDecimal.valueOf(1500), reserva.getMontoImpago());
+
+        reserva.registrarPago(BigDecimal.valueOf(1500), false);
+
+        assertTrue(reserva.getPago());
+        assertTrue(reserva.estaPaga());
+        assertEquals(BigDecimal.ZERO, reserva.getMontoImpago());
+        assertEquals(BigDecimal.valueOf(2000), reserva.getImporte());
     }
 
     @Test

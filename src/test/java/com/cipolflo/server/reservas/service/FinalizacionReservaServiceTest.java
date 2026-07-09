@@ -52,7 +52,7 @@ class FinalizacionReservaServiceTest {
 
         ReservaFinalizacionCheckResponseDto response = service.verificarFinalizacion(1L);
 
-        assertTrue(response.puedeFinalizarseDirectamente());
+        assertTrue(response.puedeFinalizarSinPago());
         assertEquals(BigDecimal.ZERO, response.montoImpago());
     }
 
@@ -64,7 +64,7 @@ class FinalizacionReservaServiceTest {
 
         ReservaFinalizacionCheckResponseDto response = service.verificarFinalizacion(1L);
 
-        assertFalse(response.puedeFinalizarseDirectamente());
+        assertFalse(response.puedeFinalizarSinPago());
         assertEquals(BigDecimal.valueOf(1500), response.montoImpago());
     }
 
@@ -128,7 +128,8 @@ class FinalizacionReservaServiceTest {
         RegistroPagoReservaRequestDto pagoDto = captor.getValue();
 
         assertEquals(BigDecimal.valueOf(1500), pagoDto.getImporte());
-        assertTrue(pagoDto.getEsPagoTotal());
+        // esPagoTotal debe ser false: se salda el monto impago sin sobrescribir el importe total
+        assertFalse(pagoDto.getEsPagoTotal());
         assertEquals(FormaPago.EFECTIVO, pagoDto.getFormaPago());
         assertEquals("Pago al finalizar", pagoDto.getNotas());
 

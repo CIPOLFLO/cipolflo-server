@@ -37,7 +37,7 @@ public class FinalizacionReservaService implements IFinalizacionReservaService {
         Reserva reserva = reservaRepository.findById(reservaId)
                 .orElseThrow(() -> new ReservaNotFoundException(reservaId));
 
-        if (reserva.getEstado() != EstadoReserva.EN_CURSO) {
+        if (!reserva.esFinalizable()) {
             throw new ReservaValidacionException(
                     ReservaCodigoError.RESERVA_NO_FINALIZABLE,
                     "Solo se pueden finalizar reservas en curso"
@@ -67,7 +67,10 @@ public class FinalizacionReservaService implements IFinalizacionReservaService {
         if (!reserva.estaPaga() && Boolean.TRUE.equals(dto.getCompletarPago())) {
             RegistroPagoReservaRequestDto pagoDto = new RegistroPagoReservaRequestDto();
             pagoDto.setImporte(reserva.getMontoImpago());
-            pagoDto.setEsPagoTotal(true);
+            // Se salda exactamente el monto impago. NO se marca esPagoTotal porque eso
+            // sobrescribiría el importe total de la reserva con el saldo restante
+            // (ver Reserva.registrarPago); al ser importe == montoImpago igual queda paga.
+            pagoDto.setEsPagoTotal(false);
             pagoDto.setFormaPago(dto.getFormaPago());
             pagoDto.setNotas(dto.getNotas());
 
