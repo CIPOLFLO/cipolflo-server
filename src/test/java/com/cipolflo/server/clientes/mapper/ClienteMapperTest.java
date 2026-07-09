@@ -435,6 +435,16 @@ class ClienteMapperTest {
     }
 
     @Test
+    void deberiaMapearUbicacionDeEmpresaEnDetalle() {
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearEmpresa(), null);
+
+        assertEquals("Uruguay", dto.getPais());
+        assertEquals("Montevideo", dto.getDepartamento());
+        assertEquals("Montevideo", dto.getCiudad());
+        assertEquals("Av. Libertador 500", dto.getDireccion());
+    }
+
+    @Test
     void deberiaMapearEmpresaEnListadoConTipoYRut() {
         ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearEmpresa(), null);
 

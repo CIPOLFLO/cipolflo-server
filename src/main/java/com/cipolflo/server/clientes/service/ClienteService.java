@@ -214,7 +214,14 @@ public class ClienteService implements IClienteService {
         socio.setEstado(EstadoSocio.ACTIVO);
         socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
         socio.setMesesSinPagar(0);
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(socio), null);
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null);
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.CEDULA_DUPLICADA.name(),
+                    "Ya existe un cliente con esa cédula"
+            );
+        }
     }
 
     @Override
@@ -234,7 +241,14 @@ public class ClienteService implements IClienteService {
                 dto.getDireccion(),
                 dto.getObservaciones()
         );
-        return ClienteMapper.toDetalleResponseDto(clienteRepository.save(empresa), null);
+        try {
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(empresa), null);
+        } catch (DataIntegrityViolationException e) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.RUT_DUPLICADO.name(),
+                    "Ya existe un cliente con ese RUT"
+            );
+        }
     }
 
     @Override
