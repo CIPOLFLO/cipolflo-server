@@ -157,10 +157,8 @@ class PagoReservaServiceTest {
                 null,
                 null,
                 null,
-                null,
                 false,
                 importe,
-                null,
                 null
         );
     }
@@ -179,10 +177,8 @@ class PagoReservaServiceTest {
                 null,
                 null,
                 null,
-                null,
                 true,
                 importe,
-                null,
                 null
         );
     }

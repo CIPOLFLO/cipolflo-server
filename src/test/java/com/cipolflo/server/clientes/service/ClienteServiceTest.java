@@ -28,6 +28,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import com.cipolflo.server.clientes.validator.RutFormatoValidator;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -81,6 +82,8 @@ private ExportProperties exportProperties;
 @Mock
 private IExportService exportService;
 
+@Mock
+private RutFormatoValidator rutFormatoValidator;
     @InjectMocks
     private ClienteService clienteService;
 
@@ -963,5 +966,36 @@ void deberiaIncluirColumnaRutEnLaExportacion() {
 
     assertTrue(encabezadosCaptor.getValue().contains("RUT"));
     assertEquals("210001230018", filasCaptor.getValue().get(0).get(3));
+}
+
+// --- buscarPorRut ---
+
+@Test
+void deberiaLanzarClienteNotFoundExceptionCuandoRutNoExiste() {
+    when(clienteRepository.findByRut("211003420017"))
+            .thenReturn(Optional.empty());
+
+    assertThrows(
+            ClienteNotFoundException.class,
+            () -> clienteService.buscarPorRut("211003420017")
+    );
+
+    verify(clienteRepository).findByRut("211003420017");
+}
+
+@Test
+void deberiaRetornarDtoCuandoRutCorrespondeAEmpresa() {
+    Empresa empresa = crearEmpresa(1L, "Antel S.A.", "211003420017");
+
+    when(clienteRepository.findByRut("211003420017"))
+            .thenReturn(Optional.of(empresa));
+
+    BusquedaRutResponseDto resultado =
+            clienteService.buscarPorRut("211003420017");
+
+    assertEquals(TipoCliente.EMPRESA, resultado.getTipoCliente());
+    assertEquals("211003420017", resultado.getRut());
+
+    verify(clienteRepository).findByRut("211003420017");
 }
 }

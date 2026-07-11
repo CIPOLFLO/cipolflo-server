@@ -60,8 +60,6 @@ public class ReservaCreacionRequestDto {
 
     private String email;
 
-    private String rut;
-
     private String notas;
 
     private LocalDateTime fechaLimite;

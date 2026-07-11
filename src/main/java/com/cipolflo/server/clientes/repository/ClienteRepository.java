@@ -24,7 +24,10 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long>, JpaSpec
 
     @Query("SELECT COUNT(e) > 0 FROM Empresa e WHERE e.rut = :rut")
     boolean existsByRut(@Param("rut") String rut);
-
+   
+    @Query("SELECT e FROM Empresa e WHERE e.rut = :rut")
+    Optional<Cliente> findByRut(@Param("rut") String rut);
+    
     boolean existsByMailIgnoreCase(String mail);
 
     Optional<Cliente> findByCedula(String cedula);

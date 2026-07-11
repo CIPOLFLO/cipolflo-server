@@ -113,33 +113,30 @@ class ServicioServiceTest {
     }
 
     private Reserva crearReservaConImporte(
-            Long clienteId,
-            Long servicioId,
-            LocalDate fechaEntrada,
-            LocalDate fechaSalida,
-            BigDecimal importe
-    ) {
-        return Reserva.crear(
-                TipoReserva.COMUN,
-                clienteId,
-                servicioId,
-                Procedencia.CAMPING,
-                fechaEntrada,
-                fechaSalida,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                importe,
-                null,
-                null
-        );
-    }
-
+        Long clienteId,
+        Long servicioId,
+        LocalDate fechaEntrada,
+        LocalDate fechaSalida,
+        BigDecimal importe
+) {
+    return Reserva.crear(
+            TipoReserva.COMUN,
+            clienteId,
+            servicioId,
+            Procedencia.CAMPING,
+            fechaEntrada,
+            fechaSalida,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            importe,
+            null
+    );
+}
     private PageRequestDto pageRequest() {
         return new PageRequestDto(0, 10, null, null);
     }

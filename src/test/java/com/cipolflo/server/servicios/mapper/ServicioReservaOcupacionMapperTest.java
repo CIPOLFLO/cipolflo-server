@@ -31,10 +31,8 @@ class ServicioReservaOcupacionMapperTest {
                 null,
                 null,
                 null,
-                null,
                 false,
                 BigDecimal.ZERO,
-                null,
                 null
         );
         ReflectionTestUtils.setField(reserva, "id", id);

@@ -165,13 +165,10 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadTotal(),
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
-                dto.getRut(),
                 dto.getNotas(),
                 requiereDocumentacion,
                 calculoCosto.costoTotal(),
-                dto.getFechaLimite(),
-                dto.getNombre()
-
+                dto.getFechaLimite()
         );
 
         Reserva guardada = reservaRepository.save(reserva);
@@ -231,8 +228,7 @@ public class ReservaService implements IReservaService {
         Page<ListadoReservasResponseDto> dtoPage = page.map(r -> new ListadoReservasResponseDto(
                 r.getId(),
                 r.getClienteId(),
-                // TODO: temporal - usar nombreRut como nombre de cliente para reservas sin fines de lucro hasta definir manejo de clientes RUT
-                r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : r.getNombreRut(),
+                nombresClientes.get(r.getClienteId()),
                 r.getServicioId(),
                 nombresServicios.get(r.getServicioId()),
                 r.getFechaEntrada(),
@@ -269,7 +265,6 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadTotal(),
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
-                dto.getRut(),
                 dto.getNotas()
         );
 

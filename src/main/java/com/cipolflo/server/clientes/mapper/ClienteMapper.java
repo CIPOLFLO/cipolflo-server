@@ -131,4 +131,16 @@ public class ClienteMapper {
                 orEmpty(socio != null ? socio.getFechaUltimoPago() : null)
         );
     }
+
+    public static BusquedaRutResponseDto toBusquedaRutResponseDto(Cliente cliente) {
+    return new BusquedaRutResponseDto(
+            cliente.getId(),
+            cliente.getNombreCompleto(),
+            cliente instanceof Empresa e ? e.getRut() : null,
+            cliente.getTelefono(),
+            cliente.getMail(),
+            cliente.getNotas(),
+            tipoDeCliente(cliente)
+    );
+}
 }

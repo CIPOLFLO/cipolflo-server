@@ -36,11 +36,9 @@ class ReservaMapperTest {
                 4,
                 1,
                 null,
-                null,
                 "Llegan a las 14hs",
                 false,
                 IMPORTE_RESERVA,
-                null,
                 null
         );
         ReflectionTestUtils.setField(r, "id", 42L);
@@ -55,6 +53,17 @@ class ReservaMapperTest {
                 "099111111",
                 "juan@mail.com",
                 TipoCliente.SOCIO
+        );
+    }
+
+    private ClienteDetalleReservaDto clienteEmpresaDto() {
+        return new ClienteDetalleReservaDto(
+                20L,
+                "Org Solidaria S.A.",
+                null,
+                "099222222",
+                "org@mail.com",
+                TipoCliente.EMPRESA
         );
     }
 
@@ -85,7 +94,6 @@ class ReservaMapperTest {
         assertFalse(dto.getPago());
         assertFalse(dto.getRequiereDocumentacion());
         assertFalse(dto.getTieneDocumentacion());
-        assertNull(dto.getRut());
         assertEquals("Llegan a las 14hs", dto.getNotas());
     }
 
@@ -151,14 +159,6 @@ class ReservaMapperTest {
     }
 
     @Test
-    void deberiaNombreSerNullParaReservaComun() {
-        ReservaDetalleResponseDto dto =
-                ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
-
-        assertNull(dto.getNombre());
-    }
-
-    @Test
     void deberiaMapearRequiereDocumentacionComoTrue() {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN,
@@ -173,10 +173,8 @@ class ReservaMapperTest {
                 0,
                 null,
                 null,
-                null,
                 true,
                 IMPORTE_RESERVA,
-                null,
                 null
         );
 
@@ -201,10 +199,10 @@ class ReservaMapperTest {
     }
 
     @Test
-    void deberiaMapearEstadoConfirmadoParaColaboracion() {
+    void deberiaMapearEstadoConfirmadoParaColaboracionConClienteEmpresa() {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
-                null,
+                20L,
                 10L,
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 9, 1),
@@ -214,23 +212,21 @@ class ReservaMapperTest {
                 null,
                 null,
                 null,
-                "20123456-7",
                 null,
                 false,
                 BigDecimal.ZERO,
-                null,
-                "Org Solidaria"
+                null
         );
 
         ReservaDetalleResponseDto dto =
-                ReservaMapper.toDetalleResponseDto(reserva, null, servicioDto());
+                ReservaMapper.toDetalleResponseDto(reserva, clienteEmpresaDto(), servicioDto());
 
         assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
         assertEquals(TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, dto.getTipoReserva());
         assertEquals(BigDecimal.ZERO, dto.getImporte());
-        assertNull(dto.getCliente());
-        assertEquals("20123456-7", dto.getRut());
-        assertEquals("Org Solidaria", dto.getNombre());
+        assertNotNull(dto.getCliente());
+        assertEquals(TipoCliente.EMPRESA, dto.getCliente().tipoCliente());
+        assertEquals("Org Solidaria S.A.", dto.getCliente().nombre());
     }
 
     @Test
@@ -272,34 +268,16 @@ class ReservaMapperTest {
     }
 
     @Test
-    void toExportFila_colaboracionSinFinesLucro_usaNombreRutComoCliente() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
-                null,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, null, null, null, "20123456-7", null, false,
-                BigDecimal.ZERO, null, "Org Solidaria"
-        );
-
-        List<String> fila = ReservaMapper.toExportFila(reserva, null, "Cabaña del río");
-
-        assertEquals("Org Solidaria", fila.get(5));  // nombreRut como fallback
-    }
-
-    @Test
-    void toExportFila_clienteNullSinNombreRut_devuelveVacioEnCliente() {
+    void toExportFila_nombreClienteNoProvisto_devuelveVacioEnCliente() {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN,
-                null,
+                12L,
                 10L,
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, null, false,
-                null, null, null
+                null, null, 2, 0, null, null, false,
+                null, null
         );
 
         List<String> fila = ReservaMapper.toExportFila(reserva, null, "Cabaña del río");
@@ -316,8 +294,8 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, null, false,
-                null, null, null
+                null, null, 2, 0, null, null, false,
+                null, null
         );
 
         List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
@@ -334,8 +312,8 @@ class ReservaMapperTest {
                 Procedencia.CAMPING,
                 LocalDate.of(2026, 9, 1),
                 LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, null, true,
-                null, null, null
+                null, null, 2, 0, null, null, true,
+                null, null
         );
 
         List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");

@@ -148,6 +148,12 @@ public class ClienteController {
             .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
             .body(archivo.getContenido());
         }
-
+@PreAuthorize("isAuthenticated()")
+@GetMapping("/rut/{rut}")
+public ResponseEntity<BusquedaRutResponseDto> buscarPorRut(@PathVariable String rut) {
+    return ResponseEntity.ok(
+        clienteService.buscarPorRut(rut)
+    );
+}
 
 }

@@ -111,47 +111,30 @@ public class ReservaCreacionValidator {
             );
         }
     }
-
-    private void validarCliente(ReservaCreacionRequestDto dto) {
-        if (Boolean.TRUE.equals(dto.getCrearCliente())) {
-            if (!StringUtils.hasText(dto.getNombre())) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE,
-                        "El nombre es requerido para crear el cliente"
-                );
-            }
-            if (!StringUtils.hasText(dto.getCedula())) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.CEDULA_REQUERIDA_PARA_CREAR_CLIENTE,
-                        "La cédula es requerida para crear el cliente"
-                );
-            }
-            if (!StringUtils.hasText(dto.getCelular())) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.CELULAR_REQUERIDO_PARA_CREAR_CLIENTE,
-                        "El celular es requerido para crear el cliente"
-                );
-            }
-        } else if (dto.getClienteId() == null) {
-            boolean esColaboracion = TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(dto.getTipoReserva());
-            if (StringUtils.hasText(dto.getRut()) && !esColaboracion) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.RUT_SOLO_VALIDO_EN_COLABORACION,
-                        "El RUT solo es válido para reservas de colaboración sin fines de lucro"
-                );
-            }
-            if (!StringUtils.hasText(dto.getRut())) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.CLIENTE_REQUERIDO,
-                        "Se requiere un clienteId o RUT para la reserva"
-                );
-            }
-            if (!StringUtils.hasText(dto.getNombre())) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.NOMBRE_REQUERIDO_PARA_COLABORACION,
-                        "El nombre de la organización es requerido para reservas de colaboración sin fines de lucro"
-                );
-            }
+private void validarCliente(ReservaCreacionRequestDto dto) {
+    if (Boolean.TRUE.equals(dto.getCrearCliente())) {
+        if (!StringUtils.hasText(dto.getNombre())) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE,
+                    "El nombre es requerido para crear el cliente"
+            );
         }
+        if (!StringUtils.hasText(dto.getCedula())) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.CEDULA_REQUERIDA_PARA_CREAR_CLIENTE,
+                    "La cédula es requerida para crear el cliente"
+            );
+        }
+        if (!StringUtils.hasText(dto.getCelular())) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.CELULAR_REQUERIDO_PARA_CREAR_CLIENTE,
+                    "El celular es requerido para crear el cliente"
+            );
+        }
+    } else if (dto.getClienteId() == null) {
+        throw new ReservaValidacionException(
+                ReservaCodigoError.CLIENTE_REQUERIDO,
+                "Se requiere un clienteId para la reserva"
+        );
     }
-}
+}};

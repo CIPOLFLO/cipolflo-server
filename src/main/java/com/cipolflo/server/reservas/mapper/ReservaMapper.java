@@ -3,7 +3,6 @@ package com.cipolflo.server.reservas.mapper;
 import java.util.List;
 
 import com.cipolflo.server.reservas.domain.Reserva;
-import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
@@ -39,9 +38,6 @@ public class ReservaMapper {
                 reserva.getPago(),
                 reserva.getRequiereDocumentacion(),
                 reserva.getTieneDocumentacion(),
-                reserva.getRut(),
-                // TODO: temporal - nombre del RUT retornado hasta definir manejo de clientes RUT
-                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(reserva.getTipoReserva()) ? reserva.getNombreRut() : null,
                 reserva.getNotas(),
                 cliente,
                 servicio,
@@ -59,7 +55,7 @@ public class ReservaMapper {
                 orEmpty(reserva.getEstado().toString()),
                 orEmpty(reserva.getProcedencia()),
                 orEmpty(nombreServicio),
-                orEmpty(nombreCliente, reserva.getNombreRut()),
+                orEmpty(nombreCliente),
                 orEmpty(reserva.getFechaEntrada()),
                 orEmpty(reserva.getFechaSalida()),
                 orEmpty(reserva.getHoraInicio()),
