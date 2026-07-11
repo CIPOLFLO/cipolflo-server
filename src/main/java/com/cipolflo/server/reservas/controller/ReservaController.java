@@ -1,6 +1,8 @@
 package com.cipolflo.server.reservas.controller;
 
 import com.cipolflo.server.reservas.dto.*;
+import com.cipolflo.server.reservas.service.ICancelacionReservaService;
+import com.cipolflo.server.reservas.service.IFinalizacionReservaService;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -29,9 +31,14 @@ public class ReservaController {
     );
 
     private final IReservaService reservaService;
+    private final ICancelacionReservaService cancelacionReservaService;
+    private final IFinalizacionReservaService finalizacionReservaService;
 
-    public ReservaController(IReservaService reservaService) {
+    public ReservaController(IReservaService reservaService, ICancelacionReservaService cancelacionReservaService, IFinalizacionReservaService finalizacionReservaService) {
+
         this.reservaService = reservaService;
+        this.cancelacionReservaService = cancelacionReservaService;
+        this.finalizacionReservaService = finalizacionReservaService;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -81,14 +88,69 @@ public class ReservaController {
             @Valid @RequestBody CalculoCostoRequestDto dto) {
         return ResponseEntity.ok(reservaService.calcularCosto(dto));
     }
-   @PreAuthorize("isAuthenticated()")
-@PostMapping("/exportar")
-public ResponseEntity<byte[]> exportarReservas(
-        @Valid @RequestBody ListadoReservasRequestDto filtros) {
-    ArchivoExportado archivo = reservaService.exportarReservas(filtros);
-    return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
-            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-            .body(archivo.getContenido());
-}
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/exportar")
+    public ResponseEntity<byte[]> exportarReservas(
+            @Valid @RequestBody ListadoReservasRequestDto filtros) {
+        ArchivoExportado archivo = reservaService.exportarReservas(filtros);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo.getContenido());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/documentacion")
+    public ResponseEntity<Void> confirmarDocumentacion(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id) {
+        reservaService.confirmarDocumentacion(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/comprobante")
+    public ResponseEntity<byte[]> descargarComprobante(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id) {
+        ArchivoExportado archivo = reservaService.generarComprobante(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(archivo.getContenido());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/cancelacion")
+    public ResponseEntity<ReservaCancelacionCheckResponseDto> verificarCancelacion(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id
+    ) {
+        return ResponseEntity.ok(cancelacionReservaService.verificarCancelacion(id));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/cancelacion")
+    public ResponseEntity<Void> cancelar(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id,
+            @Valid @RequestBody ReservaCancelacionRequestDto dto
+    ) {
+        cancelacionReservaService.cancelar(id, dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/finalizacion")
+    public ResponseEntity<ReservaFinalizacionCheckResponseDto> verificarFinalizacion(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id
+    ) {
+        return ResponseEntity.ok(finalizacionReservaService.verificarFinalizacion(id));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/finalizacion")
+    public ResponseEntity<Void> finalizar(
+            @PathVariable @Positive(message = "El id de la reserva debe ser un número positivo") Long id,
+            @Valid @RequestBody ReservaFinalizacionRequestDto dto
+    ) {
+        finalizacionReservaService.finalizar(id, dto);
+        return ResponseEntity.noContent().build();
+    }
 }

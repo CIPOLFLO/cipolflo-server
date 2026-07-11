@@ -1022,7 +1022,11 @@ Retorna el listado paginado de reservas con filtros opcionales.
       "servicioNombre": "Cabaña del río",
       "fechaEntrada": "2026-08-10",
       "fechaSalida": "2026-08-15",
-      "estadoReserva": "CONFIRMADA"
+      "estadoReserva": "CONFIRMADA",
+      "requiereDocumentacion": false,
+      "tieneDocumentacion": false,
+      "montoImpago": 0.00,
+      "fechaLimitePago": null
     }
   ],
   "page": 0,
@@ -1062,6 +1066,8 @@ Crea una nueva reserva. Soporta tres variantes de cliente:
   "servicioId": 3,
   "fechaInicio": "2026-08-10",
   "fechaFin": "2026-08-15",
+  "horaInicio": null,
+  "horaFin": null,
   "cantidadTotal": 4,
   "cantidadMenores": 1,
   "cantidad": null,
@@ -1105,6 +1111,37 @@ Crea una nueva reserva. Soporta tres variantes de cliente:
 | --------------------------------- | -------------- | ----------------------------------------------------- |
 | `COMUN`                           | `PENDIENTE`    | calculado al crear (según servicio y tipo de cliente) |
 | `COLABORACION_SIN_FINES_DE_LUCRO` | `CONFIRMADA`   | `0`                                                   |
+| Campo           | Tipo            | Obligatorio | Validación                                                                       |
+|-----------------|-----------------|-------------|----------------------------------------------------------------------------------|
+| `tipoReserva`   | `TipoReserva`   | Sí          | —                                                                                |
+| `procedencia`   | `Procedencia`   | Sí          | —                                                                                |
+| `servicioId`    | integer         | Sí          | > 0, el servicio debe existir y estar habilitado                                 |
+| `fechaInicio`   | string (date)   | Sí          | `yyyy-MM-dd`, no puede ser anterior a hoy                                        |
+| `fechaFin`      | string (date)   | Sí          | `yyyy-MM-dd`, no puede ser anterior a `fechaInicio`                              |
+| `horaInicio`    | string (time)   | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                                |
+| `horaFin`       | string (time)   | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                                |
+| `cantidadTotal` | integer         | No          | >= 0                                                                             |
+| `cantidadMenores`| integer        | No          | >= 0                                                                             |
+| `cantidad`      | integer         | No          | >= 0                                                                             |
+| `clienteId`     | integer         | Condicional | Requerido si `crearCliente` no es `true` y no se envía `rut`                    |
+| `crearCliente`  | boolean         | No          | Si `true`, se crea un nuevo cliente particular con los campos siguientes         |
+| `tipoCliente`   | `TipoCliente`   | No          | Usado para calcular el costo (precio socio vs. particular)                       |
+| `cedula`        | string          | Condicional | Requerido si `crearCliente: true`                                                |
+| `nombre`        | string          | Condicional | Requerido si `crearCliente: true` o si `tipoReserva: COLABORACION_SIN_FINES_DE_LUCRO` con `rut` _(temporal — hasta definir manejo de clientes RUT)_ |
+| `celular`       | string          | Condicional | Requerido si `crearCliente: true`                                                |
+| `email`         | string          | No          | Solo usado si `crearCliente: true`                                               |
+| `rut`           | string          | Condicional | Solo válido con `tipoReserva: COLABORACION_SIN_FINES_DE_LUCRO`; requerido si no hay `clienteId` ni `crearCliente` |
+| `notas`         | string          | No          | —                                                                                |
+| `requiereDocumentacion` | boolean | No          | Default `false`. Lo define el usuario al crear la reserva. Si es `true`, la reserva queda `PENDIENTE` hasta recibir la documentación |
+| `requiereSena`  | boolean         | No          | Default `false`. Lo define el usuario al crear la reserva. Si es `true`, la reserva queda `PENDIENTE` hasta pagar al menos el 50% |
+| `fechaLimite`   | string (datetime) | No        | `yyyy-MM-dd'T'HH:mm:ss`; fecha límite para el pago de la reserva. Si no se envía, la reserva no tiene límite de pago |
+
+**Estado inicial según tipo de reserva:**
+
+| `tipoReserva`                      | Estado inicial | Importe inicial |
+|------------------------------------|----------------|-----------------|
+| `COMUN`                            | `CONFIRMADA` si `requiereDocumentacion` y `requiereSena` son ambos `false`; en caso contrario `PENDIENTE` | calculado al crear (según servicio y tipo de cliente) |
+| `COLABORACION_SIN_FINES_DE_LUCRO`  | `CONFIRMADA` (siempre, ignora `requiereDocumentacion`/`requiereSena`) | `0`             |
 
 **Respuesta 201:**
 
@@ -1151,13 +1188,18 @@ Retorna el detalle completo de una reserva.
   "procedencia": "CAMPING",
   "fechaEntrada": "2026-08-10",
   "fechaSalida": "2026-08-15",
+  "horaInicio": null,
+  "horaFin": null,
   "cantidadTotal": 4,
   "cantidadMenores": 1,
   "cantidad": null,
   "importe": 15000.0,
+  "importe": 15000.00,
+  "montoImpago": 0.00,
   "pago": true,
   "requiereDocumentacion": false,
   "tieneDocumentacion": false,
+  "requiereSena": false,
   "rut": null,
   "nombre": null,
   "notas": "Llegan a las 14hs",
@@ -1185,6 +1227,47 @@ Retorna el detalle completo de una reserva.
 > El campo `cliente` es `null` cuando la reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO` sin cliente asociado (solo `rut`).
 > El campo `cliente` es `null` cuando la reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO` sin cliente asociado (solo `rut`). En ese caso el campo `nombre` contiene el nombre de la organización _(temporal — hasta definir manejo de clientes RUT)_.
 > `importe` y `formaPago` son `null` mientras la reserva no haya sido pagada.
+> El campo `cliente` es `null` cuando la reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO` sin cliente asociado (solo `rut`). En ese caso el campo `nombre` contiene el nombre de la organización _(temporal — hasta definir manejo de clientes RUT)_.
+> `requiereDocumentacion` y `requiereSena` se definen al crear la reserva; `tieneDocumentacion` se marca en `true` al confirmar la documentación vía `PATCH /api/v1/reservas/{id}/documentacion`.
+
+**Errores:**
+
+| HTTP Status | Código                    | Cuándo ocurre                         |
+|-------------|---------------------------|---------------------------------------|
+| 400         | `ID_INVALIDO`             | `id` no es un entero positivo         |
+| 404         | `RESERVA_NO_ENCONTRADA`   | No existe una reserva con ese `id`    |
+| 401         | —                         | Token ausente, inválido o expirado    |
+
+---
+
+### `PATCH /api/v1/reservas/{id}/documentacion`
+Confirma que se recibió la documentación de una reserva. Marca `tieneDocumentacion` en `true` y, si la reserva está `PENDIENTE` y ya cumple la seña (`requiereSena = false` o al menos el 50% pagado), transiciona automáticamente a `CONFIRMADA`.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código                    | Cuándo ocurre                         |
+|-------------|---------------------------|---------------------------------------|
+| 400         | `ID_INVALIDO`             | `id` no es un entero positivo         |
+| 404         | `RESERVA_NO_ENCONTRADA`   | No existe una reserva con ese `id`    |
+| 401         | —                         | Token ausente, inválido o expirado    |
+
+---
+
+### `GET /api/v1/reservas/{id}/comprobante`
+Descarga el comprobante en PDF de una reserva (para entregar al cliente o archivar). El PDF se genera en el backend con Apache PDFBox y contiene: tipo de reserva, estado, fechas de entrada/salida, horario (si aplica), cantidades, importe (costo total), si está pago y saldo a pagar (solo cuando la reserva no está paga), cliente asociado (nombre, documento, tipo de cliente), servicio asociado (nombre y procedencia) y notas. Todo comprobante incluye arriba, de forma automática, la fecha/hora de generación del documento.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:** cuerpo binario.
+
+| Header                | Valor                                                        |
+|-----------------------|--------------------------------------------------------------|
+| `Content-Type`        | `application/pdf`                                             |
+| `Content-Disposition` | `attachment; filename="comprobante-reserva-{id}_yyyy-MM-dd_HHmm.pdf"` |
 
 **Errores:**
 
@@ -1286,7 +1369,7 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
 >
 > **Pago parcial** (`esPagoTotal: false`): se registra el importe y `montoImpago` se reduce en ese valor. Si el importe coincide exactamente con el saldo, el sistema lo trata como pago total.
 >
-> Cuando `pago` pasa a `true`: si `requiereDocumentacion = false` la reserva transiciona automáticamente a `CONFIRMADA`; si `requiereDocumentacion = true`, solo transiciona si además `tieneDocumentacion = true`.
+> Al registrar el pago, la reserva transiciona a `CONFIRMADA` solo si estando en `PENDIENTE` cumple **ambas** condiciones: la documentación (`requiereDocumentacion = false`, o `tieneDocumentacion = true`) y la seña (`requiereSena = false`, o ya se pagó al menos el 50% del importe).
 
 **Respuesta 204:** sin body.
 
@@ -1329,6 +1412,8 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
   servicioId: number             // obligatorio, > 0
   fechaInicio: string            // obligatorio, LocalDate yyyy-MM-dd
   fechaFin: string               // obligatorio, LocalDate yyyy-MM-dd
+  horaInicio?: string            // opcional, LocalTime HH:mm; obligatorio para servicios POR_HORA
+  horaFin?: string               // opcional, LocalTime HH:mm; obligatorio para servicios POR_HORA
   cantidadTotal?: number         // opcional, >= 0
   cantidadMenores?: number       // opcional, >= 0
   cantidad?: number              // opcional, >= 0
@@ -1341,6 +1426,8 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
   email?: string                 // opcional
   rut?: string                   // condicional (solo para COLABORACION_SIN_FINES_DE_LUCRO)
   notas?: string                 // opcional
+  requiereDocumentacion?: boolean // opcional, default false; si true la reserva nace PENDIENTE hasta recibir documentación
+  requiereSena?: boolean          // opcional, default false; si true la reserva nace PENDIENTE hasta pagar >= 50%
   fechaLimite?: string           // opcional; LocalDateTime yyyy-MM-dd'T'HH:mm:ss; fecha límite de pago
 }
 ```
@@ -1386,6 +1473,18 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
   fechaEntrada: string; // LocalDate yyyy-MM-dd
   fechaSalida: string; // LocalDate yyyy-MM-dd
   estadoReserva: EstadoReserva;
+  id: number
+  clienteId: number | null      // null para reservas de colaboración sin cliente
+  nombreCliente: string | null  // nombre del cliente, o nombre de la organización si clienteId es null (temporal)
+  servicioId: number
+  servicioNombre: string
+  fechaEntrada: string          // LocalDate yyyy-MM-dd
+  fechaSalida: string           // LocalDate yyyy-MM-dd
+  estadoReserva: EstadoReserva
+  requiereDocumentacion: boolean
+  tieneDocumentacion: boolean
+  montoImpago: number | null    // saldo pendiente de pago
+  fechaLimitePago: string | null // LocalDateTime yyyy-MM-dd'T'HH:mm:ss
 }
 ```
 
@@ -1431,6 +1530,31 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
   updatedAt: string; // Instant ISO-8601 UTC
   createdBy: string;
   updatedBy: string;
+  id: number
+  tipoReserva: TipoReserva
+  estado: EstadoReserva
+  procedencia: Procedencia
+  fechaEntrada: string               // LocalDate yyyy-MM-dd
+  fechaSalida: string                // LocalDate yyyy-MM-dd
+  horaInicio: string | null          // LocalTime HH:mm; null si no aplica
+  horaFin: string | null             // LocalTime HH:mm; null si no aplica
+  cantidadTotal: number | null
+  cantidadMenores: number | null
+  cantidad: number | null
+  importe: number | null             // null si es reserva de colaboración (monto 0)
+  pago: boolean
+  requiereDocumentacion: boolean
+  tieneDocumentacion: boolean
+  requiereSena: boolean
+  rut: string | null
+  nombre: string | null         // nombre de la organización si tipoReserva es COLABORACION_SIN_FINES_DE_LUCRO, null en los demás casos (temporal)
+  notas: string | null
+  cliente: ClienteDetalleReservaDto | null  // null si no hay cliente asociado
+  servicio: ServicioDetalleReservaDto
+  createdAt: string                  // Instant ISO-8601 UTC
+  updatedAt: string                  // Instant ISO-8601 UTC
+  createdBy: string
+  updatedBy: string
 }
 ```
 
@@ -1518,6 +1642,49 @@ Registra manualmente un ingreso o egreso.
 
 ---
 
+### `DELETE /api/v1/finanzas/{id}`
+
+Elimina una finanza. La eliminación es **consciente del origen** del movimiento: aplica las reglas de negocio de la reserva o el pago de cuota asociado antes de borrar.
+
+**Path param:** `id` — integer positivo; ID de la finanza a eliminar.
+
+**Query param:**
+
+| Parámetro   | Tipo    | Obligatorio | Default | Descripción                                                                                             |
+|-------------|---------|-------------|---------|---------------------------------------------------------------------------------------------------------|
+| `confirmar` | boolean | No          | `false` | Confirma la eliminación de un ingreso cuya reserva ya está `FINALIZADA` o `CANCELADA` (ver comportamiento). |
+
+**Comportamiento según el origen del movimiento:**
+
+- **Finanza manual** (ingreso/egreso sin `reservaId` ni `pagoCuotaId`): se elimina sin lógica adicional → **204**.
+- **Ingreso de pago de cuota** (`pagoCuotaId != null`): **no** se permite eliminar → **400 `ELIMINACION_PAGO_CUOTA_NO_PERMITIDA`**. La anulación de cuotas es una funcionalidad pendiente.
+- **Egreso asociado a una reserva** (`reservaId != null`): **no** se permite eliminar → **400 `ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA`**. Si se cargó por error, la forma de compensarlo es registrar un ingreso que lo anule.
+- **Ingreso de pago de reserva** (`reservaId != null`): al eliminar se devuelve el importe al `montoImpago` de la reserva y se ajusta su `pago`/`estado` según el estado:
+  - **PENDIENTE / EN_CURSO**: se elimina el ingreso, `montoImpago += importe`, `pago` pasa a `false` si estaba en `true`; el estado no cambia → **204**.
+  - **CONFIRMADA**: además de lo anterior, si la reserva `requiereSena == true` y tras la devolución el saldo pagado queda por debajo del 50% del importe total, el estado vuelve a **PENDIENTE**; si `requiereSena == false`, permanece **CONFIRMADA** → **204**.
+  - **FINALIZADA / CANCELADA**:
+    - Con `confirmar = false` (o ausente) → **428 `CONFIRMACION_ELIMINACION_REQUERIDA`**; no se elimina nada ni se modifica la reserva. Se sugiere registrar un egreso asociado en su lugar; el front usa este error para mostrar la advertencia con las opciones "registrar egreso" / "eliminar de todas formas".
+    - Con `confirmar = true` → se elimina únicamente el ingreso; **no** se tocan `montoImpago`, `pago` ni `estado` de la reserva → **204**.
+
+> La devolución de importe nunca deja el `montoImpago` por encima del importe total de la reserva. Toda la operación es transaccional: si falla la actualización de la reserva, no se elimina el movimiento, y viceversa.
+
+**Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código                                  | Cuándo ocurre                                                                             |
+|-------------|-----------------------------------------|------------------------------------------------------------------------------------------|
+| 400         | `ID_INVALIDO`                           | El `id` no es un número positivo                                                          |
+| 400         | `SOLICITUD_INVALIDA`                    | `confirmar` con un valor no booleano                                                      |
+| 400         | `ELIMINACION_PAGO_CUOTA_NO_PERMITIDA`   | La finanza es un ingreso de pago de cuota (`pagoCuotaId != null`)                         |
+| 400         | `ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA` | La finanza es un egreso asociado a una reserva (`reservaId != null`)                    |
+| 404         | `FINANZA_NO_ENCONTRADA`                 | No existe una finanza con ese `id`                                                        |
+| 404         | `RESERVA_NO_ENCONTRADA`                 | El ingreso apunta a una reserva inexistente                                              |
+| 428         | `CONFIRMACION_ELIMINACION_REQUERIDA`    | Ingreso de una reserva `FINALIZADA`/`CANCELADA` sin `confirmar=true`                     |
+| 401         | —                                       | Token ausente, inválido o expirado                                                       |
+
+---
+
 ## Finanzas — DTOs
 
 ### Request DTOs
@@ -1575,4 +1742,5 @@ Todos los errores retornan el siguiente body:
 | 403         | Usuario autenticado sin permisos para la operación                         |
 | 404         | Recurso no encontrado por el ID proporcionado                              |
 | 409         | Conflicto de negocio (ej: deshabilitar con reservas activas sin confirmar) |
-| 500         | Error interno del servidor                                                 |
+| 428         | Falta una precondición para proceder (ej: confirmar la eliminación de un ingreso de reserva ya cerrada) |
+| 500         | Error interno del servidor                                 |

@@ -17,6 +17,10 @@ public enum EstadoReserva {
         return label;
     }
 
+    public boolean esFinalizable() {
+        return this == EN_CURSO;
+    }
+
     @Override
     public String toString() {
         return label;

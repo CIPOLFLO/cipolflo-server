@@ -85,6 +85,10 @@ public class Reserva extends AuditableEntity {
     @Setter(AccessLevel.NONE)
     private Boolean tieneDocumentacion = false;
 
+    @Column(nullable = false)
+    @Setter(AccessLevel.NONE)
+    private Boolean requiereSena = false;
+
     private String notas;
 
     public static Reserva crear(TipoReserva tipoReserva, Long clienteId, Long servicioId, Procedencia procedencia,
@@ -94,6 +98,9 @@ public class Reserva extends AuditableEntity {
                                 boolean requiereDocumentacionPrevia,
                                 BigDecimal importe, LocalDateTime fechaLimite
     ) {
+                                Integer cantidad, String rut, String nombre, String notas,
+                                boolean requiereDocumentacion, boolean requiereSena,
+                                BigDecimal importe, LocalDateTime fechaLimite) {
         Reserva r = new Reserva();
         r.tipoReserva = tipoReserva;
         r.clienteId = clienteId;
@@ -107,8 +114,9 @@ public class Reserva extends AuditableEntity {
         r.cantidadMenores = cantidadMenores;
         r.cantidad = cantidad;
         r.notas = notas;
-        r.requiereDocumentacion = requiereDocumentacionPrevia;
-        r.estado = resolverEstado(tipoReserva);
+        r.requiereDocumentacion = requiereDocumentacion;
+        r.requiereSena = requiereSena;
+        r.estado = resolverEstado(tipoReserva, requiereDocumentacion, requiereSena);
         r.importe = resolverImporte(importe, tipoReserva);
         r.montoImpago = resolverImporte(importe, tipoReserva);
         r.fechaLimitePago = fechaLimite;
@@ -119,29 +127,69 @@ public class Reserva extends AuditableEntity {
         if (this.pago) {
             throw new IllegalStateException("La reserva está paga");
         }
-        if(esPagoTotal || importe.compareTo(this.getMontoImpago()) == 0){
+        if (esPagoTotal || importe.compareTo(this.getMontoImpago()) == 0) {
             this.montoImpago = BigDecimal.ZERO;
             this.pago = true;
-            if(esPagoTotal){
+            if (esPagoTotal) {
                 this.setImporte(importe);
             }
-        }else {
+        } else {
             this.montoImpago = this.montoImpago.subtract(importe);
             if (this.montoImpago.compareTo(BigDecimal.ZERO) == 0) {
                 this.pago = true;
             }
         }
-        if (this.getEstado().equals(EstadoReserva.PENDIENTE)
-                && tienePagadoAlMenosLaMitad() && sePuedeConfirmar()) {
-            cambiarEstado(EstadoReserva.CONFIRMADA);
+        confirmarSiCorresponde();
+    }
+
+    /**
+     * Revierte un pago previamente registrado sobre la reserva, típicamente al eliminarse el ingreso
+     * asociado en finanzas.
+     * <p>
+     * Devuelve el {@code importe} eliminado al {@code montoImpago} (acotado al importe total de la
+     * reserva como salvaguarda), baja el flag {@code pago} si estaba en {@code true} y, si la reserva
+     * está {@code CONFIRMADA}, requiere seña y tras la devolución ya no cumple el mínimo del 50%,
+     * la vuelve a {@code PENDIENTE}.
+     * <p>
+     * Edge case: cuando el pago original se registró como pago total, el {@code importe} de la reserva
+     * se sobrescribió al valor pagado y el {@code montoImpago} quedó en cero; al revertir, el
+     * {@code montoImpago} vuelve al importe eliminado.
+     *
+     * @param importe importe del ingreso eliminado que se devuelve al saldo impago
+     */
+    public void revertirPago(BigDecimal importe) {
+        this.montoImpago = this.montoImpago.add(importe).min(this.importe);
+        if (Boolean.TRUE.equals(this.pago)) {
+            this.pago = false;
+        }
+        if (this.estado == EstadoReserva.CONFIRMADA && this.requiereSena && !tienePagadoAlMenosLaMitad()) {
+            cambiarEstado(EstadoReserva.PENDIENTE);
         }
     }
 
     public void recibirDocumentacion() {
         this.tieneDocumentacion = true;
-        if (this.estado == EstadoReserva.PENDIENTE && this.pago) {
+        confirmarSiCorresponde();
+    }
+
+    private void confirmarSiCorresponde() {
+        if (this.estado == EstadoReserva.PENDIENTE && documentacionCumplida() && senaCumplida()) {
             cambiarEstado(EstadoReserva.CONFIRMADA);
         }
+    }
+
+    private boolean documentacionCumplida() {
+        return !this.requiereDocumentacion || this.tieneDocumentacion;
+    }
+
+    private boolean senaCumplida() {
+        return !this.requiereSena || tienePagadoAlMenosLaMitad();
+    }
+
+    private boolean tienePagadoAlMenosLaMitad() {
+        BigDecimal montoPagado = getImporte().subtract(getMontoImpago());
+        BigDecimal mitad = getImporte().divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
+        return montoPagado.compareTo(mitad) >= 0;
     }
 
     public void cambiarEstado(EstadoReserva nuevoEstado) {
@@ -156,9 +204,11 @@ public class Reserva extends AuditableEntity {
     private boolean esTransicionValida(EstadoReserva nuevoEstado) {
         return switch (this.estado) {
             case PENDIENTE   -> nuevoEstado == EstadoReserva.CONFIRMADA || nuevoEstado == EstadoReserva.CANCELADA;
-            case CONFIRMADA  -> nuevoEstado == EstadoReserva.EN_CURSO || nuevoEstado == EstadoReserva.CANCELADA;
+            case CONFIRMADA  -> nuevoEstado == EstadoReserva.EN_CURSO
+                    || nuevoEstado == EstadoReserva.CANCELADA
+                    || nuevoEstado == EstadoReserva.PENDIENTE;
             case EN_CURSO    -> nuevoEstado == EstadoReserva.FINALIZADA;
-            case FINALIZADA,CANCELADA  -> false;
+            case FINALIZADA, CANCELADA -> false;
         };
     }
 
@@ -179,34 +229,35 @@ public class Reserva extends AuditableEntity {
         cambiarEstado(EstadoReserva.CANCELADA);
     }
 
+    public boolean esCancelable() {
+        return this.estado == EstadoReserva.PENDIENTE
+                || this.estado == EstadoReserva.CONFIRMADA;
+    }
     // TODO: agregar método confirmar() cuando se implemente el ticket de confirmación manual de reserva
 
-    private static EstadoReserva resolverEstado(TipoReserva tipoReserva) {
-        if(tipoReserva.equals(TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO)){
+    private static EstadoReserva resolverEstado(TipoReserva tipoReserva, boolean requiereDocumentacion, boolean requiereSena) {
+        if (TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(tipoReserva)) {
             return EstadoReserva.CONFIRMADA;
-        }else{
+        }
+        if (requiereDocumentacion || requiereSena) {
             return EstadoReserva.PENDIENTE;
         }
+        return EstadoReserva.CONFIRMADA;
     }
 
-    private static BigDecimal resolverImporte(BigDecimal importe, TipoReserva tipoReserva){
+    private static BigDecimal resolverImporte(BigDecimal importe, TipoReserva tipoReserva) {
         BigDecimal imp = BigDecimal.ZERO;
         if (tipoReserva == TipoReserva.COMUN) {
             imp = importe;
-        };
+        }
         return imp;
     }
 
-    private Boolean sePuedeConfirmar()
-    {
-        return !this.requiereDocumentacion ||
-                this.tieneDocumentacion;
+    public boolean estaPaga() {
+        return montoImpago.compareTo(BigDecimal.ZERO) == 0;
     }
 
-    private boolean tienePagadoAlMenosLaMitad() {
-        BigDecimal montoPagado = getImporte().subtract(getMontoImpago());
-        BigDecimal mitad = getImporte().divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
-
-        return montoPagado.compareTo(mitad) >= 0;
+    public boolean esFinalizable() {
+        return this.estado.esFinalizable();
     }
 }

@@ -14,6 +14,7 @@ Backend del sistema de gestión del Club CIPOLFLO. Administra clientes, socios, 
 - **Liquibase**
 - **Gradle (Kotlin DSL)**
 - **Lombok**
+- **Springdoc OpenAPI (Swagger UI)**
 
 ---
 
@@ -150,6 +151,19 @@ La API queda disponible en `http://localhost:8080`.
 
 > **¿Por qué aparece una pantalla de login en el navegador?**
 > El proyecto incluye Spring Security, que por defecto protege todos los endpoints. Eso es comportamiento esperado — la configuración de seguridad se completará cuando se implementen los endpoints de autenticación. Por ahora, el usuario por defecto es `user` y la contraseña generada aparece en la consola al iniciar la app, en una línea como: `Using generated security password: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`.
+
+### Documentación de la API (Swagger)
+
+La documentación de la API se genera automáticamente con **springdoc-openapi** a partir de los controllers y de las anotaciones `@Schema` de los DTOs.
+
+| Recurso | Ruta |
+|---|---|
+| Swagger UI | `http://localhost:8080/swagger-ui.html` |
+| Especificación OpenAPI (JSON) | `http://localhost:8080/v3/api-docs` |
+
+> **Estas rutas están protegidas por Spring Security**, igual que el resto de la API. No están incluidas en las rutas públicas de `SecurityConfig`, así que acceder sin un JWT válido devuelve `401`. Para explorar la doc hay que autenticarse enviando el token en el header `Authorization: Bearer <token>` (por ejemplo desde un cliente HTTP), o —solo en un entorno de desarrollo— agregar temporalmente `"/swagger-ui/**"`, `"/swagger-ui.html"` y `"/v3/api-docs/**"` a `permitAll()` en `SecurityConfig`.
+
+> **Importante:** para documentar campos de DTOs usar `@Schema` (de `io.swagger.v3.oas.annotations.media`), **no** `@Description` de `jdk.jfr` —esta última no tiene efecto sobre la doc de la API.
 
 ### Comandos útiles
 

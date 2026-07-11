@@ -14,7 +14,7 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Socio extends Cliente {
+public class Socio extends Cliente implements ClienteConUbicacion {
 
     private Integer numeroSocio;
 

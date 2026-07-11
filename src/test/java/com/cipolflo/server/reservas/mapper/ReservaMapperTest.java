@@ -38,6 +38,7 @@ class ReservaMapperTest {
                 null,
                 "Llegan a las 14hs",
                 false,
+                false,
                 IMPORTE_RESERVA,
                 null
         );
@@ -83,7 +84,7 @@ class ReservaMapperTest {
 
         assertEquals(42L, dto.getId());
         assertEquals(TipoReserva.COMUN, dto.getTipoReserva());
-        assertEquals(EstadoReserva.PENDIENTE, dto.getEstado());
+        assertEquals(EstadoReserva.CONFIRMADA, dto.getEstado());
         assertEquals(Procedencia.CAMPING, dto.getProcedencia());
         assertEquals(LocalDate.of(2026, 8, 10), dto.getFechaEntrada());
         assertEquals(LocalDate.of(2026, 8, 15), dto.getFechaSalida());
@@ -94,6 +95,8 @@ class ReservaMapperTest {
         assertFalse(dto.getPago());
         assertFalse(dto.getRequiereDocumentacion());
         assertFalse(dto.getTieneDocumentacion());
+        assertFalse(dto.getRequiereSena());
+        assertNull(dto.getRut());
         assertEquals("Llegan a las 14hs", dto.getNotas());
     }
 
@@ -159,6 +162,28 @@ class ReservaMapperTest {
     }
 
     @Test
+    void deberiaMapearCamposDeAuditoriaUpdatedAtYUpdatedBy() {
+        Reserva reserva = crearReserva(12L);
+        Instant ahora = Instant.now();
+        ReflectionTestUtils.setField(reserva, "updatedAt", ahora);
+        ReflectionTestUtils.setField(reserva, "updatedBy", "editor@test.com");
+
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+
+        assertEquals(ahora, dto.getUpdatedAt());
+        assertEquals("editor@test.com", dto.getUpdatedBy());
+    }
+
+    @Test
+    void deberiaNombreSerNullParaReservaComun() {
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
+
+        assertNull(dto.getNombre());
+    }
+
+    @Test
     void deberiaMapearRequiereDocumentacionComoTrue() {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN,
@@ -174,6 +199,7 @@ class ReservaMapperTest {
                 null,
                 null,
                 true,
+                false,
                 IMPORTE_RESERVA,
                 null
         );
@@ -185,17 +211,32 @@ class ReservaMapperTest {
     }
 
     @Test
-    void deberiaMapearCamposDeAuditoriaUpdatedAtYUpdatedBy() {
-        Reserva reserva = crearReserva(12L);
-        Instant ahora = Instant.now();
-        ReflectionTestUtils.setField(reserva, "updatedAt", ahora);
-        ReflectionTestUtils.setField(reserva, "updatedBy", "editor@test.com");
+    void deberiaMapearRequiereSenaComoTrue() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
+                12L,
+                10L,
+                Procedencia.CAMPING,
+                LocalDate.of(2026, 8, 10),
+                LocalDate.of(2026, 8, 15),
+                null,
+                null,
+                2,
+                0,
+                null,
+                null,
+                null,
+                null,
+                false,
+                true,
+                IMPORTE_RESERVA,
+                null
+        );
 
         ReservaDetalleResponseDto dto =
                 ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
 
-        assertEquals(ahora, dto.getUpdatedAt());
-        assertEquals("editor@test.com", dto.getUpdatedBy());
+        assertTrue(dto.getRequiereSena());
     }
 
     @Test
@@ -213,6 +254,7 @@ class ReservaMapperTest {
                 null,
                 null,
                 null,
+                false,
                 false,
                 BigDecimal.ZERO,
                 null
@@ -238,7 +280,7 @@ class ReservaMapperTest {
         assertEquals(18, fila.size());
         assertEquals("42",                fila.get(0));   // id
         assertEquals("Común",             fila.get(1));   // tipoReserva
-        assertEquals("Pendiente",         fila.get(2));   // estado
+        assertEquals("Confirmada",        fila.get(2));   // estado
         assertEquals("Camping",           fila.get(3));   // procedencia
         assertEquals("Cabaña del río",    fila.get(4));   // nombreServicio
         assertEquals("Juan Pérez",        fila.get(5));   // nombreCliente

@@ -1,5 +1,8 @@
 package com.cipolflo.server.finanzas.exception;
 
 public enum FinanzaCodigoError {
-    FINANZA_NO_ENCONTRADA
+    FINANZA_NO_ENCONTRADA,
+    ELIMINACION_PAGO_CUOTA_NO_PERMITIDA,
+    ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA,
+    CONFIRMACION_ELIMINACION_REQUERIDA
 }

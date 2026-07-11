@@ -3,6 +3,7 @@ package com.cipolflo.server.clientes.mapper;
 import java.util.List;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.ClienteConUbicacion;
 import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
@@ -23,21 +24,19 @@ public class ClienteMapper {
     }
 
     private static String pais(Cliente cliente) {
-        if (cliente instanceof Socio s) return s.getPais();
-        if (cliente instanceof Empresa e) return e.getPais();
-        return null;
+        return cliente instanceof ClienteConUbicacion u ? u.getPais() : null;
     }
 
     private static String departamento(Cliente cliente) {
-        if (cliente instanceof Socio s) return s.getDepartamento();
-        if (cliente instanceof Empresa e) return e.getDepartamento();
-        return null;
+        return cliente instanceof ClienteConUbicacion u ? u.getDepartamento() : null;
+    }
+
+    private static String ciudad(Cliente cliente) {
+        return cliente instanceof ClienteConUbicacion u ? u.getCiudad() : null;
     }
 
     private static String direccion(Cliente cliente) {
-        if (cliente instanceof Socio s) return s.getDireccion();
-        if (cliente instanceof Empresa e) return e.getDireccion();
-        return null;
+        return cliente instanceof ClienteConUbicacion u ? u.getDireccion() : null;
     }
 
     public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto) {
@@ -51,10 +50,10 @@ public class ClienteMapper {
                 cliente.getTelefono(),
                 cliente.getMail(),
                 socio != null ? socio.getMetodoCobro() : null,
-                socio != null ? socio.getPais() : null,
-                socio != null ? socio.getDepartamento() : null,
-                socio != null ? socio.getCiudad() : null,
-                socio != null ? socio.getDireccion() : null,
+                pais(cliente),
+                departamento(cliente),
+                ciudad(cliente),
+                direccion(cliente),
                 socio != null ? socio.getNumeroSocio() : null,
                 tipoDeCliente(cliente),
                 socio != null ? socio.getEstado() : null,

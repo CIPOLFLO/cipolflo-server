@@ -566,7 +566,7 @@ private RutFormatoValidator rutFormatoValidator;
 
         when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.of(10));
 
-        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Socio.class))).thenAnswer(invocation -> {
             Socio socio = invocation.getArgument(0);
             socio.setId(1L);
             return socio;
@@ -579,7 +579,7 @@ private RutFormatoValidator rutFormatoValidator;
 
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
         verify(clienteRepository).findMaxNumeroSocio();
-        verify(clienteRepository).save(any(Socio.class));
+        verify(clienteRepository).saveAndFlush(any(Socio.class));
     }
 
     @Test
@@ -588,7 +588,7 @@ private RutFormatoValidator rutFormatoValidator;
 
         when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.empty());
 
-        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Socio.class))).thenAnswer(invocation -> {
             Socio socio = invocation.getArgument(0);
             socio.setId(1L);
             return socio;
@@ -604,7 +604,7 @@ private RutFormatoValidator rutFormatoValidator;
 
         verify(clienteRepository).findMaxNumeroSocio();
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
-        verify(clienteRepository).save(any(Socio.class));
+        verify(clienteRepository).saveAndFlush(any(Socio.class));
     }
 
     @Test
@@ -613,7 +613,7 @@ private RutFormatoValidator rutFormatoValidator;
         dto.setEmail(null);
 
         when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.empty());
-        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Socio.class))).thenAnswer(invocation -> {
             Socio socio = invocation.getArgument(0);
             socio.setId(1L);
             return socio;
@@ -625,7 +625,7 @@ private RutFormatoValidator rutFormatoValidator;
         assertNull(response.getEmail());
 
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
-        verify(clienteRepository).save(any(Socio.class));
+        verify(clienteRepository).saveAndFlush(any(Socio.class));
     }
 
     // --- registrarEmpresa ---
@@ -634,7 +634,7 @@ private RutFormatoValidator rutFormatoValidator;
     void deberiaRegistrarEmpresaCorrectamente() {
         RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
 
-        when(clienteRepository.save(any(Empresa.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Empresa.class))).thenAnswer(invocation -> {
             Empresa empresa = invocation.getArgument(0);
             empresa.setId(1L);
             return empresa;
@@ -649,7 +649,7 @@ private RutFormatoValidator rutFormatoValidator;
         assertNull(response.getCedula());
 
         verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), anyString());
-        verify(clienteRepository).save(any(Empresa.class));
+        verify(clienteRepository).saveAndFlush(any(Empresa.class));
     }
 
     @Test
@@ -657,7 +657,7 @@ private RutFormatoValidator rutFormatoValidator;
         RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
         dto.setMail(null);
 
-        when(clienteRepository.save(any(Empresa.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Empresa.class))).thenAnswer(invocation -> {
             Empresa empresa = invocation.getArgument(0);
             empresa.setId(1L);
             return empresa;
@@ -669,7 +669,7 @@ private RutFormatoValidator rutFormatoValidator;
         assertNull(response.getEmail());
 
         verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), isNull());
-        verify(clienteRepository).save(any(Empresa.class));
+        verify(clienteRepository).saveAndFlush(any(Empresa.class));
     }
 
     @Test
