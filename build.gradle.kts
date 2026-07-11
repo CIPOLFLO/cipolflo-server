@@ -36,6 +36,7 @@ dependencies {
 	implementation ("org.springframework.boot:spring-boot-starter-mail")
 	implementation ("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	implementation ("org.springframework.boot:spring-boot-starter-actuator")
+	implementation ("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
 	compileOnly ("org.projectlombok:lombok")
 	runtimeOnly ("org.postgresql:postgresql")
 	implementation ("org.liquibase:liquibase-core")

@@ -14,6 +14,7 @@ Backend del sistema de gestión del Club CIPOLFLO. Administra clientes, socios, 
 - **Liquibase**
 - **Gradle (Kotlin DSL)**
 - **Lombok**
+- **Springdoc OpenAPI (Swagger UI)**
 
 ---
 
@@ -41,9 +42,11 @@ Si ya tenés JDK 21 instalado, saltear este paso.
 1. Ir a [https://www.oracle.com/java/technologies/downloads/#java21](https://www.oracle.com/java/technologies/downloads/#java21) y descargar el instalador para Windows.
 2. Ejecutar el instalador con las opciones por defecto.
 3. Verificar la instalación abriendo una terminal y ejecutando:
+
 ```
 java -version
 ```
+
 Debe mostrar `java version "21..."`.
 
 ---
@@ -62,6 +65,7 @@ cd cipolflo-server
 En la raíz del proyecto hay un archivo `.env.example` con valores de ejemplo. Hay que crear una copia con el nombre `.env` y completar las credenciales reales.
 
 **En PowerShell:**
+
 ```powershell
 Copy-Item .env.example .env
 ```
@@ -81,10 +85,10 @@ DB_PASSWORD=elegí_una_contraseña_segura
 
 > `DB_PASSWORD` y `POSTGRES_PASSWORD` deben tener el mismo valor.
 
-| Archivo | Se versiona | Contiene |
-|---|---|---|
-| `.env.example` | Sí | Plantilla con valores de ejemplo — sin credenciales reales |
-| `.env` | **No** (está en `.gitignore`) | Tus credenciales reales — nunca commitear |
+| Archivo        | Se versiona                   | Contiene                                                   |
+| -------------- | ----------------------------- | ---------------------------------------------------------- |
+| `.env.example` | Sí                            | Plantilla con valores de ejemplo — sin credenciales reales |
+| `.env`         | **No** (está en `.gitignore`) | Tus credenciales reales — nunca commitear                  |
 
 ---
 
@@ -147,6 +151,19 @@ La API queda disponible en `http://localhost:8080`.
 
 > **¿Por qué aparece una pantalla de login en el navegador?**
 > El proyecto incluye Spring Security, que por defecto protege todos los endpoints. Eso es comportamiento esperado — la configuración de seguridad se completará cuando se implementen los endpoints de autenticación. Por ahora, el usuario por defecto es `user` y la contraseña generada aparece en la consola al iniciar la app, en una línea como: `Using generated security password: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`.
+
+### Documentación de la API (Swagger)
+
+La documentación de la API se genera automáticamente con **springdoc-openapi** a partir de los controllers y de las anotaciones `@Schema` de los DTOs.
+
+| Recurso | Ruta |
+|---|---|
+| Swagger UI | `http://localhost:8080/swagger-ui.html` |
+| Especificación OpenAPI (JSON) | `http://localhost:8080/v3/api-docs` |
+
+> **Estas rutas están protegidas por Spring Security**, igual que el resto de la API. No están incluidas en las rutas públicas de `SecurityConfig`, así que acceder sin un JWT válido devuelve `401`. Para explorar la doc hay que autenticarse enviando el token en el header `Authorization: Bearer <token>` (por ejemplo desde un cliente HTTP), o —solo en un entorno de desarrollo— agregar temporalmente `"/swagger-ui/**"`, `"/swagger-ui.html"` y `"/v3/api-docs/**"` a `permitAll()` en `SecurityConfig`.
+
+> **Importante:** para documentar campos de DTOs usar `@Schema` (de `io.swagger.v3.oas.annotations.media`), **no** `@Description` de `jdk.jfr` —esta última no tiene efecto sobre la doc de la API.
 
 ### Comandos útiles
 
@@ -216,6 +233,7 @@ ALTER TABLE public.cliente ADD COLUMN fecha_baja date;
 ```
 
 Reglas del formato:
+
 - La primera línea del archivo debe ser siempre `--liquibase formatted sql`.
 - Cada changeset necesita `--changeset autor:id`. El `id` debe ser único en todo el proyecto — usar el ticket como prefijo (`cipolflo:DEV-117-...`) garantiza esto.
 - Agregar siempre `--rollback` con el SQL inverso. Si el rollback es imposible (ej: `DROP TABLE`), usar `--rollback empty`.
@@ -244,7 +262,7 @@ databaseChangeLog:
   - include:
       file: db/changelog/migrations/001_initial_schema.sql
   - include:
-      file: db/changelog/migrations/DEV-117/db.changelog-DEV-117.yaml   # ← agregar acá
+      file: db/changelog/migrations/DEV-117/db.changelog-DEV-117.yaml # ← agregar acá
 ```
 
 **4. Verificar localmente**
@@ -311,12 +329,12 @@ Dentro de cada módulo, la estructura de capas es:
 
 Clases base y enums usados por todos los módulos.
 
-| Clase / Enum | Rol |
-|---|---|
-| `AuditableEntity` | Superclase abstracta con `createdAt` y `updatedAt` automáticos. Todas las entidades la extienden. |
-| `HealthController` | Endpoint `GET /api/health` para verificar que el servidor responde. |
-| `FormaPago` | Enum: `EFECTIVO`, `TRANSFERENCIA`, `DEBITO`, `CREDITO` |
-| `Procedencia` | Enum: `SEDE`, `CAMPING` |
+| Clase / Enum       | Rol                                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| `AuditableEntity`  | Superclase abstracta con `createdAt` y `updatedAt` automáticos. Todas las entidades la extienden. |
+| `HealthController` | Endpoint `GET /api/health` para verificar que el servidor responde.                               |
+| `FormaPago`        | Enum: `EFECTIVO`, `TRANSFERENCIA`, `DEBITO`, `CREDITO`                                            |
+| `Procedencia`      | Enum: `SEDE`, `CAMPING`                                                                           |
 
 ---
 
@@ -334,18 +352,18 @@ Cliente (abstracta)
 
 `Socio` incluye lógica de negocio: control de meses sin pagar, cambio automático de estado a `INACTIVO` al superar 3 meses, y baja.
 
-| Clase | Rol |
-|---|---|
-| `Cliente` | Entidad base: cédula, nombre, teléfono, mail, notas |
-| `Particular` | Extiende Cliente sin campos adicionales |
-| `Socio` | Extiende Cliente con número de socio, fecha de nacimiento, estado, domicilio, cuotas |
-| `PagoCuota` | Registro de pago de cuota mensual de un socio |
-| `EstadoSocio` | Enum: `ACTIVO`, `INACTIVO`, `DE_BAJA` |
-| `MetodoCobro` | Enum: `EN_SEDE`, `DESCUENTO_SALARIO`, `TRANSFERENCIA` |
-| `ClienteRepository` | `JpaRepository<Cliente, Long>` |
-| `IClienteService` / `ClienteService` | Interfaz + implementación del servicio |
-| `ClienteRequestDto` / `ClienteResponseDto` | DTOs de entrada y salida |
-| `ClienteController` | `@RestController` — base: `/api/v1/clientes` |
+| Clase                                      | Rol                                                                                  |
+| ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `Cliente`                                  | Entidad base: cédula, nombre, teléfono, mail, notas                                  |
+| `Particular`                               | Extiende Cliente sin campos adicionales                                              |
+| `Socio`                                    | Extiende Cliente con número de socio, fecha de nacimiento, estado, domicilio, cuotas |
+| `PagoCuota`                                | Registro de pago de cuota mensual de un socio                                        |
+| `EstadoSocio`                              | Enum: `ACTIVO`, `INACTIVO`, `DE_BAJA`                                                |
+| `MetodoCobro`                              | Enum: `EN_SEDE`, `DESCUENTO_SALARIO`, `TRANSFERENCIA`                                |
+| `ClienteRepository`                        | `JpaRepository<Cliente, Long>`                                                       |
+| `IClienteService` / `ClienteService`       | Interfaz + implementación del servicio                                               |
+| `ClienteRequestDto` / `ClienteResponseDto` | DTOs de entrada y salida                                                             |
+| `ClienteController`                        | `@RestController` — base: `/api/v1/clientes`                                         |
 
 ---
 
@@ -353,14 +371,14 @@ Cliente (abstracta)
 
 Catálogo de servicios que el club ofrece (actividades, instalaciones, etc.).
 
-| Clase | Rol |
-|---|---|
-| `Servicio` | Entidad: nombre, procedencia, precio por tipo de cliente, modalidad, capacidad, habilitado, requiereDocumentacion |
-| `ModalidadPrecio` | Enum: `POR_DIA`, `POR_PERSONA`, `POR_DIA_POR_PERSONA`, `POR_UNIDAD`, `POR_HORA` |
-| `ServicioRepository` | `JpaRepository<Servicio, Long>` |
-| `IServicioService` / `ServicioService` | Interfaz + implementación del servicio |
-| `ServicioRequestDto` / `ServicioResponseDto` | DTOs de entrada y salida |
-| `ServicioController` | `@RestController` — base: `/api/v1/servicios` |
+| Clase                                        | Rol                                                                                                               |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `Servicio`                                   | Entidad: nombre, procedencia, precio por tipo de cliente, modalidad, capacidad, habilitado, requiereDocumentacion |
+| `ModalidadPrecio`                            | Enum: `POR_DIA`, `POR_PERSONA`, `POR_DIA_POR_PERSONA`, `POR_UNIDAD`, `POR_HORA`                                   |
+| `ServicioRepository`                         | `JpaRepository<Servicio, Long>`                                                                                   |
+| `IServicioService` / `ServicioService`       | Interfaz + implementación del servicio                                                                            |
+| `ServicioRequestDto` / `ServicioResponseDto` | DTOs de entrada y salida                                                                                          |
+| `ServicioController`                         | `@RestController` — base: `/api/v1/servicios`                                                                     |
 
 ---
 
@@ -386,18 +404,18 @@ Las reservas de tipo `COLABORACION_SIN_FINES_DE_LUCRO` no tienen `clienteId`; en
 
 La entidad usa un **factory method estático** `Reserva.crear(...)` en lugar de constructor público.
 
-| Clase | Rol |
-|---|---|
-| `Reserva` | Entidad central: tipoReserva, clienteId (nullable), servicio, fechas, cantidades, rut, importe, estado, pago, documentación |
-| `EstadoReserva` | Enum: `PENDIENTE`, `CONFIRMADA`, `EN_CURSO`, `FINALIZADA`, `CANCELADA` |
-| `TipoReserva` | Enum: `COMUN`, `COLABORACION_SIN_FINES_DE_LUCRO` |
-| `ReservaRepository` | `JpaRepository<Reserva, Long>` |
-| `IReservaService` / `ReservaService` | Interfaz + implementación del servicio |
-| `IRegistroParticularService` / `RegistroParticularService` | Servicio dedicado para registrar clientes particulares (usado durante la creación de reserva) |
-| `ReservaCreacionValidator` | Valida fechas, disponibilidad del servicio, solapamiento y datos de cliente antes de crear la reserva |
-| `IServicioRequiereDocumentacion` / `ServicioRequiereDocumentacion` | Consulta si un servicio requiere documentación previa |
-| `ReservaCreacionRequestDto` / `ReservaCreacionResponseDto` | DTOs de entrada y salida para creación |
-| `ReservaController` | `@RestController` — base: `/api/v1/reservas` |
+| Clase                                                              | Rol                                                                                                                         |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `Reserva`                                                          | Entidad central: tipoReserva, clienteId (nullable), servicio, fechas, cantidades, rut, importe, estado, pago, documentación |
+| `EstadoReserva`                                                    | Enum: `PENDIENTE`, `CONFIRMADA`, `EN_CURSO`, `FINALIZADA`, `CANCELADA`                                                      |
+| `TipoReserva`                                                      | Enum: `COMUN`, `COLABORACION_SIN_FINES_DE_LUCRO`                                                                            |
+| `ReservaRepository`                                                | `JpaRepository<Reserva, Long>`                                                                                              |
+| `IReservaService` / `ReservaService`                               | Interfaz + implementación del servicio                                                                                      |
+| `IRegistroParticularService` / `RegistroParticularService`         | Servicio dedicado para registrar clientes particulares (usado durante la creación de reserva)                               |
+| `ReservaCreacionValidator`                                         | Valida fechas, disponibilidad del servicio, solapamiento y datos de cliente antes de crear la reserva                       |
+| `IServicioRequiereDocumentacion` / `ServicioRequiereDocumentacion` | Consulta si un servicio requiere documentación previa                                                                       |
+| `ReservaCreacionRequestDto` / `ReservaCreacionResponseDto`         | DTOs de entrada y salida para creación                                                                                      |
+| `ReservaController`                                                | `@RestController` — base: `/api/v1/reservas`                                                                                |
 
 ---
 
@@ -415,15 +433,15 @@ Finanza (abstracta)
 
 `Ingreso` puede vincularse opcionalmente a una `Reserva` mediante `reservaId`.
 
-| Clase | Rol |
-|---|---|
-| `Finanza` | Entidad base: fecha, importe, concepto, forma de pago, notas |
-| `Ingreso` | Extiende Finanza con procedencia y referencia opcional a reserva |
-| `Egreso` | Extiende Finanza sin campos adicionales |
-| `FinanzaRepository` | `JpaRepository<Finanza, Long>` |
-| `IFinanzaService` / `FinanzaService` | Interfaz + implementación del servicio |
-| `FinanzaRequestDto` / `FinanzaResponseDto` | DTOs de entrada y salida |
-| `FinanzaController` | `@RestController` — base: `/api/v1/finanzas` |
+| Clase                                      | Rol                                                              |
+| ------------------------------------------ | ---------------------------------------------------------------- |
+| `Finanza`                                  | Entidad base: fecha, importe, concepto, forma de pago, notas     |
+| `Ingreso`                                  | Extiende Finanza con procedencia y referencia opcional a reserva |
+| `Egreso`                                   | Extiende Finanza sin campos adicionales                          |
+| `FinanzaRepository`                        | `JpaRepository<Finanza, Long>`                                   |
+| `IFinanzaService` / `FinanzaService`       | Interfaz + implementación del servicio                           |
+| `FinanzaRequestDto` / `FinanzaResponseDto` | DTOs de entrada y salida                                         |
+| `FinanzaController`                        | `@RestController` — base: `/api/v1/finanzas`                     |
 
 ---
 
@@ -506,10 +524,10 @@ Los archivos `code_review_*.md` son locales y no deben pushearse. Agregar al `.g
 
 ## Endpoints disponibles
 
-| Método | Ruta | Módulo | Estado |
-|---|---|---|---|
-| GET | `/api/health` | shared | Activo |
-| GET, POST, PUT, PATCH | `/api/v1/clientes/**` | clientes | Activo |
-| GET, POST, PUT, PATCH | `/api/v1/servicios/**` | servicios | Activo |
-| POST | `POST /api/v1/reservas` | reservas | Activo — crear reserva |
-| POST | `/api/v1/finanzas` | finanzas | Activo |
+| Método                | Ruta                    | Módulo    | Estado                 |
+| --------------------- | ----------------------- | --------- | ---------------------- |
+| GET                   | `/api/health`           | shared    | Activo                 |
+| GET, POST, PUT, PATCH | `/api/v1/clientes/**`   | clientes  | Activo                 |
+| GET, POST, PUT, PATCH | `/api/v1/servicios/**`  | servicios | Activo                 |
+| POST                  | `POST /api/v1/reservas` | reservas  | Activo — crear reserva |
+| POST                  | `/api/v1/finanzas`      | finanzas  | Activo                 |

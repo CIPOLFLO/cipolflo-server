@@ -1,6 +1,7 @@
 package com.cipolflo.server.clientes.service;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
@@ -69,6 +70,9 @@ private CedulaFormatoValidator cedulaFormatoValidator;
 private RegistroParticularValidator registroParticularValidator;
 
 @Mock
+private RegistroEmpresaValidator registroEmpresaValidator;
+
+@Mock
 private IPagoCuotaService pagoCuotaService;
 
 @Mock
@@ -116,6 +120,14 @@ private IExportService exportService;
         return particular;
     }
 
+    private Empresa crearEmpresa(Long id, String razonSocial, String rut) {
+        Empresa empresa = Empresa.registrar(
+                rut, razonSocial, "099000000", "empresa@mail.com",
+                "Uruguay", "Montevideo", "Montevideo", "Av. Libertador 500", null);
+        empresa.setId(id);
+        return empresa;
+    }
+
     private ModificacionParticularRequestDto dtoParticular(String nombre, String telefono) {
         ModificacionParticularRequestDto dto = new ModificacionParticularRequestDto();
         dto.setCedula("12345672");
@@ -150,6 +162,20 @@ private IExportService exportService;
         dto.setDepartamento("Montevideo");
         dto.setCiudad("Montevideo");
         dto.setDireccion("Av. Italia 1234");
+        dto.setObservaciones("Sin observaciones");
+        return dto;
+    }
+
+    private RegistroEmpresaRequestDto crearRegistroEmpresaRequest() {
+        RegistroEmpresaRequestDto dto = new RegistroEmpresaRequestDto();
+        dto.setRazonSocial("Antel S.A.");
+        dto.setRut("21.100342.001-7");
+        dto.setPais("Uruguay");
+        dto.setDepartamento("Montevideo");
+        dto.setCiudad("Montevideo");
+        dto.setDireccion("Guatemala 1075");
+        dto.setTelefono("099123456");
+        dto.setMail("empresa@mail.com");
         dto.setObservaciones("Sin observaciones");
         return dto;
     }
@@ -272,6 +298,37 @@ private IExportService exportService;
         assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
         assertEquals("Uruguay", dto.getPais());
         verify(clienteRepository).findById(1L);
+    }
+
+    @Test
+    void deberiaRetornarDetalleDeUnaEmpresaConTipoYRut() {
+        Empresa empresa = crearEmpresa(3L, "Cipolatti S.A.", "210001230018");
+        when(clienteRepository.findById(3L)).thenReturn(Optional.of(empresa));
+
+        ClienteResponseDto dto = clienteService.getDetalleCliente(3L);
+
+        assertEquals(3L, dto.getId());
+        assertEquals("Cipolatti S.A.", dto.getNombre());
+        assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
+        assertEquals("210001230018", dto.getRut());
+        assertNull(dto.getCedula());
+        verify(pagoCuotaService, never()).calcularUltimaCuotaPaga(anyLong());
+    }
+
+    @Test
+    void deberiaMapearEmpresaEnListadoConTipoYRut() {
+        Empresa empresa = crearEmpresa(3L, "Cipolatti S.A.", "210001230018");
+        Page<Cliente> page = new PageImpl<>(List.of(empresa));
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        PageResponse<ListadoClientesResponseDto> resultado = clienteService.getListadoClientes(sinFiltros(), pageRequest());
+
+        ListadoClientesResponseDto dto = resultado.content().get(0);
+        assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
+        assertEquals("210001230018", dto.getRut());
+        assertNull(dto.getCedula());
+        assertNull(dto.getUltimaCuotaDto());
+        verify(pagoCuotaService, never()).calcularUltimaCuotaPaga(anyLong());
     }
 
     @Test
@@ -506,7 +563,7 @@ private IExportService exportService;
 
         when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.of(10));
 
-        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Socio.class))).thenAnswer(invocation -> {
             Socio socio = invocation.getArgument(0);
             socio.setId(1L);
             return socio;
@@ -519,7 +576,7 @@ private IExportService exportService;
 
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
         verify(clienteRepository).findMaxNumeroSocio();
-        verify(clienteRepository).save(any(Socio.class));
+        verify(clienteRepository).saveAndFlush(any(Socio.class));
     }
 
     @Test
@@ -528,7 +585,7 @@ private IExportService exportService;
 
         when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.empty());
 
-        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Socio.class))).thenAnswer(invocation -> {
             Socio socio = invocation.getArgument(0);
             socio.setId(1L);
             return socio;
@@ -544,7 +601,7 @@ private IExportService exportService;
 
         verify(clienteRepository).findMaxNumeroSocio();
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
-        verify(clienteRepository).save(any(Socio.class));
+        verify(clienteRepository).saveAndFlush(any(Socio.class));
     }
 
     @Test
@@ -553,7 +610,7 @@ private IExportService exportService;
         dto.setEmail(null);
 
         when(clienteRepository.findMaxNumeroSocio()).thenReturn(Optional.empty());
-        when(clienteRepository.save(any(Socio.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Socio.class))).thenAnswer(invocation -> {
             Socio socio = invocation.getArgument(0);
             socio.setId(1L);
             return socio;
@@ -565,7 +622,81 @@ private IExportService exportService;
         assertNull(response.getEmail());
 
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), isNull());
-        verify(clienteRepository).save(any(Socio.class));
+        verify(clienteRepository).saveAndFlush(any(Socio.class));
+    }
+
+    // --- registrarEmpresa ---
+
+    @Test
+    void deberiaRegistrarEmpresaCorrectamente() {
+        RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
+
+        when(clienteRepository.saveAndFlush(any(Empresa.class))).thenAnswer(invocation -> {
+            Empresa empresa = invocation.getArgument(0);
+            empresa.setId(1L);
+            return empresa;
+        });
+
+        ClienteResponseDto response = clienteService.registrarEmpresa(dto);
+
+        assertNotNull(response);
+        assertEquals("Antel S.A.", response.getNombre());
+        assertEquals("211003420017", response.getRut());
+        assertEquals(TipoCliente.EMPRESA, response.getTipoCliente());
+        assertNull(response.getCedula());
+
+        verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), anyString());
+        verify(clienteRepository).saveAndFlush(any(Empresa.class));
+    }
+
+    @Test
+    void deberiaRegistrarEmpresaSinMail() {
+        RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
+        dto.setMail(null);
+
+        when(clienteRepository.saveAndFlush(any(Empresa.class))).thenAnswer(invocation -> {
+            Empresa empresa = invocation.getArgument(0);
+            empresa.setId(1L);
+            return empresa;
+        });
+
+        ClienteResponseDto response = clienteService.registrarEmpresa(dto);
+
+        assertNotNull(response);
+        assertNull(response.getEmail());
+
+        verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), isNull());
+        verify(clienteRepository).saveAndFlush(any(Empresa.class));
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoRutEsInvalidoAlRegistrarEmpresa() {
+        RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.RUT_INVALIDO.name(),
+                "El RUT ingresado no es válido"
+        )).when(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), any());
+
+        assertThrows(ClienteValidacionException.class, () -> clienteService.registrarEmpresa(dto));
+
+        verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), any());
+        verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    void deberiaLanzarErrorCuandoRutEstaDuplicadoAlRegistrarEmpresa() {
+        RegistroEmpresaRequestDto dto = crearRegistroEmpresaRequest();
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.RUT_DUPLICADO.name(),
+                "Ya existe un cliente con ese RUT"
+        )).when(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), any());
+
+        assertThrows(ClienteValidacionException.class, () -> clienteService.registrarEmpresa(dto));
+
+        verify(registroEmpresaValidator).validar(any(RegistroEmpresaRequestDto.class), anyString(), any());
+        verify(clienteRepository, never()).save(any());
     }
 
     // --- buscarPorCedula ---
@@ -769,8 +900,8 @@ void deberiaExportarFilasConLabelsLegiblesDeEstadoYMetodoCobro() {
     verify(exportService).generarExcel(anyString(), anyList(), filasCaptor.capture(), any(int[].class));
 
     List<String> fila = filasCaptor.getValue().get(0);
-    assertEquals("Activo",   fila.get(4));   // estado usa label, no "ACTIVO"
-    assertEquals("Efectivo", fila.get(7));   // metodoCobro usa label, no "EFECTIVO"
+    assertEquals("Activo",   fila.get(5));   // estado usa label, no "ACTIVO"
+    assertEquals("Efectivo", fila.get(8));   // metodoCobro usa label, no "EFECTIVO"
 }
 
 @Test
@@ -812,5 +943,25 @@ void deberiaExportarClientesCorrectamente() {
             anyList(),
             any(int[].class)
     );
+}
+
+@Test
+@SuppressWarnings("unchecked")
+void deberiaIncluirColumnaRutEnLaExportacion() {
+    Empresa empresa = crearEmpresa(1L, "Cipolatti S.A.", "210001230018");
+
+    when(clienteRepository.findAll(any(Specification.class))).thenReturn(List.of(empresa));
+    when(exportProperties.maxFilas()).thenReturn(1000);
+    when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+            .thenReturn(new byte[0]);
+
+    clienteService.exportarClientes(sinFiltros());
+
+    ArgumentCaptor<List<String>> encabezadosCaptor = ArgumentCaptor.forClass((Class) List.class);
+    ArgumentCaptor<List<List<String>>> filasCaptor = ArgumentCaptor.forClass((Class) List.class);
+    verify(exportService).generarExcel(anyString(), encabezadosCaptor.capture(), filasCaptor.capture(), any(int[].class));
+
+    assertTrue(encabezadosCaptor.getValue().contains("RUT"));
+    assertEquals("210001230018", filasCaptor.getValue().get(0).get(3));
 }
 }

@@ -1,6 +1,7 @@
 package com.cipolflo.server.clientes.repository;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
@@ -70,6 +71,19 @@ class ClienteSpecificationTest {
         spec.toPredicate(root, query, cb);
 
         verify(cb).equal(typeExpr, Particular.class);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void conTipoCliente_deberiaCrearPredicateParaEmpresa() {
+        Expression<Class<? extends Cliente>> typeExpr = mock(Expression.class);
+        when(root.type()).thenReturn(typeExpr);
+        when(cb.equal(typeExpr, Empresa.class)).thenReturn(mock(Predicate.class));
+
+        Specification<Cliente> spec = ClienteSpecification.conTipoCliente(TipoCliente.EMPRESA);
+        spec.toPredicate(root, query, cb);
+
+        verify(cb).equal(typeExpr, Empresa.class);
     }
 
     // --- conNombre ---
@@ -190,18 +204,25 @@ class ClienteSpecificationTest {
     void conIdentificador_deberiaBuscarPorCedulaNormalizada() {
         Path<Object> cedulaPath = mock(Path.class);
         Expression<String> lowerExpr = mock(Expression.class);
+        Expression<String> lowerRut = mock(Expression.class);
         Root<Socio> socioRoot = mock(Root.class);
         Path<Object> nroSocioPath = mock(Path.class);
         Expression<String> textExpr = mock(Expression.class);
+        Root<Empresa> empresaRoot = mock(Root.class);
+        Path<Object> rutPath = mock(Path.class);
 
         when(root.get("cedula")).thenReturn(cedulaPath);
-        when(cb.lower(any())).thenReturn(lowerExpr);
+        // cb.lower se invoca primero para la cédula y luego para el rut
+        when(cb.lower(any())).thenReturn(lowerExpr, lowerRut);
         when(cb.like(eq(lowerExpr), eq("12345678%"))).thenReturn(mock(Predicate.class));
+        when(cb.like(eq(lowerRut), eq("12345678%"))).thenReturn(mock(Predicate.class));
         doReturn(socioRoot).when(cb).treat(root, Socio.class);
         when(socioRoot.get("numeroSocio")).thenReturn(nroSocioPath);
         when(cb.function("TEXT", String.class, nroSocioPath)).thenReturn(textExpr);
         when(cb.like(eq(textExpr), eq("12345678%"))).thenReturn(mock(Predicate.class));
-        when(cb.or(any(), any())).thenReturn(mock(Predicate.class));
+        doReturn(empresaRoot).when(cb).treat(root, Empresa.class);
+        when(empresaRoot.get("rut")).thenReturn(rutPath);
+        when(cb.or(any(), any(), any())).thenReturn(mock(Predicate.class));
 
         Specification<Cliente> spec =
                 ClienteSpecification.conIdentificador("1.234.567-8");
@@ -216,18 +237,25 @@ class ClienteSpecificationTest {
     void conIdentificador_deberiaBuscarPorCedulaParcial() {
         Path<Object> cedulaPath = mock(Path.class);
         Expression<String> lowerExpr = mock(Expression.class);
+        Expression<String> lowerRut = mock(Expression.class);
         Root<Socio> socioRoot = mock(Root.class);
         Path<Object> nroSocioPath = mock(Path.class);
         Expression<String> textExpr = mock(Expression.class);
+        Root<Empresa> empresaRoot = mock(Root.class);
+        Path<Object> rutPath = mock(Path.class);
 
         when(root.get("cedula")).thenReturn(cedulaPath);
-        when(cb.lower(any())).thenReturn(lowerExpr);
+        // cb.lower se invoca primero para la cédula y luego para el rut
+        when(cb.lower(any())).thenReturn(lowerExpr, lowerRut);
         when(cb.like(eq(lowerExpr), eq("123%"))).thenReturn(mock(Predicate.class));
+        when(cb.like(eq(lowerRut), eq("123%"))).thenReturn(mock(Predicate.class));
         doReturn(socioRoot).when(cb).treat(root, Socio.class);
         when(socioRoot.get("numeroSocio")).thenReturn(nroSocioPath);
         when(cb.function("TEXT", String.class, nroSocioPath)).thenReturn(textExpr);
         when(cb.like(eq(textExpr), eq("123%"))).thenReturn(mock(Predicate.class));
-        when(cb.or(any(), any())).thenReturn(mock(Predicate.class));
+        doReturn(empresaRoot).when(cb).treat(root, Empresa.class);
+        when(empresaRoot.get("rut")).thenReturn(rutPath);
+        when(cb.or(any(), any(), any())).thenReturn(mock(Predicate.class));
 
         Specification<Cliente> spec =
                 ClienteSpecification.conIdentificador("123");
@@ -239,28 +267,64 @@ class ClienteSpecificationTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void conIdentificador_deberiaCrearPredicateOrEntreCedulaYNroSocio() {
+    void conIdentificador_deberiaBuscarPorRutDeEmpresa() {
+        Path<Object> cedulaPath = mock(Path.class);
+        Expression<String> lowerCedula = mock(Expression.class);
+        Expression<String> lowerRut = mock(Expression.class);
+        Root<Socio> socioRoot = mock(Root.class);
+        Path<Object> nroSocioPath = mock(Path.class);
+        Expression<String> textExpr = mock(Expression.class);
+        Root<Empresa> empresaRoot = mock(Root.class);
+        Path<Object> rutPath = mock(Path.class);
+
+        when(root.get("cedula")).thenReturn(cedulaPath);
+        // cb.lower se invoca primero para la cédula y luego para el rut
+        when(cb.lower(any())).thenReturn(lowerCedula, lowerRut);
+        when(cb.like(eq(lowerCedula), eq("123%"))).thenReturn(mock(Predicate.class));
+        doReturn(socioRoot).when(cb).treat(root, Socio.class);
+        when(socioRoot.get("numeroSocio")).thenReturn(nroSocioPath);
+        when(cb.function("TEXT", String.class, nroSocioPath)).thenReturn(textExpr);
+        when(cb.like(eq(textExpr), eq("123%"))).thenReturn(mock(Predicate.class));
+        doReturn(empresaRoot).when(cb).treat(root, Empresa.class);
+        when(empresaRoot.get("rut")).thenReturn(rutPath);
+        when(cb.like(eq(lowerRut), eq("123%"))).thenReturn(mock(Predicate.class));
+        when(cb.or(any(), any(), any())).thenReturn(mock(Predicate.class));
+
+        Specification<Cliente> spec = ClienteSpecification.conIdentificador("123");
+        spec.toPredicate(root, query, cb);
+
+        verify(cb).like(lowerRut, "123%");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void conIdentificador_deberiaCrearPredicateOrEntreCedulaNroSocioYRut() {
         Path<Object> cedulaPath = mock(Path.class);
         Expression<String> lowerExpr = mock(Expression.class);
         Root<Socio> socioRoot = mock(Root.class);
         Path<Object> nroSocioPath = mock(Path.class);
         Expression<String> textExpr = mock(Expression.class);
+        Root<Empresa> empresaRoot = mock(Root.class);
+        Path<Object> rutPath = mock(Path.class);
         Predicate cedulaPredicate = mock(Predicate.class);
         Predicate nroSocioPredicate = mock(Predicate.class);
+        Predicate rutPredicate = mock(Predicate.class);
 
         when(root.get("cedula")).thenReturn(cedulaPath);
         when(cb.lower(any())).thenReturn(lowerExpr);
-        when(cb.like(lowerExpr, "123%")).thenReturn(cedulaPredicate);
         doReturn(socioRoot).when(cb).treat(root, Socio.class);
         when(socioRoot.get("numeroSocio")).thenReturn(nroSocioPath);
         when(cb.function("TEXT", String.class, nroSocioPath)).thenReturn(textExpr);
+        doReturn(empresaRoot).when(cb).treat(root, Empresa.class);
+        when(empresaRoot.get("rut")).thenReturn(rutPath);
+        when(cb.like(lowerExpr, "123%")).thenReturn(cedulaPredicate, rutPredicate);
         when(cb.like(textExpr, "123%")).thenReturn(nroSocioPredicate);
-        when(cb.or(cedulaPredicate, nroSocioPredicate)).thenReturn(mock(Predicate.class));
+        when(cb.or(cedulaPredicate, nroSocioPredicate, rutPredicate)).thenReturn(mock(Predicate.class));
 
         Specification<Cliente> spec = ClienteSpecification.conIdentificador("123");
         spec.toPredicate(root, query, cb);
 
-        verify(cb).or(cedulaPredicate, nroSocioPredicate);
+        verify(cb).or(cedulaPredicate, nroSocioPredicate, rutPredicate);
     }
 
     // --- conEstado ---

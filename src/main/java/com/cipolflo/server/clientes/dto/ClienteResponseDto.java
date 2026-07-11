@@ -16,6 +16,7 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
     private final Long id;
     private final String nombre;
     private final String cedula;
+    private final String rut;
     private final LocalDate fechaNacimiento;
     private final String telefono;
     private final String email;
@@ -31,7 +32,7 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
     private final UltimaCuotaDto ultimaCuotaDto;
 
     public ClienteResponseDto(
-            Long id, String nombre, String cedula, LocalDate fechaNacimiento,
+            Long id, String nombre, String cedula, String rut, LocalDate fechaNacimiento,
             String telefono, String email, MetodoCobro metodoCobro,
             String pais, String departamento, String ciudad, String direccion,
             Integer numeroSocio, TipoCliente tipoCliente, EstadoSocio estado, String observaciones,UltimaCuotaDto ultimaCuotaDto,
@@ -40,6 +41,7 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
         this.id = id;
         this.nombre = nombre;
         this.cedula = cedula;
+        this.rut = rut;
         this.fechaNacimiento = fechaNacimiento;
         this.telefono = telefono;
         this.email = email;

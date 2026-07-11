@@ -4,6 +4,7 @@ import com.cipolflo.server.reservas.dto.CalculoCostoResponseDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.service.ICancelacionReservaService;
+import com.cipolflo.server.reservas.service.IFinalizacionReservaService;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,8 @@ class CalculoCostoControllerTest {
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
     @MockitoBean
     private ICancelacionReservaService cancelacionReservaService;
+    @MockitoBean
+    private IFinalizacionReservaService finalizacionReservaService;
 
     private static final String URL = "/api/v1/reservas/calcular-costo";
 

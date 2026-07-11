@@ -2,6 +2,7 @@ package com.cipolflo.server.clientes.repository;
 
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
@@ -16,7 +17,11 @@ public class ClienteSpecification {
     public static Specification<Cliente> conTipoCliente(TipoCliente tipoCliente) {
         if (tipoCliente == null)
             return (root, query, cb) -> cb.conjunction();
-        Class<?> tipo = tipoCliente == TipoCliente.SOCIO ? Socio.class : Particular.class;
+        Class<?> tipo = switch (tipoCliente) {
+            case SOCIO -> Socio.class;
+            case EMPRESA -> Empresa.class;
+            case PARTICULAR -> Particular.class;
+        };
         return (root, query, cb) -> cb.equal(root.type(), tipo);
     }
 
@@ -53,7 +58,8 @@ public class ClienteSpecification {
             Predicate porCedula = cb.like(cb.lower(root.get("cedula")), patron);
             Predicate porNroSocio = cb.like(
                     cb.function("TEXT", String.class, cb.treat(root, Socio.class).get("numeroSocio")), patron);
-            return cb.or(porCedula, porNroSocio);
+            Predicate porRut = cb.like(cb.lower(cb.treat(root, Empresa.class).get("rut")), patron);
+            return cb.or(porCedula, porNroSocio, porRut);
         };
     }
 

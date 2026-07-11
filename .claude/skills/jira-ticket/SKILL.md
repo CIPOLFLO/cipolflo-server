@@ -25,6 +25,7 @@ Usá Grep y Glob para encontrar archivos relevantes que no conocés de antemano.
 ## Paso 2 — Diseñar antes de escribir
 
 Antes de redactar el ticket, resolvé internamente:
+
 - ¿Qué método HTTP corresponde a esta operación?
 - ¿Qué capa/s necesitan cambios? (controller, service, repository, dominio, DTOs, excepciones)
 - ¿Qué validaciones aplican?
@@ -55,6 +56,7 @@ Usá exactamente esta estructura:
 ### Criterios de aceptación
 
 [Criterios concretos y verificables. Organizalos por escenario si aplica. Incluí siempre:]
+
 - Respuestas HTTP esperadas por escenario (éxito, no encontrado, validación inválida, etc.)
 - Reglas de validación de campos
 - Reglas de negocio
@@ -89,12 +91,14 @@ Nombres de los DTOs nuevos y sus campos con validaciones. Justificá si se reuti
 Nuevas excepciones, nuevos códigos de error en el enum correspondiente, y el handler a agregar en `GlobalExceptionHandler`.
 
 **Tests**
+
 - `NombreControllerTest`: escenarios HTTP a cubrir.
 - `NombreServiceTest`: caminos de lógica de negocio a cubrir.
 - Cualquier clase utilitaria nueva tiene su propio test.
 
 **Validaciones — dónde y cómo se implementa cada una**
 Explicá en qué capa vive cada validación, cómo se gatilla y qué error HTTP produce. Aplicá el patrón de capas del proyecto:
+
 - Forma/formato → declarativa en el DTO (Bean Validation), disparada por `@Valid` en el controller.
 - Reglas de negocio (unicidad, cross-field, lookups a BD) → validador `@Component` invocado desde el service. Indicá explícitamente si el ticket NO necesita uno.
 - Invariantes de dominio → dentro de la entidad (factory methods / transiciones).
@@ -118,17 +122,20 @@ Explicá en qué capa vive cada validación, cómo se gatilla y qué error HTTP 
 ## Convenciones del proyecto a aplicar
 
 ### Métodos HTTP
+
 - `GET` — consultas; retorna `200` (o `404` si el recurso no se encuentra cuando se espera uno)
 - `POST` — creación; retorna `201`
 - `PUT` — actualización completa del recurso; retorna `200` con el recurso actualizado
 - `PATCH` — operaciones parciales o de estado específico (ej. baja, habilitación); retorna `200` o `204`
 
 ### URLs
+
 `/api/v1/{módulo}/{id?}/{sub-recurso?}`
 
 Para operaciones sobre subtipos (ej. solo socios), usar sub-ruta explícita: `/api/v1/clientes/socios/{id}`.
 
 ### Controller
+
 - Clase: `@RestController`, `@Validated`, `@RequestMapping("/api/v1/...")`
 - IDs: `@PathVariable @Positive(message = "El id de X debe ser un número positivo")`
 - Body: `@Valid @RequestBody`
@@ -137,37 +144,44 @@ Para operaciones sobre subtipos (ej. solo socios), usar sub-ruta explícita: `/a
 - Retorno: `ResponseEntity<T>`
 
 ### Service
+
 - Siempre definir interfaz `IXxxService` y su implementación `XxxService`
 - Inyección por constructor (sin `@Autowired`)
 - Operaciones de escritura: `@Transactional`
 - La lógica de negocio pertenece al dominio, no al servicio
 
 ### Dominio
+
 - Lógica de negocio encapsulada en métodos del dominio (ej. `entidad.cancelar()`, `entidad.darDeBaja()`)
 - Factory methods para creación (ej. `Reserva.crear(...)`)
 - Transiciones de estado validadas dentro del dominio
 
 ### Excepciones
+
 - Una clase de excepción por caso de error (ej. `XxxNotFoundException`)
 - Enum `XxxCodigoError` por módulo con los códigos de error
 - Todo manejado en `GlobalExceptionHandler`
 - `404` para no encontrado; `400` para validaciones y reglas de negocio violadas
 
 ### DTOs
+
 - DTOs separados para request y response
 - Crear un DTO específico por caso de uso; no reutilizar DTOs de otros contextos salvo que sean semánticamente idénticos
 - No incluir info de auditoría en DTOs de uso específico (guardarla para el detalle completo)
 - DTOs de request: anotaciones de Bean Validation en los campos
 
 ### Herencia SINGLE_TABLE (clientes)
+
 - Distinguir subtipos con `instanceof` al buscar por id
 - Si el id existe pero el tipo no coincide con lo esperado, retornar `404`
 - Separar endpoints por subtipo cuando los campos o validaciones difieren entre `Socio` y `Particular`
 
 ### Paginación
+
 - Usar `PageRequestDto` + `PageResponse<T>` para endpoints de listado
 - Filtros como `XxxListadoRequestDto` con `@Valid @ModelAttribute`
 
 ### Validación de cédula
+
 - La regex `^\d+(\.\d+)*(-\d+)?$` y la normalización (eliminar puntos y guiones) están en `ClienteSpecification`
 - Si se necesita en otro contexto, extraer a una clase utilitaria `CedulaUtils`

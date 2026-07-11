@@ -26,6 +26,8 @@ public interface IClienteService {
 
     ClienteResponseDto registrarSocio(RegistroSocioRequestDto dto);
 
+    ClienteResponseDto registrarEmpresa(RegistroEmpresaRequestDto dto);
+
     BusquedaCedulaResponseDto buscarPorCedula(String cedula);
 
     EstadoSocioResponseDto consultarEstadoSocio(Long id);
