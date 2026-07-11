@@ -355,4 +355,100 @@ class ReservaTest {
 
         assertTrue(reserva.estaPaga());
     }
+
+    // ── revertirPago ──────────────────────────────────────────────────────────
+
+    @Test
+    void revertirPagoDeberiaDevolverImporteAlMontoImpago() {
+        Reserva reserva = crearComun(true, false);
+        reserva.registrarPago(BigDecimal.valueOf(500), false);
+
+        assertEquals(0, reserva.getMontoImpago().compareTo(BigDecimal.valueOf(1500)));
+
+        reserva.revertirPago(BigDecimal.valueOf(500));
+
+        assertEquals(0, reserva.getMontoImpago().compareTo(BigDecimal.valueOf(2000)));
+        assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
+    }
+
+    @Test
+    void revertirPagoDeberiaPonerPagoEnFalseCuandoEstabaPaga() {
+        Reserva reserva = crearComun(false, true);
+        reserva.registrarPago(BigDecimal.valueOf(2000), true);
+
+        assertTrue(reserva.getPago());
+
+        reserva.revertirPago(BigDecimal.valueOf(2000));
+
+        assertFalse(reserva.getPago());
+        assertEquals(0, reserva.getMontoImpago().compareTo(BigDecimal.valueOf(2000)));
+    }
+
+    @Test
+    void revertirPagoDeberiaVolverAPendienteSiRequiereSenaYQuedaBajoLaMitad() {
+        Reserva reserva = crearComun(false, true);
+        reserva.registrarPago(BigDecimal.valueOf(1000), false);
+
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+
+        reserva.revertirPago(BigDecimal.valueOf(1000));
+
+        assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
+    }
+
+    @Test
+    void revertirPagoNoDeberiaVolverAPendienteCuandoNoRequiereSena() {
+        Reserva reserva = crearComun(false, false);
+        reserva.registrarPago(BigDecimal.valueOf(500), false);
+
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+
+        reserva.revertirPago(BigDecimal.valueOf(500));
+
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+    }
+
+    @Test
+    void revertirPagoNoDeberiaVolverAPendienteSiSigueCumpliendoLaMitad() {
+        Reserva reserva = crearComun(false, true);
+        reserva.registrarPago(BigDecimal.valueOf(2000), false);
+
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+
+        reserva.revertirPago(BigDecimal.valueOf(500));
+
+        assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
+    }
+
+    @Test
+    void revertirPagoNoDeberiaSuperarElImporteTotal() {
+        Reserva reserva = crearComun(true, false);
+        reserva.registrarPago(BigDecimal.valueOf(800), false);
+
+        reserva.revertirPago(BigDecimal.valueOf(5000));
+
+        assertEquals(0, reserva.getMontoImpago().compareTo(BigDecimal.valueOf(2000)));
+    }
+
+    @Test
+    void revertirPagoEnCursoNoDeberiaCambiarElEstado() {
+        Reserva reserva = crearComun(false, false);
+        reserva.registrarPago(BigDecimal.valueOf(2000), true);
+        reserva.cambiarEstado(EstadoReserva.EN_CURSO);
+
+        reserva.revertirPago(BigDecimal.valueOf(2000));
+
+        assertEquals(EstadoReserva.EN_CURSO, reserva.getEstado());
+        assertFalse(reserva.getPago());
+        assertEquals(0, reserva.getMontoImpago().compareTo(BigDecimal.valueOf(2000)));
+    }
+
+    @Test
+    void cambiarEstadoDeberiaPermitirConfirmadaAPendiente() {
+        Reserva reserva = crearComun(false, false);
+
+        reserva.cambiarEstado(EstadoReserva.PENDIENTE);
+
+        assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
+    }
 }

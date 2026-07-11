@@ -5,11 +5,14 @@ import com.cipolflo.server.finanzas.domain.Finanza;
 import com.cipolflo.server.finanzas.domain.Ingreso;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.*;
+import com.cipolflo.server.finanzas.exception.EliminacionEgresoReservaNoPermitidaException;
+import com.cipolflo.server.finanzas.exception.EliminacionPagoCuotaNoPermitidaException;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.finanzas.mapper.FinanzaMapper;
 import com.cipolflo.server.finanzas.repository.FinanzaRepository;
 import com.cipolflo.server.finanzas.repository.FinanzaSpecification;
 import com.cipolflo.server.reservas.dto.PagoAsociadoReservaDto;
+import com.cipolflo.server.reservas.service.IReversionPagoReservaService;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.*;
@@ -31,13 +34,16 @@ public class FinanzaService implements IFinanzaService, IConsultaPagosAsociadosR
     private final FinanzaRepository finanzaRepository;
     private final IExportService exportService;
     private final ExportProperties exportProperties;
+    private final IReversionPagoReservaService reversionPagoReservaService;
 
     public FinanzaService(FinanzaRepository finanzaRepository,
                           IExportService exportService,
-                          ExportProperties exportProperties) {
+                          ExportProperties exportProperties,
+                          IReversionPagoReservaService reversionPagoReservaService) {
         this.finanzaRepository = finanzaRepository;
         this.exportService = exportService;
         this.exportProperties = exportProperties;
+        this.reversionPagoReservaService = reversionPagoReservaService;
     }
 
     @Override
@@ -173,10 +179,24 @@ public class FinanzaService implements IFinanzaService, IConsultaPagosAsociadosR
     }
 
     @Transactional
-    public void eliminarFinanza(Long id) {
-      Finanza finanza = finanzaRepository.findById(id)
-      .orElseThrow(() -> new FinanzaNotFoundException(id));
-      finanzaRepository.delete(finanza);
+    @Override
+    public void eliminarFinanza(Long id, boolean confirmar) {
+        Finanza finanza = finanzaRepository.findById(id)
+                .orElseThrow(() -> new FinanzaNotFoundException(id));
+
+        if (finanza instanceof Ingreso ingreso) {
+            if (ingreso.getPagoCuotaId() != null) {
+                throw new EliminacionPagoCuotaNoPermitidaException();
+            }
+            if (ingreso.getReservaId() != null) {
+                reversionPagoReservaService.revertirPorEliminacion(
+                        ingreso.getReservaId(), ingreso.getImporte(), confirmar);
+            }
+        } else if (finanza instanceof Egreso egreso && egreso.getReservaId() != null) {
+            throw new EliminacionEgresoReservaNoPermitidaException();
+        }
+
+        finanzaRepository.delete(finanza);
     }
 
     @Transactional

@@ -1642,6 +1642,49 @@ Registra manualmente un ingreso o egreso.
 
 ---
 
+### `DELETE /api/v1/finanzas/{id}`
+
+Elimina una finanza. La eliminación es **consciente del origen** del movimiento: aplica las reglas de negocio de la reserva o el pago de cuota asociado antes de borrar.
+
+**Path param:** `id` — integer positivo; ID de la finanza a eliminar.
+
+**Query param:**
+
+| Parámetro   | Tipo    | Obligatorio | Default | Descripción                                                                                             |
+|-------------|---------|-------------|---------|---------------------------------------------------------------------------------------------------------|
+| `confirmar` | boolean | No          | `false` | Confirma la eliminación de un ingreso cuya reserva ya está `FINALIZADA` o `CANCELADA` (ver comportamiento). |
+
+**Comportamiento según el origen del movimiento:**
+
+- **Finanza manual** (ingreso/egreso sin `reservaId` ni `pagoCuotaId`): se elimina sin lógica adicional → **204**.
+- **Ingreso de pago de cuota** (`pagoCuotaId != null`): **no** se permite eliminar → **400 `ELIMINACION_PAGO_CUOTA_NO_PERMITIDA`**. La anulación de cuotas es una funcionalidad pendiente.
+- **Egreso asociado a una reserva** (`reservaId != null`): **no** se permite eliminar → **400 `ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA`**. Si se cargó por error, la forma de compensarlo es registrar un ingreso que lo anule.
+- **Ingreso de pago de reserva** (`reservaId != null`): al eliminar se devuelve el importe al `montoImpago` de la reserva y se ajusta su `pago`/`estado` según el estado:
+  - **PENDIENTE / EN_CURSO**: se elimina el ingreso, `montoImpago += importe`, `pago` pasa a `false` si estaba en `true`; el estado no cambia → **204**.
+  - **CONFIRMADA**: además de lo anterior, si la reserva `requiereSena == true` y tras la devolución el saldo pagado queda por debajo del 50% del importe total, el estado vuelve a **PENDIENTE**; si `requiereSena == false`, permanece **CONFIRMADA** → **204**.
+  - **FINALIZADA / CANCELADA**:
+    - Con `confirmar = false` (o ausente) → **428 `CONFIRMACION_ELIMINACION_REQUERIDA`**; no se elimina nada ni se modifica la reserva. Se sugiere registrar un egreso asociado en su lugar; el front usa este error para mostrar la advertencia con las opciones "registrar egreso" / "eliminar de todas formas".
+    - Con `confirmar = true` → se elimina únicamente el ingreso; **no** se tocan `montoImpago`, `pago` ni `estado` de la reserva → **204**.
+
+> La devolución de importe nunca deja el `montoImpago` por encima del importe total de la reserva. Toda la operación es transaccional: si falla la actualización de la reserva, no se elimina el movimiento, y viceversa.
+
+**Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código                                  | Cuándo ocurre                                                                             |
+|-------------|-----------------------------------------|------------------------------------------------------------------------------------------|
+| 400         | `ID_INVALIDO`                           | El `id` no es un número positivo                                                          |
+| 400         | `SOLICITUD_INVALIDA`                    | `confirmar` con un valor no booleano                                                      |
+| 400         | `ELIMINACION_PAGO_CUOTA_NO_PERMITIDA`   | La finanza es un ingreso de pago de cuota (`pagoCuotaId != null`)                         |
+| 400         | `ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA` | La finanza es un egreso asociado a una reserva (`reservaId != null`)                    |
+| 404         | `FINANZA_NO_ENCONTRADA`                 | No existe una finanza con ese `id`                                                        |
+| 404         | `RESERVA_NO_ENCONTRADA`                 | El ingreso apunta a una reserva inexistente                                              |
+| 428         | `CONFIRMACION_ELIMINACION_REQUERIDA`    | Ingreso de una reserva `FINALIZADA`/`CANCELADA` sin `confirmar=true`                     |
+| 401         | —                                       | Token ausente, inválido o expirado                                                       |
+
+---
+
 ## Finanzas — DTOs
 
 ### Request DTOs
@@ -1699,4 +1742,5 @@ Todos los errores retornan el siguiente body:
 | 403         | Usuario autenticado sin permisos para la operación                         |
 | 404         | Recurso no encontrado por el ID proporcionado                              |
 | 409         | Conflicto de negocio (ej: deshabilitar con reservas activas sin confirmar) |
-| 500         | Error interno del servidor                                                 |
+| 428         | Falta una precondición para proceder (ej: confirmar la eliminación de un ingreso de reserva ya cerrada) |
+| 500         | Error interno del servidor                                 |
