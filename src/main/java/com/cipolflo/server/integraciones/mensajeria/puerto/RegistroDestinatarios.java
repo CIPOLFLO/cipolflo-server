@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface RegistroDestinatarios {
 
     /**
-     * Busca el destinatario autorizado a usar el bot (personal del club, no clientes).
+     * Busca el destinatario autorizado a usar el bot (personal de la asociación, no clientes).
      *
      * @return vacío si el {@code destinatarioId} no está registrado o no está activo
      */
