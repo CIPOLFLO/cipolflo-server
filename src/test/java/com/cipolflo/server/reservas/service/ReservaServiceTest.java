@@ -108,8 +108,6 @@ class ReservaServiceTest {
                 null,
                 null,
                 null,
-                null,
-                null,
                 false,
                 false,
                 BigDecimal.valueOf(1500),
@@ -476,8 +474,6 @@ class ReservaServiceTest {
         verify(reservaRepository, never()).findAll(any(Specification.class), any(Pageable.class));
     }
 
-   
-
     @Test
     void deberiaBuscarNombresDeClientesYServiciosDeTodasLasReservasDeLaPagina() {
         Reserva reserva1 = crearReservaComun(1L, 5L);
@@ -687,7 +683,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 true, false,
                 BigDecimal.valueOf(1500), null
         );
@@ -709,7 +705,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 true, true,
                 BigDecimal.valueOf(1500), null
         );
@@ -804,7 +800,7 @@ class ReservaServiceTest {
         return Reserva.crear(
                 TipoReserva.COMUN, 1L, 5L, Procedencia.CAMPING,
                 LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5),
-                null, null, 4, 1, null, "Nota", false,
+                null, null, 4, 1, null, "Nota", false, false,
                 BigDecimal.valueOf(1500), null
         );
     }

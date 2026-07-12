@@ -63,7 +63,7 @@ class ComprobanteReservaContenidoPdfTest {
                 BigDecimal.ZERO,
                 true,
                 false, false, false,
-                null, null, "Llegan a las 14hs",
+                "Llegan a las 14hs",
                 cliente, servicio,
                 null, null, null, null);
     }

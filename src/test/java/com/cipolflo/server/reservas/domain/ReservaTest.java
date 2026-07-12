@@ -26,8 +26,6 @@ class ReservaTest {
                 null,
                 null,
                 null,
-                null,
-                null,
                 requiereDocumentacion,
                 requiereSena,
                 BigDecimal.valueOf(2000),
@@ -75,8 +73,6 @@ class ReservaTest {
                 null,
                 null,
                 null,
-                "20123456-7",
-                "Org Test",
                 null,
                 true,
                 true,
@@ -276,7 +272,6 @@ class ReservaTest {
                 4,
                 1,
                 null,
-                null,
                 "nota nueva"
         );
 
@@ -344,8 +339,6 @@ class ReservaTest {
                 null,
                 null,
                 null,
-                "20123456-7",
-                "Org Test",
                 null,
                 true,
                 true,

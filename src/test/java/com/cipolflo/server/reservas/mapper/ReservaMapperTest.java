@@ -96,7 +96,6 @@ class ReservaMapperTest {
         assertFalse(dto.getRequiereDocumentacion());
         assertFalse(dto.getTieneDocumentacion());
         assertFalse(dto.getRequiereSena());
-        assertNull(dto.getRut());
         assertEquals("Llegan a las 14hs", dto.getNotas());
     }
 
@@ -176,14 +175,6 @@ class ReservaMapperTest {
     }
 
     @Test
-    void deberiaNombreSerNullParaReservaComun() {
-        ReservaDetalleResponseDto dto =
-                ReservaMapper.toDetalleResponseDto(crearReserva(12L), clienteDto(), servicioDto());
-
-        assertNull(dto.getNombre());
-    }
-
-    @Test
     void deberiaMapearRequiereDocumentacionComoTrue() {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN,
@@ -223,8 +214,6 @@ class ReservaMapperTest {
                 null,
                 2,
                 0,
-                null,
-                null,
                 null,
                 null,
                 false,
@@ -310,56 +299,56 @@ class ReservaMapperTest {
     }
 
     @Test
-    void toExportFila_nombreClienteNoProvisto_devuelveVacioEnCliente() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                12L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, false,
-                null, null
-        );
+void toExportFila_nombreClienteNoProvisto_devuelveVacioEnCliente() {
+    Reserva reserva = Reserva.crear(
+            TipoReserva.COMUN,
+            12L,
+            10L,
+            Procedencia.CAMPING,
+            LocalDate.of(2026, 9, 1),
+            LocalDate.of(2026, 9, 3),
+            null, null, 2, 0, null, null, false, false,
+            null, null
+    );
 
-        List<String> fila = ReservaMapper.toExportFila(reserva, null, "Cabaña del río");
+    List<String> fila = ReservaMapper.toExportFila(reserva, null, "Cabaña del río");
 
-        assertEquals("", fila.get(5));
-    }
+    assertEquals("", fila.get(5));
+}
 
-    @Test
-    void toExportFila_notasNulas_devuelveVacio() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                12L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, false,
-                null, null
-        );
+@Test
+void toExportFila_notasNulas_devuelveVacio() {
+    Reserva reserva = Reserva.crear(
+            TipoReserva.COMUN,
+            12L,
+            10L,
+            Procedencia.CAMPING,
+            LocalDate.of(2026, 9, 1),
+            LocalDate.of(2026, 9, 3),
+            null, null, 2, 0, null, null, false, false,
+            null, null
+    );
 
-        List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
+    List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
 
-        assertEquals("", fila.get(17));
-    }
+    assertEquals("", fila.get(17));
+}
 
-    @Test
-    void toExportFila_requiereDocumentacion_devuelveSi() {
-        Reserva reserva = Reserva.crear(
-                TipoReserva.COMUN,
-                12L,
-                10L,
-                Procedencia.CAMPING,
-                LocalDate.of(2026, 9, 1),
-                LocalDate.of(2026, 9, 3),
-                null, null, 2, 0, null, null, true,
-                null, null
-        );
+@Test
+void toExportFila_requiereDocumentacion_devuelveSi() {
+    Reserva reserva = Reserva.crear(
+            TipoReserva.COMUN,
+            12L,
+            10L,
+            Procedencia.CAMPING,
+            LocalDate.of(2026, 9, 1),
+            LocalDate.of(2026, 9, 3),
+            null, null, 2, 0, null, null, true, false,
+            null, null
+    );
 
-        List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
+    List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
 
-        assertEquals("Sí", fila.get(15));
-    }
+    assertEquals("Sí", fila.get(15));
+}
 }

@@ -95,10 +95,6 @@ public class Reserva extends AuditableEntity {
                                 LocalDate fechaEntrada, LocalDate fechaSalida, LocalTime horaInicio, LocalTime horaFin,
                                 Integer cantidadTotal, Integer cantidadMenores,
                                 Integer cantidad, String notas,
-                                boolean requiereDocumentacionPrevia,
-                                BigDecimal importe, LocalDateTime fechaLimite
-    ) {
-                                Integer cantidad, String rut, String nombre, String notas,
                                 boolean requiereDocumentacion, boolean requiereSena,
                                 BigDecimal importe, LocalDateTime fechaLimite) {
         Reserva r = new Reserva();

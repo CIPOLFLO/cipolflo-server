@@ -112,14 +112,14 @@ class ServicioServiceTest {
     }
 
     private Reserva crearReservaConImporte(
-        Long clienteId,
-        Long servicioId,
-        LocalDate fechaEntrada,
-        LocalDate fechaSalida,
-        BigDecimal importe
-) {
-    return Reserva.crear(
-            TipoReserva.COMUN,
+            Long clienteId,
+            Long servicioId,
+            LocalDate fechaEntrada,
+            LocalDate fechaSalida,
+            BigDecimal importe
+    ) {
+        return Reserva.crear(
+              TipoReserva.COMUN,
             clienteId,
             servicioId,
             Procedencia.CAMPING,
@@ -132,35 +132,9 @@ class ServicioServiceTest {
             null,
             null,
             false,
+            false,
             importe,
             null
-    );
-}
-            Long clienteId,
-            Long servicioId,
-            LocalDate fechaEntrada,
-            LocalDate fechaSalida,
-            BigDecimal importe
-    ) {
-        return Reserva.crear(
-                TipoReserva.COMUN,
-                clienteId,
-                servicioId,
-                Procedencia.CAMPING,
-                fechaEntrada,
-                fechaSalida,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                false,
-                importe,
-                null
         );
     }
 
