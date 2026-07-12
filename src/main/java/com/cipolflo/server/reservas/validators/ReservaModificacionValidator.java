@@ -1,7 +1,4 @@
 package com.cipolflo.server.reservas.validators;
-import java.time.LocalDate;
-import java.util.List;
-import org.springframework.stereotype.Component;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
@@ -11,6 +8,10 @@ import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import com.cipolflo.server.shared.ZonaHoraria;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.util.List;
 
 @Component
 public class ReservaModificacionValidator {

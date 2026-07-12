@@ -968,34 +968,34 @@ void deberiaIncluirColumnaRutEnLaExportacion() {
     assertEquals("210001230018", filasCaptor.getValue().get(0).get(3));
 }
 
-// --- buscarPorRut ---
+    // --- buscarPorRut ---
 
-@Test
-void deberiaLanzarClienteNotFoundExceptionCuandoRutNoExiste() {
-    when(clienteRepository.findByRut("211003420017"))
-            .thenReturn(Optional.empty());
+    @Test
+    void deberiaLanzarClienteNotFoundExceptionCuandoRutNoExiste() {
+        when(clienteRepository.findByRut("211003420017"))
+                .thenReturn(Optional.empty());
 
-    assertThrows(
-            ClienteNotFoundException.class,
-            () -> clienteService.buscarPorRut("211003420017")
-    );
+        assertThrows(
+                ClienteNotFoundException.class,
+                () -> clienteService.buscarPorRut("211003420017")
+        );
 
-    verify(clienteRepository).findByRut("211003420017");
-}
+        verify(clienteRepository).findByRut("211003420017");
+    }
 
-@Test
-void deberiaRetornarDtoCuandoRutCorrespondeAEmpresa() {
-    Empresa empresa = crearEmpresa(1L, "Antel S.A.", "211003420017");
+    @Test
+    void deberiaRetornarDtoCuandoRutCorrespondeAEmpresa() {
+        Empresa empresa = crearEmpresa(1L, "Antel S.A.", "211003420017");
 
-    when(clienteRepository.findByRut("211003420017"))
-            .thenReturn(Optional.of(empresa));
+        when(clienteRepository.findByRut("211003420017"))
+                .thenReturn(Optional.of(empresa));
 
-    BusquedaRutResponseDto resultado =
-            clienteService.buscarPorRut("211003420017");
+        BusquedaRutResponseDto resultado =
+                clienteService.buscarPorRut("211003420017");
 
-    assertEquals(TipoCliente.EMPRESA, resultado.getTipoCliente());
-    assertEquals("211003420017", resultado.getRut());
+        assertEquals(TipoCliente.EMPRESA, resultado.getTipoCliente());
+        assertEquals("211003420017", resultado.getRut());
 
-    verify(clienteRepository).findByRut("211003420017");
-}
+        verify(clienteRepository).findByRut("211003420017");
+    }
 }

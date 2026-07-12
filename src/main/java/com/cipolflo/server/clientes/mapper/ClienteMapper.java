@@ -131,15 +131,15 @@ public class ClienteMapper {
         );
     }
 
-    public static BusquedaRutResponseDto toBusquedaRutResponseDto(Cliente cliente) {
-    return new BusquedaRutResponseDto(
-            cliente.getId(),
-            cliente.getNombreCompleto(),
-            cliente instanceof Empresa e ? e.getRut() : null,
-            cliente.getTelefono(),
-            cliente.getMail(),
-            cliente.getNotas(),
-            tipoDeCliente(cliente)
-    );
-}
+    public static BusquedaRutResponseDto toBusquedaRutResponseDto(Empresa empresa) {
+        return new BusquedaRutResponseDto(
+                empresa.getId(),
+                empresa.getNombreCompleto(),
+                empresa.getRut(),
+                empresa.getTelefono(),
+                empresa.getMail(),
+                empresa.getNotas(),
+                TipoCliente.EMPRESA
+        );
+    }
 }

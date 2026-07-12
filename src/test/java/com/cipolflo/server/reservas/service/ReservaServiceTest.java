@@ -352,23 +352,6 @@ class ReservaServiceTest {
     }
 
     @Test
-    void deberiaRetornarClienteNullCuandoClienteIdEsNull() {
-        Reserva reserva = crearReservaComun(null, 10L);
-
-        ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
-                10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
-        );
-
-        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
-        when(consultaServicioSimple.getDetalleServicioSimple(10L)).thenReturn(servicioDto);
-
-        ReservaDetalleResponseDto resultado = reservaService.getDetalle(1L);
-
-        assertNull(resultado.getCliente());
-        verify(consultaClienteDetalle, never()).getDetallClienteSimple(any());
-    }
-
-    @Test
     void deberiaLlamarConsultaServicioConServicioIdDeLaReserva() {
         Long servicioId = 10L;
         Reserva reserva = crearReservaComun(5L, servicioId);

@@ -1,7 +1,10 @@
 package com.cipolflo.server.reservas.validators;
 
+import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
+import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -26,10 +29,14 @@ public class ReservaCreacionValidator {
 
     private final ReservaRepository reservaRepository;
     private final ServicioRepository servicioRepository;
+    private final IConsultaClienteDetalle consultaClienteDetalle;
 
-    public ReservaCreacionValidator(ReservaRepository reservaRepository, ServicioRepository servicioRepository) {
+    public ReservaCreacionValidator(ReservaRepository reservaRepository,
+                                    ServicioRepository servicioRepository,
+                                    IConsultaClienteDetalle consultaClienteDetalle) {
         this.reservaRepository = reservaRepository;
         this.servicioRepository = servicioRepository;
+        this.consultaClienteDetalle = consultaClienteDetalle;
     }
 
     public void validar(ReservaCreacionRequestDto dto) {
@@ -111,8 +118,21 @@ public class ReservaCreacionValidator {
             );
         }
     }
-private void validarCliente(ReservaCreacionRequestDto dto) {
-    if (Boolean.TRUE.equals(dto.getCrearCliente())) {
+    private void validarCliente(ReservaCreacionRequestDto dto) {
+        if (Boolean.TRUE.equals(dto.getCrearCliente())) {
+            validarDatosNuevoCliente(dto);
+            return;
+        }
+        if (dto.getClienteId() == null) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.CLIENTE_REQUERIDO,
+                    "Se requiere un clienteId para la reserva"
+            );
+        }
+        validarClienteExistente(dto);
+    }
+
+    private void validarDatosNuevoCliente(ReservaCreacionRequestDto dto) {
         if (!StringUtils.hasText(dto.getNombre())) {
             throw new ReservaValidacionException(
                     ReservaCodigoError.NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE,
@@ -131,10 +151,18 @@ private void validarCliente(ReservaCreacionRequestDto dto) {
                     "El celular es requerido para crear el cliente"
             );
         }
-    } else if (dto.getClienteId() == null) {
-        throw new ReservaValidacionException(
-                ReservaCodigoError.CLIENTE_REQUERIDO,
-                "Se requiere un clienteId para la reserva"
-        );
     }
-}};
+
+    // Lanza ClienteNotFoundException (404) si el clienteId no existe.
+    private void validarClienteExistente(ReservaCreacionRequestDto dto) {
+        ClienteDetalleReservaDto cliente = consultaClienteDetalle.getDetallClienteSimple(dto.getClienteId());
+
+        boolean esColaboracion = TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(dto.getTipoReserva());
+        if (esColaboracion && cliente.tipoCliente() != TipoCliente.EMPRESA) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.CLIENTE_EMPRESA_REQUERIDO_PARA_COLABORACION,
+                    "Las reservas de colaboración sin fines de lucro requieren un cliente de tipo EMPRESA"
+            );
+        }
+    }
+}

@@ -1217,71 +1217,73 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.codigo").value("RUT_DUPLICADO"));
     }
+
     // --- buscarPorRut ---
 
-private BusquedaRutResponseDto busquedaEmpresa() {
-    return new BusquedaRutResponseDto(
-            1L, "Antel S.A.", "211003420017",
-            "099123456", "empresa@mail.com", null,
-            TipoCliente.EMPRESA
-    );
-}
+    private BusquedaRutResponseDto busquedaEmpresa() {
+        return new BusquedaRutResponseDto(
+                1L, "Antel S.A.", "211003420017",
+                "099123456", "empresa@mail.com", null,
+                TipoCliente.EMPRESA
+        );
+    }
 
-@Test
-@WithMockUser
-void deberiaRetornarNotFoundCuandoRutNoEstaRegistrado() throws Exception {
-    when(clienteService.buscarPorRut("999999999999")).thenThrow(new ClienteNotFoundException("Cliente no encontrado"));
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoRutNoEstaRegistrado() throws Exception {
+        when(clienteService.buscarPorRut("999999999999"))
+                .thenThrow(new ClienteNotFoundException("Cliente no encontrado"));
 
-    mockMvc.perform(get("/api/v1/clientes/rut/999999999999"))
-            .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/clientes/rut/999999999999"))
+                .andExpect(status().isNotFound());
 
-    verify(clienteService).buscarPorRut("999999999999");
-}
+        verify(clienteService).buscarPorRut("999999999999");
+    }
 
-@Test
-@WithMockUser
-void deberiaRetornarEmpresaCuandoRutCorrespondeAEmpresa() throws Exception {
-    when(clienteService.buscarPorRut("211003420017")).thenReturn(busquedaEmpresa());
+    @Test
+    @WithMockUser
+    void deberiaRetornarEmpresaCuandoRutCorrespondeAEmpresa() throws Exception {
+        when(clienteService.buscarPorRut("211003420017")).thenReturn(busquedaEmpresa());
 
-    mockMvc.perform(get("/api/v1/clientes/rut/211003420017"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.tipoCliente").value("EMPRESA"))
-            .andExpect(jsonPath("$.rut").value("211003420017"));
+        mockMvc.perform(get("/api/v1/clientes/rut/211003420017"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tipoCliente").value("EMPRESA"))
+                .andExpect(jsonPath("$.rut").value("211003420017"));
 
-    verify(clienteService).buscarPorRut("211003420017");
-}
+        verify(clienteService).buscarPorRut("211003420017");
+    }
 
-@Test
-@WithMockUser
-void deberiaRetornarBadRequestCuandoFormatoDeRutEsInvalido() throws Exception {
-    doThrow(new ClienteValidacionException(
-            ClienteCodigoError.RUT_INVALIDO.name(),
-            "El RUT ingresado no es válido"
-    )).when(clienteService).buscarPorRut("formato-invalido");
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFormatoDeRutEsInvalido() throws Exception {
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.RUT_INVALIDO.name(),
+                "El RUT ingresado no es válido"
+        )).when(clienteService).buscarPorRut("formato-invalido");
 
-    mockMvc.perform(get("/api/v1/clientes/rut/formato-invalido"))
-            .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/v1/clientes/rut/formato-invalido"))
+                .andExpect(status().isBadRequest());
 
-    verify(clienteService).buscarPorRut("formato-invalido");
-}
+        verify(clienteService).buscarPorRut("formato-invalido");
+    }
 
-@Test
-@WithMockUser
-void deberiaEncontrarMismoRegistroConRutFormateadoYSinFormatear() throws Exception {
-    when(clienteService.buscarPorRut(any())).thenReturn(busquedaEmpresa());
+    @Test
+    @WithMockUser
+    void deberiaEncontrarMismoRegistroConRutFormateadoYSinFormatear() throws Exception {
+        when(clienteService.buscarPorRut(any())).thenReturn(busquedaEmpresa());
 
-    mockMvc.perform(get("/api/v1/clientes/rut/211003420017"))
-            .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/clientes/rut/211003420017"))
+                .andExpect(status().isOk());
 
-    mockMvc.perform(get("/api/v1/clientes/rut/21.100342.001-7"))
-            .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/clientes/rut/21.100342.001-7"))
+                .andExpect(status().isOk());
 
-    verify(clienteService, times(2)).buscarPorRut(any());
-}
+        verify(clienteService, times(2)).buscarPorRut(any());
+    }
 
-@Test
-void deberiaRetornarUnauthorizedAlBuscarPorRutSinAutenticacion() throws Exception {
-    mockMvc.perform(get("/api/v1/clientes/rut/211003420017"))
-            .andExpect(status().isUnauthorized());
-}
+    @Test
+    void deberiaRetornarUnauthorizedAlBuscarPorRutSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/rut/211003420017"))
+                .andExpect(status().isUnauthorized());
+    }
 }

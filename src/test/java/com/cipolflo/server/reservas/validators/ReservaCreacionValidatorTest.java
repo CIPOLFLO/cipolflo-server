@@ -1,7 +1,11 @@
 package com.cipolflo.server.reservas.validators;
 
+import com.cipolflo.server.clientes.domain.enums.TipoCliente;
+import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
+import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
+import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -36,8 +40,17 @@ class ReservaCreacionValidatorTest {
     @Mock
     private ServicioRepository servicioRepository;
 
+    @Mock
+    private IConsultaClienteDetalle consultaClienteDetalle;
+
     @InjectMocks
     private ReservaCreacionValidator validator;
+
+    private ClienteDetalleReservaDto clienteDe(TipoCliente tipoCliente) {
+        return new ClienteDetalleReservaDto(
+                42L, "Cliente de prueba", null, "099111111", "cliente@test.com", tipoCliente
+        );
+    }
 
     private ReservaCreacionRequestDto mockDto(
             TipoReserva tipoReserva,
@@ -284,7 +297,7 @@ class ReservaCreacionValidatorTest {
     }
 
     @Test
-    void deberiaPasarValidacionColaboracionConClienteId() {
+    void deberiaPasarValidacionColaboracionConClienteEmpresa() {
         ReservaCreacionRequestDto dto = mockDto(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, 1L,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
@@ -294,8 +307,46 @@ class ReservaCreacionValidatorTest {
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                 any(), any(), any(), any()
         )).thenReturn(false);
+        when(consultaClienteDetalle.getDetallClienteSimple(20L)).thenReturn(clienteDe(TipoCliente.EMPRESA));
 
         assertDoesNotThrow(() -> validator.validar(dto));
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoColaboracionConClienteQueNoEsEmpresa() {
+        ReservaCreacionRequestDto dto = mockDto(
+                TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO, 1L,
+                LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
+                20L, false, null, null, null
+        );
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                any(), any(), any(), any()
+        )).thenReturn(false);
+        when(consultaClienteDetalle.getDetallClienteSimple(20L)).thenReturn(clienteDe(TipoCliente.PARTICULAR));
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> validator.validar(dto)
+        );
+        assertEquals(ReservaCodigoError.CLIENTE_EMPRESA_REQUERIDO_PARA_COLABORACION.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaPropagarExcepcionCuandoClienteIdNoExiste() {
+        ReservaCreacionRequestDto dto = mockDto(
+                TipoReserva.COMUN, 1L,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
+                99L, false, null, null, null
+        );
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                any(), any(), any(), any()
+        )).thenReturn(false);
+        when(consultaClienteDetalle.getDetallClienteSimple(99L))
+                .thenThrow(new ClienteNotFoundException(99L));
+
+        assertThrows(ClienteNotFoundException.class, () -> validator.validar(dto));
     }
 
     @Test
@@ -309,6 +360,7 @@ class ReservaCreacionValidatorTest {
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                 any(), any(), any(), any()
         )).thenReturn(false);
+        when(consultaClienteDetalle.getDetallClienteSimple(42L)).thenReturn(clienteDe(TipoCliente.PARTICULAR));
 
         assertDoesNotThrow(() -> validator.validar(dto));
     }

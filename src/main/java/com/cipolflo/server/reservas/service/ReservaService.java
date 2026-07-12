@@ -191,9 +191,8 @@ public class ReservaService implements IReservaService {
     public ReservaDetalleResponseDto getDetalle(Long id) {
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new ReservaNotFoundException(id));
-        ClienteDetalleReservaDto cliente = reserva.getClienteId() != null
-                ? consultaClienteDetalle.getDetallClienteSimple(reserva.getClienteId())
-                : null;
+        ClienteDetalleReservaDto cliente =
+                consultaClienteDetalle.getDetallClienteSimple(reserva.getClienteId());
         ServicioDetalleReservaDto servicio =
                 consultaServicioSimple.getDetalleServicioSimple(reserva.getServicioId());
         return ReservaMapper.toDetalleResponseDto(reserva, cliente, servicio);
