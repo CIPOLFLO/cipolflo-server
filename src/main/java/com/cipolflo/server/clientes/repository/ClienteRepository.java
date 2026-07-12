@@ -3,11 +3,13 @@ package com.cipolflo.server.clientes.repository;
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Socio;
+import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,9 +40,11 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long>, JpaSpec
     @Query("SELECT MAX(s.numeroSocio) FROM Socio s")
     Optional<Integer> findMaxNumeroSocio();
 
-    // mesesSinPagar es una propiedad de la subclase Socio (no de Cliente), por lo que la
-    // derivación automática de query no puede resolverla; se consulta explícitamente sobre Socio.
-    @Query("SELECT s FROM Socio s WHERE s.mesesSinPagar >= :meses")
-    List<Socio> findByMesesSinPagarGreaterThanEqual(@Param("meses") Integer meses);
+    // mesesSinPagar y estado son propiedades de la subclase Socio (no de Cliente), por lo
+    // que la derivación automática de query no puede resolverlas; se consulta explícitamente
+    // sobre Socio. Se excluye DE_BAJA: un socio dado de baja ya no es un caso accionable.
+    @Query("SELECT s FROM Socio s WHERE s.estado IN :estados AND s.mesesSinPagar >= :meses")
+    List<Socio> findByEstadoInAndMesesSinPagarGreaterThanEqual(
+            @Param("estados") Collection<EstadoSocio> estados, @Param("meses") Integer meses);
 
 }

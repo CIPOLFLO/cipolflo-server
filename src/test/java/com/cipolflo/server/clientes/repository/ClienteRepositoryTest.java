@@ -44,9 +44,24 @@ class ClienteRepositoryTest {
         clienteRepository.saveAndFlush(socioConMesesSinPagar("3", 2));
         clienteRepository.saveAndFlush(socioConMesesSinPagar("4", 3));
 
-        List<Socio> atrasados = clienteRepository.findByMesesSinPagarGreaterThanEqual(2);
+        List<Socio> atrasados = clienteRepository.findByEstadoInAndMesesSinPagarGreaterThanEqual(
+                List.of(EstadoSocio.ACTIVO, EstadoSocio.INACTIVO), 2);
 
         assertEquals(2, atrasados.size());
         assertTrue(atrasados.stream().allMatch(s -> s.getMesesSinPagar() >= 2));
+    }
+
+    @Test
+    void noDeberiaIncluirSociosDadosDeBaja() {
+        Socio deBaja = socioConMesesSinPagar("1", 5);
+        deBaja.setEstado(EstadoSocio.DE_BAJA);
+        clienteRepository.saveAndFlush(deBaja);
+        clienteRepository.saveAndFlush(socioConMesesSinPagar("2", 1));
+
+        List<Socio> atrasados = clienteRepository.findByEstadoInAndMesesSinPagarGreaterThanEqual(
+                List.of(EstadoSocio.ACTIVO, EstadoSocio.INACTIVO), 1);
+
+        assertEquals(1, atrasados.size());
+        assertEquals("2", atrasados.get(0).getCedula());
     }
 }

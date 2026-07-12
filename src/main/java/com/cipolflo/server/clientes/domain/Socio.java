@@ -16,6 +16,9 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class Socio extends Cliente implements ClienteConUbicacion {
 
+    /** Meses sin pagar a partir de los cuales el socio pasa a {@link EstadoSocio#INACTIVO}. */
+    public static final int MESES_PARA_INACTIVO = 3;
+
     private Integer numeroSocio;
 
     @Column(nullable = false)
@@ -50,7 +53,7 @@ public class Socio extends Cliente implements ClienteConUbicacion {
 
     public void incrementarMesesSinPagar() {
         this.mesesSinPagar++;
-        if (this.mesesSinPagar >= 3) {
+        if (this.mesesSinPagar >= MESES_PARA_INACTIVO) {
             this.estado = EstadoSocio.INACTIVO;
         }
     }
