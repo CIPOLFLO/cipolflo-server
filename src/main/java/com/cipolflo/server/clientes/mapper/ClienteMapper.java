@@ -105,6 +105,7 @@ public class ClienteMapper {
                 cliente.getId(),
                 cliente.getNombreCompleto(),
                 cliente.getCedula(),
+                cliente instanceof Empresa e ? e.getRut() : null,
                 cliente.getTelefono(),
                 cliente.getMail(),
                 tipoDeCliente(cliente)
@@ -128,6 +129,18 @@ public class ClienteMapper {
                 orEmpty(direccion(cliente)),
                 orEmpty(socio != null ? socio.getFechaIngreso() : null),
                 orEmpty(socio != null ? socio.getFechaUltimoPago() : null)
+        );
+    }
+
+    public static BusquedaRutResponseDto toBusquedaRutResponseDto(Empresa empresa) {
+        return new BusquedaRutResponseDto(
+                empresa.getId(),
+                empresa.getNombreCompleto(),
+                empresa.getRut(),
+                empresa.getTelefono(),
+                empresa.getMail(),
+                empresa.getNotas(),
+                TipoCliente.EMPRESA
         );
     }
 }

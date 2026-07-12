@@ -42,13 +42,13 @@ class ReservaEmailListenerTest {
                 null, null, null,
                 null, null, null,
                 null, null, null,
-                null, null, null,
+                null,
                 cliente, null,
                 null, null, null, null);
     }
 
     private ClienteDetalleReservaDto cliente(String nombre, String email) {
-        return new ClienteDetalleReservaDto(1L, nombre, "1.234.567-8", "099123456", email, TipoCliente.PARTICULAR);
+        return new ClienteDetalleReservaDto(1L, nombre, "1.234.567-8", null, "099123456", email, TipoCliente.PARTICULAR);
     }
 
     @Test

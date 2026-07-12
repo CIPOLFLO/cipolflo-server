@@ -43,6 +43,7 @@ public class ClienteService implements IClienteService {
     private final ModificacionSocioValidator modificacionSocioValidator;
     private final RegistroSocioValidator registroSocioValidator;
     private final CedulaFormatoValidator cedulaFormatoValidator;
+    private final RutFormatoValidator rutFormatoValidator;
     private final RegistroParticularValidator registroParticularValidator;
     private final RegistroEmpresaValidator registroEmpresaValidator;
     private final ExportProperties exportProperties;
@@ -53,6 +54,7 @@ public class ClienteService implements IClienteService {
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
                           CedulaFormatoValidator cedulaFormatoValidator,
+                          RutFormatoValidator rutFormatoValidator,
                           ModificacionSocioValidator modificacionSocioValidator,
                           RegistroSocioValidator registroSocioValidator,
                           RegistroParticularValidator registroParticularValidator,
@@ -66,6 +68,7 @@ public class ClienteService implements IClienteService {
         this.modificacionSocioValidator = modificacionSocioValidator;
         this.registroSocioValidator = registroSocioValidator;
         this.cedulaFormatoValidator = cedulaFormatoValidator;
+        this.rutFormatoValidator = rutFormatoValidator;
         this.registroParticularValidator = registroParticularValidator;
         this.registroEmpresaValidator = registroEmpresaValidator;
         this.exportProperties = exportProperties;
@@ -264,6 +267,22 @@ public class ClienteService implements IClienteService {
                 .orElseThrow(() ->
                         new ClienteNotFoundException(
                                 "No existe un cliente con esa cédula"
+                        ));
+    }
+
+    @Override
+    public BusquedaRutResponseDto buscarPorRut(String rut) {
+
+        rutFormatoValidator.validar(rut);
+
+        String rutNormalizado =
+                RutNormalizador.normalizar(rut);
+
+        return clienteRepository.findByRut(rutNormalizado)
+                .map(ClienteMapper::toBusquedaRutResponseDto)
+                .orElseThrow(() ->
+                        new ClienteNotFoundException(
+                                "No existe un cliente con ese RUT"
                         ));
     }
 

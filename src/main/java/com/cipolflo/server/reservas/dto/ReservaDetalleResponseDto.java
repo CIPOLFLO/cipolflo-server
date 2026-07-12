@@ -32,9 +32,6 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
     private final Boolean requiereDocumentacion;
     private final Boolean tieneDocumentacion;
     private final Boolean requiereSena;
-    private final String rut;
-    // TODO: temporal - nombre de la organización con RUT hasta definir manejo de clientes RUT.
-    private final String nombre;
     private final String notas;
     private final ClienteDetalleReservaDto cliente;
     private final ServicioDetalleReservaDto servicio;
@@ -45,7 +42,7 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
             Integer cantidadTotal, Integer cantidadMenores, Integer cantidad,
             BigDecimal importe, BigDecimal montoImpago, Boolean pago,
             Boolean requiereDocumentacion, Boolean tieneDocumentacion, Boolean requiereSena,
-            String rut, String nombre, String notas,
+            String notas,
             ClienteDetalleReservaDto cliente, ServicioDetalleReservaDto servicio,
             Instant createdAt, Instant updatedAt, String createdBy, String updatedBy) {
         super(createdAt, updatedAt, createdBy, updatedBy);
@@ -66,8 +63,6 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
         this.requiereDocumentacion = requiereDocumentacion;
         this.tieneDocumentacion = tieneDocumentacion;
         this.requiereSena = requiereSena;
-        this.rut = rut;
-        this.nombre = nombre;
         this.notas = notas;
         this.cliente = cliente;
         this.servicio = servicio;

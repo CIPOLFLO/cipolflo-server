@@ -4,11 +4,10 @@ import com.cipolflo.server.clientes.dto.*;
 
 import java.util.Collection;
 import java.util.Map;
-import com.cipolflo.server.clientes.dto.BusquedaCedulaResponseDto;
+
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
-import com.cipolflo.server.clientes.dto.RegistroParticularRequestDto;
 
 public interface IClienteService {
 
@@ -33,5 +32,7 @@ public interface IClienteService {
     EstadoSocioResponseDto consultarEstadoSocio(Long id);
 
     ArchivoExportado exportarClientes(ListadoClientesRequestDto filtros);
+
+    BusquedaRutResponseDto buscarPorRut(String rut);
 
 }

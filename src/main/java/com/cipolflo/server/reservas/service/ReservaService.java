@@ -171,8 +171,6 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadTotal(),
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
-                dto.getRut(),
-                dto.getNombre(),
                 dto.getNotas(),
                 Boolean.TRUE.equals(dto.getRequiereDocumentacion()),
                 Boolean.TRUE.equals(dto.getRequiereSena()),
@@ -193,9 +191,8 @@ public class ReservaService implements IReservaService {
     public ReservaDetalleResponseDto getDetalle(Long id) {
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new ReservaNotFoundException(id));
-        ClienteDetalleReservaDto cliente = reserva.getClienteId() != null
-                ? consultaClienteDetalle.getDetallClienteSimple(reserva.getClienteId())
-                : null;
+        ClienteDetalleReservaDto cliente =
+                consultaClienteDetalle.getDetallClienteSimple(reserva.getClienteId());
         ServicioDetalleReservaDto servicio =
                 consultaServicioSimple.getDetalleServicioSimple(reserva.getServicioId());
         return ReservaMapper.toDetalleResponseDto(reserva, cliente, servicio);
@@ -241,8 +238,7 @@ public class ReservaService implements IReservaService {
         Page<ListadoReservasResponseDto> dtoPage = page.map(r -> new ListadoReservasResponseDto(
                 r.getId(),
                 r.getClienteId(),
-                // TODO: temporal - usar nombreRut como nombre de cliente para reservas sin fines de lucro hasta definir manejo de clientes RUT
-                r.getClienteId() != null ? nombresClientes.get(r.getClienteId()) : r.getNombreRut(),
+                nombresClientes.get(r.getClienteId()),
                 r.getServicioId(),
                 nombresServicios.get(r.getServicioId()),
                 r.getFechaEntrada(),
@@ -280,7 +276,6 @@ public class ReservaService implements IReservaService {
                 dto.getCantidadTotal(),
                 dto.getCantidadMenores(),
                 dto.getCantidad(),
-                dto.getRut(),
                 dto.getNotas()
         );
 

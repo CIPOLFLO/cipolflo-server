@@ -33,7 +33,7 @@ public class Reserva extends AuditableEntity {
     @Setter(AccessLevel.NONE)
     private TipoReserva tipoReserva;
 
-    @Column
+    @Column(nullable = false)
     @Setter(AccessLevel.NONE)
     private Long clienteId;
 
@@ -67,10 +67,6 @@ public class Reserva extends AuditableEntity {
 
     private Integer cantidad;
 
-    private String rut;
-
-    private String nombreRut;
-
     @Column(nullable = false)
     @Setter(AccessLevel.NONE)
     private Boolean pago = false;
@@ -98,7 +94,7 @@ public class Reserva extends AuditableEntity {
     public static Reserva crear(TipoReserva tipoReserva, Long clienteId, Long servicioId, Procedencia procedencia,
                                 LocalDate fechaEntrada, LocalDate fechaSalida, LocalTime horaInicio, LocalTime horaFin,
                                 Integer cantidadTotal, Integer cantidadMenores,
-                                Integer cantidad, String rut, String nombre, String notas,
+                                Integer cantidad, String notas,
                                 boolean requiereDocumentacion, boolean requiereSena,
                                 BigDecimal importe, LocalDateTime fechaLimite) {
         Reserva r = new Reserva();
@@ -113,10 +109,6 @@ public class Reserva extends AuditableEntity {
         r.cantidadTotal = cantidadTotal;
         r.cantidadMenores = cantidadMenores;
         r.cantidad = cantidad;
-        r.rut = rut;
-        if (TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(tipoReserva) && nombre != null) {
-            r.nombreRut = nombre.trim();
-        }
         r.notas = notas;
         r.requiereDocumentacion = requiereDocumentacion;
         r.requiereSena = requiereSena;
@@ -218,7 +210,7 @@ public class Reserva extends AuditableEntity {
 
     public void modificar(Long servicioId, Procedencia procedencia, LocalDate fechaEntrada,
                           LocalDate fechaSalida, Integer cantidadTotal, Integer cantidadMenores,
-                          Integer cantidad, String rut, String notas) {
+                          Integer cantidad, String notas) {
         this.servicioId = servicioId;
         this.procedencia = procedencia;
         this.fechaEntrada = fechaEntrada;
@@ -226,7 +218,6 @@ public class Reserva extends AuditableEntity {
         this.cantidadTotal = cantidadTotal;
         this.cantidadMenores = cantidadMenores;
         this.cantidad = cantidad;
-        this.rut = rut;
         this.notas = notas;
     }
 

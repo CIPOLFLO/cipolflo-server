@@ -154,8 +154,7 @@ class ReversionPagoReservaServiceTest {
                 null,
                 null,
                 null,
-                null,
-                null,
+
                 null,
                 null,
                 null,

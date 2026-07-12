@@ -210,8 +210,6 @@ class CancelacionReservaServiceTest {
                 null,
                 null,
                 null,
-                null,
-                null,
                 true,
                 false,
                 BigDecimal.valueOf(1500),
@@ -232,8 +230,7 @@ class CancelacionReservaServiceTest {
                 null,
                 null,
                 null,
-                "20123456-7",
-                "Org Test",
+                
                 null,
                 false,
                 false,

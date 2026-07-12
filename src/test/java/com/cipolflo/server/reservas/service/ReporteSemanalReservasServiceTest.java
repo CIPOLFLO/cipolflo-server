@@ -184,7 +184,7 @@ class ReporteSemanalReservasServiceTest {
                 anyCollection(), any(), any())).thenReturn(List.of(enCurso));
         when(consultaServicioSimple.getNombresByIds(anyCollection())).thenReturn(Map.of(10L, "Cabaña Norte"));
         when(consultaClienteDetalle.getDetallClienteSimple(eq(20L))).thenReturn(
-                new ClienteDetalleReservaDto(20L, "Juan Pérez", "1.234.567-8", "099123456", "juan@mail.com", null));
+                new ClienteDetalleReservaDto(20L, "Juan Pérez", "1.234.567-8", null, "099123456", "juan@mail.com", null));
 
         ReporteSemanalReservasService servicio = servicioCon("admin@cipolflo.com");
         String resumen = servicio.enviarReporteSemanal();

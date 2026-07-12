@@ -35,7 +35,5 @@ public class ReservaModificacionRequestDto {
     @Min(0)
     private Integer cantidad;
 
-    private String rut;
-
     private String notas;
 }

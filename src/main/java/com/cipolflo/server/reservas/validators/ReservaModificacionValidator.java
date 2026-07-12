@@ -2,7 +2,6 @@ package com.cipolflo.server.reservas.validators;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
-import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ReservaModificacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -10,7 +9,6 @@ import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import com.cipolflo.server.shared.ZonaHoraria;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -33,10 +31,9 @@ public class ReservaModificacionValidator {
     }
 
     public void validar(Reserva reserva, ReservaModificacionRequestDto dto) {
-        validarFechas(reserva.getFechaEntrada(), reserva.getFechaSalida() ,dto);
+        validarFechas(reserva.getFechaEntrada(), reserva.getFechaSalida(), dto);
         validarServicio(dto.getServicioId());
         validarSolapamiento(reserva.getId(), dto);
-        validarRut(reserva.getTipoReserva(), dto.getRut());
     }
 
     private void validarFechas(LocalDate fechaEntrada, LocalDate fechaSalida, ReservaModificacionRequestDto dto) {
@@ -55,7 +52,6 @@ public class ReservaModificacionValidator {
                     "La fecha de fin no puede ser anterior a la fecha de inicio"
             );
         }
-
     }
 
     private void validarServicio(Long servicioId) {
@@ -80,16 +76,6 @@ public class ReservaModificacionValidator {
             throw new ReservaValidacionException(
                     ReservaCodigoError.FECHAS_SOLAPADAS,
                     "El servicio ya tiene una reserva activa en ese período"
-            );
-        }
-    }
-
-    private void validarRut(TipoReserva tipoReserva, String rut) {
-        boolean esColaboracion = TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(tipoReserva);
-        if (StringUtils.hasText(rut) && !esColaboracion) {
-            throw new ReservaValidacionException(
-                    ReservaCodigoError.RUT_SOLO_VALIDO_EN_COLABORACION,
-                    "El RUT solo es válido para reservas de colaboración sin fines de lucro"
             );
         }
     }

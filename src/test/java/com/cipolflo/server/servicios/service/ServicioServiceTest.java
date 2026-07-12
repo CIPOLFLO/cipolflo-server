@@ -119,24 +119,22 @@ class ServicioServiceTest {
             BigDecimal importe
     ) {
         return Reserva.crear(
-                TipoReserva.COMUN,
-                clienteId,
-                servicioId,
-                Procedencia.CAMPING,
-                fechaEntrada,
-                fechaSalida,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                false,
-                importe,
-                null
+              TipoReserva.COMUN,
+            clienteId,
+            servicioId,
+            Procedencia.CAMPING,
+            fechaEntrada,
+            fechaSalida,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            false,
+            importe,
+            null
         );
     }
 

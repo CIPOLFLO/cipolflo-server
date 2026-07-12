@@ -149,5 +149,11 @@ public class ClienteController {
             .body(archivo.getContenido());
         }
 
-
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/rut/{rut}")
+    public ResponseEntity<BusquedaRutResponseDto> buscarPorRut(@PathVariable String rut) {
+        return ResponseEntity.ok(
+            clienteService.buscarPorRut(rut)
+        );
+    }
 }

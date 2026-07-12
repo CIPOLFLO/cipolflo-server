@@ -183,8 +183,6 @@ class FinalizacionReservaServiceTest {
                 null,
                 null,
                 null,
-                null,
-                null,
                 false,
                 false,
                 BigDecimal.valueOf(2000),

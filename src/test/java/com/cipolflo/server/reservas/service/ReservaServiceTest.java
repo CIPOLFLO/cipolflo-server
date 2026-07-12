@@ -108,8 +108,6 @@ class ReservaServiceTest {
                 null,
                 null,
                 null,
-                null,
-                null,
                 false,
                 false,
                 BigDecimal.valueOf(1500),
@@ -130,8 +128,6 @@ class ReservaServiceTest {
                 4,
                 1,
                 null,
-                null,
-                null,
                 notas,
                 false,
                 false,
@@ -140,10 +136,10 @@ class ReservaServiceTest {
         );
     }
 
-    private Reserva crearReservaColaboracion(Long servicioId, String rut, String nombre) {
+    private Reserva crearReservaColaboracion(Long clienteId, Long servicioId) {
         return Reserva.crear(
                 TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO,
-                null,
+                clienteId,
                 servicioId,
                 Procedencia.CAMPING,
                 LocalDate.now().plusDays(1),
@@ -153,26 +149,10 @@ class ReservaServiceTest {
                 null,
                 null,
                 null,
-                rut,
-                nombre,
                 null,
                 false,
                 false,
                 BigDecimal.ZERO,
-                null
-        );
-    }
-
-    private Reserva crearReservaExport() {
-        return Reserva.crear(
-                TipoReserva.COMUN, 1L, 5L, Procedencia.CAMPING,
-                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5),
-                null, null, 4, 1, null, null,
-                null,
-                "Nota",
-                false,
-                false,
-                BigDecimal.valueOf(1500),
                 null
         );
     }
@@ -314,17 +294,15 @@ class ReservaServiceTest {
     }
 
     @Test
-    void deberiaRegistrarReservaColaboracionConRutSinClienteId() {
+    void deberiaRegistrarReservaColaboracionConClienteIdDeEmpresa() {
         ReservaCreacionRequestDto dto = mock(ReservaCreacionRequestDto.class);
         when(dto.getCrearCliente()).thenReturn(false);
-        when(dto.getClienteId()).thenReturn(null);
+        when(dto.getClienteId()).thenReturn(20L);
         when(dto.getTipoReserva()).thenReturn(TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO);
         when(dto.getServicioId()).thenReturn(10L);
         when(dto.getProcedencia()).thenReturn(Procedencia.CAMPING);
         when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(1));
         when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(3));
-        when(dto.getRut()).thenReturn("20123456-7");
-        when(dto.getNombre()).thenReturn("Org Solidaria");
 
         mockCalculoCosto();
 
@@ -337,7 +315,7 @@ class ReservaServiceTest {
         assertEquals(3L, response.getId());
         verify(registroParticularService, never()).registrarParticular(any());
         verify(reservaRepository).save(argThat(r ->
-                r.getClienteId() == null &&
+                Long.valueOf(20L).equals(r.getClienteId()) &&
                         TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(r.getTipoReserva())
         ));
     }
@@ -358,7 +336,7 @@ class ReservaServiceTest {
         Reserva reserva = crearReservaComun(clienteId, 10L);
 
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
-                clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO
+                clienteId, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
@@ -374,29 +352,12 @@ class ReservaServiceTest {
     }
 
     @Test
-    void deberiaRetornarClienteNullCuandoClienteIdEsNull() {
-        Reserva reserva = crearReservaColaboracion(10L, "20123456-7", "Org Test");
-
-        ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
-                10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
-        );
-
-        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
-        when(consultaServicioSimple.getDetalleServicioSimple(10L)).thenReturn(servicioDto);
-
-        ReservaDetalleResponseDto resultado = reservaService.getDetalle(1L);
-
-        assertNull(resultado.getCliente());
-        verify(consultaClienteDetalle, never()).getDetallClienteSimple(any());
-    }
-
-    @Test
     void deberiaLlamarConsultaServicioConServicioIdDeLaReserva() {
         Long servicioId = 10L;
         Reserva reserva = crearReservaComun(5L, servicioId);
 
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
-                5L, "Juan", "12345678", "099", null, TipoCliente.SOCIO
+                5L, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
@@ -416,7 +377,7 @@ class ReservaServiceTest {
         Reserva reserva = crearReservaComun(5L, 10L, "Nota");
 
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
-                5L, "Juan", "12345678", "099", "j@mail.com", TipoCliente.SOCIO
+                5L, "Juan", "12345678", null, "099", "j@mail.com", TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 10L, "Cabaña", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
@@ -497,24 +458,6 @@ class ReservaServiceTest {
     }
 
     @Test
-    void deberiaRetornarNombreClienteNullCuandoReservaTieneClienteIdNull() {
-        Reserva reserva = crearReservaColaboracion(5L, "20123456-7", "Org Test");
-
-        when(reservaRepository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(reserva)));
-        when(consultaClienteDetalle.getNombresByIds(any())).thenReturn(Map.of());
-        when(consultaServicioSimple.getNombresByIds(any())).thenReturn(Map.of(5L, "Cabaña"));
-
-        PageResponse<ListadoReservasResponseDto> resultado = reservaService.getListadoReservas(
-                new ListadoReservasRequestDto(null, null, null, null, null, null),
-                new PageRequestDto(0, 10, null, null)
-        );
-
-        assertNull(resultado.content().get(0).getClienteId());
-        assertEquals("Org Test", resultado.content().get(0).getNombreCliente());
-    }
-
-    @Test
     void deberiaBuscarNombresDeClientesYServiciosDeTodasLasReservasDeLaPagina() {
         Reserva reserva1 = crearReservaComun(1L, 5L);
         Reserva reserva2 = crearReservaComun(2L, 6L);
@@ -591,7 +534,6 @@ class ReservaServiceTest {
         when(dto.getCantidadTotal()).thenReturn(4);
         when(dto.getCantidadMenores()).thenReturn(2);
         when(dto.getCantidad()).thenReturn(null);
-        when(dto.getRut()).thenReturn(null);
         when(dto.getNotas()).thenReturn("nueva nota");
 
         when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
@@ -612,7 +554,7 @@ class ReservaServiceTest {
     @Test
     void deberiaModificarReservaEnEstadoConfirmada() {
         Long reservaId = 1L;
-        Reserva reserva = crearReservaColaboracion(10L, "20123456-7", "Org Test");
+        Reserva reserva = crearReservaColaboracion(20L, 10L);
 
         assertEquals(EstadoReserva.CONFIRMADA, reserva.getEstado());
 
@@ -621,7 +563,6 @@ class ReservaServiceTest {
         when(dto.getProcedencia()).thenReturn(Procedencia.CAMPING);
         when(dto.getFechaInicio()).thenReturn(LocalDate.now().plusDays(5));
         when(dto.getFechaFin()).thenReturn(LocalDate.now().plusDays(10));
-        when(dto.getRut()).thenReturn("20123456-7");
 
         when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
         when(reservaRepository.save(reserva)).thenReturn(reserva);
@@ -662,7 +603,7 @@ class ReservaServiceTest {
     @Test
     void deberiaLanzarExcepcionCuandoEstadoEsEnCurso() {
         Long reservaId = 1L;
-        Reserva reserva = crearReservaColaboracion(10L, "20123456-7", "Org Test");
+        Reserva reserva = crearReservaColaboracion(20L, 10L);
         reserva.cambiarEstado(EstadoReserva.EN_CURSO);
 
         when(reservaRepository.findById(reservaId)).thenReturn(Optional.of(reserva));
@@ -680,7 +621,7 @@ class ReservaServiceTest {
     @Test
     void deberiaLanzarExcepcionCuandoEstadoEsFinalizada() {
         Long reservaId = 1L;
-        Reserva reserva = crearReservaColaboracion(10L, "20123456-7", "Org Test");
+        Reserva reserva = crearReservaColaboracion(20L, 10L);
         reserva.cambiarEstado(EstadoReserva.EN_CURSO);
         reserva.cambiarEstado(EstadoReserva.FINALIZADA);
 
@@ -725,7 +666,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 true, false,
                 BigDecimal.valueOf(1500), null
         );
@@ -747,7 +688,7 @@ class ReservaServiceTest {
         Reserva reserva = Reserva.crear(
                 TipoReserva.COMUN, 5L, 10L, Procedencia.CAMPING,
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
                 true, true,
                 BigDecimal.valueOf(1500), null
         );
@@ -836,6 +777,15 @@ class ReservaServiceTest {
 
         assertEquals(response, resultado);
         verify(calculoCostoService).calcularCosto(request);
+    }
+
+    private Reserva crearReservaExport() {
+        return Reserva.crear(
+                TipoReserva.COMUN, 1L, 5L, Procedencia.CAMPING,
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5),
+                null, null, 4, 1, null, "Nota", false, false,
+                BigDecimal.valueOf(1500), null
+        );
     }
 
     @Test
@@ -932,7 +882,7 @@ class ReservaServiceTest {
         Reserva reserva = crearReservaComun(clienteId, servicioId);
 
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
-                clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO);
+                clienteId, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO);
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
 

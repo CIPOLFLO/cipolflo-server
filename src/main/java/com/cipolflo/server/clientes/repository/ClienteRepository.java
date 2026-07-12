@@ -1,6 +1,7 @@
 package com.cipolflo.server.clientes.repository;
 
 import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.Empresa;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -24,6 +25,9 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long>, JpaSpec
 
     @Query("SELECT COUNT(e) > 0 FROM Empresa e WHERE e.rut = :rut")
     boolean existsByRut(@Param("rut") String rut);
+
+    @Query("SELECT e FROM Empresa e WHERE e.rut = :rut")
+    Optional<Empresa> findByRut(@Param("rut") String rut);
 
     boolean existsByMailIgnoreCase(String mail);
 

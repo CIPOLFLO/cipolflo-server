@@ -31,8 +31,6 @@ class ServicioReservaOcupacionMapperTest {
                 null,
                 null,
                 null,
-                null,
-                null,
                 false,
                 false,
                 BigDecimal.ZERO,
