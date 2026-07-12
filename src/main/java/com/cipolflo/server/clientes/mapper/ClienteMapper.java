@@ -96,7 +96,8 @@ public class ClienteMapper {
         return new EstadoSocioResponseDto(
                 socio.getId(),
                 socio.getEstado(),
-                socio.getNumeroSocio()
+                socio.getNumeroSocio(),
+                socio.getMesesSinPagar()
         );
     }
 

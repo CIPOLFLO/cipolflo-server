@@ -199,11 +199,15 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearEstadoSocioResponseDto() {
-        EstadoSocioResponseDto dto = ClienteMapper.toEstadoSocioResponseDto(crearSocio());
+        Socio socio = crearSocio();
+        socio.setMesesSinPagar(3);
+
+        EstadoSocioResponseDto dto = ClienteMapper.toEstadoSocioResponseDto(socio);
 
         assertEquals(1L, dto.getId());
         assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
         assertEquals(5, dto.getNumeroSocio());
+        assertEquals(3, dto.getMesesSinPagar());
     }
 
     @Test

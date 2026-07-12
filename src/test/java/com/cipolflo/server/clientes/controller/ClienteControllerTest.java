@@ -384,7 +384,7 @@ class ClienteControllerTest {
     // --- consultarEstadoSocio ---
 
     private EstadoSocioResponseDto estadoSocio() {
-        return new EstadoSocioResponseDto(1L, EstadoSocio.ACTIVO, 5);
+        return new EstadoSocioResponseDto(1L, EstadoSocio.ACTIVO, 5, 0);
     }
 
     @Test
@@ -396,7 +396,8 @@ class ClienteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.estado").value("ACTIVO"))
-                .andExpect(jsonPath("$.numeroSocio").value(5));
+                .andExpect(jsonPath("$.numeroSocio").value(5))
+                .andExpect(jsonPath("$.mesesSinPagar").value(0));
 
         verify(clienteService).consultarEstadoSocio(1L);
     }

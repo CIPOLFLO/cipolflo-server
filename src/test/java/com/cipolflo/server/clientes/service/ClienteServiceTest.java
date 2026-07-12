@@ -762,6 +762,7 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
     @Test
     void deberiaRetornarEstadoDelSocioCuandoExiste() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 5, EstadoSocio.INACTIVO);
+        socio.setMesesSinPagar(4);
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
 
         EstadoSocioResponseDto resultado = clienteService.consultarEstadoSocio(1L);
@@ -769,6 +770,7 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
         assertEquals(1L, resultado.getId());
         assertEquals(EstadoSocio.INACTIVO, resultado.getEstado());
         assertEquals(5, resultado.getNumeroSocio());
+        assertEquals(4, resultado.getMesesSinPagar());
         verify(clienteRepository).findById(1L);
     }
 

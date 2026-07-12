@@ -659,7 +659,8 @@ Devuelve el estado actual de un socio puntual (`ACTIVO`, `INACTIVO` o `DE_BAJA`)
 {
   "id": 1,
   "estado": "ACTIVO",
-  "numeroSocio": 5
+  "numeroSocio": 5,
+  "mesesSinPagar": 0
 }
 ```
 
