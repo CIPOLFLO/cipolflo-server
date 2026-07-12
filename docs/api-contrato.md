@@ -1222,6 +1222,7 @@ Retorna el detalle completo de una reserva.
     "id": 12,
     "nombre": "Juan Pérez",
     "cedula": "12345678",
+    "rut": null,
     "telefono": "099111111",
     "email": "juan@mail.com",
     "tipoCliente": "SOCIO"
@@ -1553,12 +1554,15 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
 {
   id: number;
   nombre: string;
-  cedula: string;
+  cedula: string | null; // null para clientes EMPRESA
+  rut: string | null;    // presente solo para clientes EMPRESA
   telefono: string;
   email: string | null;
   tipoCliente: TipoCliente;
 }
 ```
+
+> El documento identificatorio del cliente es el `rut` si `tipoCliente` es `EMPRESA` y la `cedula` en los demás casos. El comprobante en PDF usa ese mismo criterio para el campo documento.
 
 #### `ServicioDetalleReservaDto` — servicio embebido en el detalle de reserva
 

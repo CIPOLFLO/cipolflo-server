@@ -105,6 +105,7 @@ public class ClienteMapper {
                 cliente.getId(),
                 cliente.getNombreCompleto(),
                 cliente.getCedula(),
+                cliente instanceof Empresa e ? e.getRut() : null,
                 cliente.getTelefono(),
                 cliente.getMail(),
                 tipoDeCliente(cliente)

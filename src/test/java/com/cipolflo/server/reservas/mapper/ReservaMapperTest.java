@@ -51,6 +51,7 @@ class ReservaMapperTest {
                 12L,
                 "Juan Pérez",
                 "12345678",
+                null,
                 "099111111",
                 "juan@mail.com",
                 TipoCliente.SOCIO
@@ -62,6 +63,7 @@ class ReservaMapperTest {
                 20L,
                 "Org Solidaria S.A.",
                 null,
+                "211003420017",
                 "099222222",
                 "org@mail.com",
                 TipoCliente.EMPRESA

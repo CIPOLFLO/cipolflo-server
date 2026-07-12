@@ -1,5 +1,6 @@
 package com.cipolflo.server.reservas.pdf;
 
+import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
@@ -71,10 +72,14 @@ public class ComprobanteReservaContenidoPdf implements ContenidoPdf {
         ClienteDetalleReservaDto cliente = detalle.getCliente();
         if (cliente != null) {
             writer.escribirCampo("Nombre", texto(cliente.nombre()));
-            writer.escribirCampo("Documento", texto(cliente.cedula()));
+            writer.escribirCampo(etiquetaDocumento(cliente), texto(cliente.documento()));
             writer.escribirCampo("Tipo de cliente", texto(cliente.tipoCliente()));
         }
         writer.espacio(8f);
+    }
+
+    private String etiquetaDocumento(ClienteDetalleReservaDto cliente) {
+        return cliente.tipoCliente() == TipoCliente.EMPRESA ? "RUT" : "Documento";
     }
 
     private void escribirServicio(PdfWriter writer) {

@@ -48,7 +48,7 @@ class ReservaCreacionValidatorTest {
 
     private ClienteDetalleReservaDto clienteDe(TipoCliente tipoCliente) {
         return new ClienteDetalleReservaDto(
-                42L, "Cliente de prueba", null, "099111111", "cliente@test.com", tipoCliente
+                42L, "Cliente de prueba", null, null, "099111111", "cliente@test.com", tipoCliente
         );
     }
 

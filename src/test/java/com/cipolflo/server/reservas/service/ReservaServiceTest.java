@@ -336,7 +336,7 @@ class ReservaServiceTest {
         Reserva reserva = crearReservaComun(clienteId, 10L);
 
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
-                clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO
+                clienteId, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
@@ -357,7 +357,7 @@ class ReservaServiceTest {
         Reserva reserva = crearReservaComun(5L, servicioId);
 
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
-                5L, "Juan", "12345678", "099", null, TipoCliente.SOCIO
+                5L, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
@@ -377,7 +377,7 @@ class ReservaServiceTest {
         Reserva reserva = crearReservaComun(5L, 10L, "Nota");
 
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
-                5L, "Juan", "12345678", "099", "j@mail.com", TipoCliente.SOCIO
+                5L, "Juan", "12345678", null, "099", "j@mail.com", TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 10L, "Cabaña", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
@@ -882,7 +882,7 @@ class ReservaServiceTest {
         Reserva reserva = crearReservaComun(clienteId, servicioId);
 
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
-                clienteId, "Juan", "12345678", "099", null, TipoCliente.SOCIO);
+                clienteId, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO);
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
                 servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
 
