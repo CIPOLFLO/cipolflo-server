@@ -1,7 +1,8 @@
 # API Contrato — CIPOLFLO Server
 
 > Base URL: `http://localhost:8080`  
-> Todos los endpoints requieren autenticación (Bearer Token JWT).  
+> Todos los endpoints requieren autenticación (Bearer Token JWT), **salvo el webhook de
+> Telegram** (`/api/public/**`), que se autentica con un secret token propio.  
 > Las fechas/horas se manejan como `Instant` (ISO-8601 UTC, ej: `"2025-01-15T10:30:00Z"`).
 
 ---
@@ -19,7 +20,8 @@
 8. [Reservas — DTOs](#reservas--dtos)
 9. [Finanzas — Endpoints](#finanzas--endpoints)
 10. [Finanzas — DTOs](#finanzas--dtos)
-11. [Manejo de errores](#manejo-de-errores)
+11. [Integraciones — Endpoints](#integraciones--endpoints)
+12. [Manejo de errores](#manejo-de-errores)
 
 ---
 
@@ -1718,6 +1720,37 @@ Elimina una finanza. La eliminación es **consciente del origen** del movimiento
 
 ---
 
+## Integraciones — Endpoints
+
+### `POST /api/public/telegram/webhook`
+
+Recibe los updates del bot de Telegram (RF6, ticket DEV-149). **Es el único endpoint del
+sistema que no requiere JWT de Auth0** — Telegram no puede enviar nuestro Bearer Token.
+Va bajo `/api/public/**`, fuera del esquema de autenticación general de este documento.
+
+**Autenticación:** header `X-Telegram-Bot-Api-Secret-Token`, comparado en tiempo
+constante contra el secret configurado (`cipolflo.telegram.webhook-secret`) — no JWT.
+
+| Header | Requerido | Descripción |
+|---|---|---|
+| `X-Telegram-Bot-Api-Secret-Token` | Sí | Secret acordado con Telegram al registrar el webhook (`setWebhook`) |
+
+**Body:** el payload de update de Telegram (solo se mapean `update_id`, `message.text`,
+`message.chat.id`, `message.chat.username` — sin Bean Validation, un campo desconocido no
+rompe el binding).
+
+**Respuesta:**
+
+| HTTP Status | Cuándo |
+|---|---|
+| `200` | Siempre, una vez validado el secret — aun si el mensaje se descarta o falla el procesamiento. El procesamiento ocurre de forma asíncrona, no bloquea la respuesta. |
+| `401` (`TELEGRAM_SECRET_INVALIDO`) | El header falta o no coincide con el secret configurado. No se procesa nada. |
+
+Ver arquitectura completa en
+[`telegram-bot-arquitectura.md`](telegram-bot-arquitectura.md).
+
+---
+
 ## Manejo de errores
 
 Todos los errores retornan el siguiente body:
@@ -1732,7 +1765,7 @@ Todos los errores retornan el siguiente body:
 | HTTP Status | Cuándo ocurre                                                              |
 | ----------- | -------------------------------------------------------------------------- |
 | 400         | Validación fallida en body o query params                                  |
-| 401         | Token ausente, inválido o expirado                                         |
+| 401         | Token ausente, inválido o expirado (o, en el webhook de Telegram, `TELEGRAM_SECRET_INVALIDO`) |
 | 403         | Usuario autenticado sin permisos para la operación                         |
 | 404         | Recurso no encontrado por el ID proporcionado                              |
 | 409         | Conflicto de negocio (ej: deshabilitar con reservas activas sin confirmar) |

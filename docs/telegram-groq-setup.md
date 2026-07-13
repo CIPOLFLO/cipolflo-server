@@ -1,9 +1,11 @@
 # Setup de Telegram + Groq (DEV-149) — CIPOLFLO Server
 
 > Qué se configuró para el bot de Telegram (RF6) y cómo se obtuvo cada credencial.
-> Este documento cubre solo el **paso 1** del ticket (dependencias, properties y alta
-> del bot) — la arquitectura completa (tools, asistente, webhook, notificaciones) está
-> en [`docs/tickets/DEV-149-bot-telegram.md`](tickets/DEV-149-bot-telegram.md).
+> Este documento cubre el **paso 1** del ticket (dependencias, properties y alta del
+> bot). La arquitectura completa ya implementada (tools, asistente, webhook) está en
+> [`telegram-bot-arquitectura.md`](telegram-bot-arquitectura.md); para probarlo en local
+> ver [`telegram-bot-pruebas-locales.md`](telegram-bot-pruebas-locales.md); para
+> desplegar, [`telegram-bot-despliegue.md`](telegram-bot-despliegue.md).
 
 ---
 
@@ -23,9 +25,10 @@
 ## Resumen
 
 El bot usa **Spring AI** contra **Groq** (proveedor con API compatible con OpenAI) para
-interpretar consultas en lenguaje natural, y **Telegram** como canal de mensajería. En
-esta etapa solo se dejaron listas las dependencias, las properties y las credenciales;
-todavía no existen ni la tabla de chats autorizados ni el webhook.
+interpretar consultas en lenguaje natural, y **Telegram** como canal de mensajería. Este
+documento cubre específicamente el paso 1 (dependencias, properties, credenciales) —
+el resto del bot (tabla de chats autorizados, webhook, tools, asistente) ya está
+implementado; ver [`telegram-bot-arquitectura.md`](telegram-bot-arquitectura.md).
 
 ---
 
@@ -190,15 +193,20 @@ Windows.
 
 ## Qué falta
 
-Esto cubre únicamente el **paso 1** del plan de implementación del ticket. Todavía no
-existen:
+Esto cubre únicamente el paso 1 (configuración inicial). El resto del camino de
+**consultas entrantes** ya está implementado y documentado en
+[`telegram-bot-arquitectura.md`](telegram-bot-arquitectura.md): migración, puertos,
+cliente de Telegram, procesador, webhook, tools y asistente de IA.
 
-- La migración Liquibase (`telegram_chat_autorizado`, `envio_mensajes_log`).
-- Los puertos del núcleo (`CanalMensajeria`, `RegistroDestinatarios`).
-- El cliente de Telegram, el procesador de mensajes y el webhook.
-- Las tools (`DisponibilidadTools`, `CuotaTools`) y el asistente de IA.
-- Los schedulers nuevos y sus properties de cron.
+Lo que sigue pendiente (ver la sección
+["Qué NO está implementado"](telegram-bot-arquitectura.md#qué-no-está-implementado) de
+ese documento):
 
-El detalle completo de cada paso está en
-[`docs/tickets/DEV-149-bot-telegram.md`](tickets/DEV-149-bot-telegram.md), sección
-"Paso a paso de implementación".
+- Notificaciones salientes por Telegram (aviso de cuotas atrasadas, reporte semanal
+  bicanal) — se evaluó y se decidió posponer.
+- El scheduler de "reservas por vencer" mencionado en el ticket original.
+- Registrar el webhook en el ambiente desplegado — ver
+  [`telegram-bot-despliegue.md`](telegram-bot-despliegue.md).
+
+El ticket original completo está en
+[`docs/tickets/DEV-149-bot-telegram.md`](tickets/DEV-149-bot-telegram.md).

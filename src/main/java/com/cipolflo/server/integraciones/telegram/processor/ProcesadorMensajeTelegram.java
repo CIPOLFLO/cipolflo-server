@@ -30,7 +30,6 @@ public class ProcesadorMensajeTelegram implements IProcesadorMensajeTelegram {
     private static final Logger log = LoggerFactory.getLogger(ProcesadorMensajeTelegram.class);
 
     private static final String COMANDO_RESET = "/reset";
-    private static final String MENSAJE_RECHAZO = "No tenés acceso a este bot.";
     private static final String MENSAJE_RESET_OK = "Listo, arrancamos de cero. ¿En qué te ayudo?";
     private static final String MENSAJE_ERROR_GENERICO =
             "No pude procesar tu consulta en este momento, probá de nuevo en unos minutos.";
@@ -62,7 +61,9 @@ public class ProcesadorMensajeTelegram implements IProcesadorMensajeTelegram {
         Optional<DestinatarioMensajeria> destinatario = registroDestinatarios.buscarAutorizado(chatId);
         if (destinatario.isEmpty()) {
             log.warn("Chat no autorizado intentó usar el bot: chatId={}, username={}", chatId, message.chat().username());
-            enviarSeguro(chatId, MENSAJE_RECHAZO, TipoEventoMensaje.RECHAZO_NO_AUTORIZADO);
+            String mensajeRechazo = "No tenés acceso a este bot. Tu ID es " + chatId
+                    + " — pasaselo a un administrador para que te dé de alta.";
+            enviarSeguro(chatId, mensajeRechazo, TipoEventoMensaje.RECHAZO_NO_AUTORIZADO);
             return;
         }
 

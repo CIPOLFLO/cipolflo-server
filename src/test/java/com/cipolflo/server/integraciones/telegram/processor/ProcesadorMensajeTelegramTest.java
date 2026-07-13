@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -64,14 +65,14 @@ class ProcesadorMensajeTelegramTest {
     }
 
     @Test
-    void chatNoAutorizado_noDeberiaLlamarAlAsistenteYDeberiaEnviarRechazo() {
+    void chatNoAutorizado_noDeberiaLlamarAlAsistenteYDeberiaEnviarRechazoConElChatId() {
         when(registroDestinatarios.buscarAutorizado("123")).thenReturn(Optional.empty());
         TelegramUpdateDto update = updateConTexto(123L, "intruso", "hola");
 
         nuevoProcesador().procesar(update);
 
         verify(asistenteConsultas, never()).responder(anyString(), anyString());
-        verify(canalMensajeria).enviar(eq("123"), anyString(), eq(TipoEventoMensaje.RECHAZO_NO_AUTORIZADO));
+        verify(canalMensajeria).enviar(eq("123"), contains("123"), eq(TipoEventoMensaje.RECHAZO_NO_AUTORIZADO));
     }
 
     @Test
