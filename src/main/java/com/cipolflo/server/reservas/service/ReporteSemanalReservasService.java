@@ -51,7 +51,8 @@ public class ReporteSemanalReservasService implements IReporteSemanalReservasSer
     private static final List<EstadoReserva> ESTADOS_REPORTE = List.of(
             EstadoReserva.PENDIENTE,
             EstadoReserva.CONFIRMADA,
-            EstadoReserva.EN_CURSO
+            EstadoReserva.EN_CURSO,
+            EstadoReserva.VENCIDA_SIN_PAGO
     );
 
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -135,7 +136,8 @@ public class ReporteSemanalReservasService implements IReporteSemanalReservasSer
             boolean empiezaAntes = r.getFechaEntrada().isBefore(lunes);
             boolean iniciaEnSemana = !r.getFechaEntrada().isBefore(lunes) && !r.getFechaEntrada().isAfter(domingo);
 
-            if ((estado == EstadoReserva.CONFIRMADA || estado == EstadoReserva.EN_CURSO)
+            if ((estado == EstadoReserva.CONFIRMADA || estado == EstadoReserva.EN_CURSO
+                    || estado == EstadoReserva.VENCIDA_SIN_PAGO)
                     && empiezaAntes) {
                 enCurso.add(r);
             } else if (estado == EstadoReserva.CONFIRMADA && iniciaEnSemana) {
