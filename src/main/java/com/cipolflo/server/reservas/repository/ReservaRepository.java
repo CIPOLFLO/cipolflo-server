@@ -54,4 +54,16 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
             LocalDate fechaInicio,
             Long idExcluir
     );
+
+    /**
+     * Reservas en el estado dado cuya fecha de entrada es exactamente {@code fechaEntrada}.
+     * Usado por el scheduler de transición de estados por fecha (paso a EN_CURSO).
+     */
+    List<Reserva> findByEstadoAndFechaEntrada(EstadoReserva estado, LocalDate fechaEntrada);
+
+    /**
+     * Reservas en el estado dado cuya fecha de salida es exactamente {@code fechaSalida}.
+     * Usado por el scheduler de transición de estados por fecha (paso a FINALIZADA/VENCIDA_SIN_PAGO).
+     */
+    List<Reserva> findByEstadoAndFechaSalida(EstadoReserva estado, LocalDate fechaSalida);
 }
