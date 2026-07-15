@@ -744,7 +744,7 @@ Modifica los datos de un socio.
 | `direccion`       | string        | Sí          | no vacío                                      |
 | `metodoCobro`     | `MetodoCobro` | Sí          | —                                             |
 
-> Campos no modificables: `numeroSocio`, `estado`, `fechaIngreso`, `mesesSinPagar`, `fechaUltimoPago`.
+> Campos no modificables: `numeroSocio`, `estado`, `fechaIngreso`, `fechaUltimoPago`.
 
 **Respuestas:**
 
@@ -790,7 +790,7 @@ Registra un nuevo cliente de tipo socio.
 | `direccion`       | string        | No          | —                                                          |
 | `observaciones`   | string        | No          | —                                                          |
 
-> La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO`, `mesesSinPagar = 0` y `fechaIngreso` igual a la fecha actual. El `numeroSocio` se asigna de forma incremental.
+> La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO` y `fechaIngreso` igual a la fecha actual. El `numeroSocio` se asigna de forma incremental.
 
 **Respuesta 201:** mismo body que `GET /api/v1/clientes/{id}`
 

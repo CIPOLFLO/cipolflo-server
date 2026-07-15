@@ -58,6 +58,7 @@ de tres líneas; el trazado en base queda gratis.
 |---|---|---|
 | `reservas/scheduled/ReporteSemanalReservasScheduler` | `ReporteSemanalReservasService` | Mail con las reservas de la semana. |
 | `shared/mantenimiento/LimpiezaLogsEmailScheduler` | `LimpiezaLogsEmailService` | Purga de `envio_emails_logs` viejos. |
+| `clientes/scheduled/InactivacionSociosScheduler` | `InactivacionSociosService` | Inactivación automática de socios morosos. |
 
 ---
 
@@ -167,6 +168,10 @@ cipolflo.reportes.reservas-semanal.destinatario=${REPORTE_RESERVAS_DESTINATARIO:
 cipolflo.tareas.limpieza-logs-email.cron=0 0 5 * * SUN
 cipolflo.tareas.limpieza-logs-email.zona=America/Montevideo
 cipolflo.tareas.limpieza-logs-email.retencion-dias=90
+
+# Inactivación automática de socios morosos: primer día de cada mes 03:00 (hora de Uruguay).
+cipolflo.tareas.inactivacion-socios.cron=0 0 3 1 * *
+cipolflo.tareas.inactivacion-socios.zona=America/Montevideo
 ```
 
 Cada tarea bindea sus properties con un record `@ConfigurationProperties` (patrón
@@ -205,6 +210,20 @@ en `envio_emails_logs`** (ver [Envío de Emails](envio-emails.md)). Si el SMTP f
 Los **domingos 05:00** elimina de `envio_emails_logs` los registros con más de **90 días**
 (configurable), usando `deleteByCreatedAtBefore` sobre el índice de `created_at`. Es
 idempotente: si no hay vencidos, no borra nada.
+
+### Inactivación automática de socios
+
+El **primer día de cada mes a las 03:00** evalúa a todos los socios `ACTIVO`. Para cada uno,
+recalcula desde cero (consultando `pago_cuota`) cuántos meses **completos** adeuda: compara
+el primer período pendiente (mes siguiente al último pagado, o `fechaIngreso` si nunca pagó)
+contra el mes en curso. El mes en curso nunca cuenta como adeudado — recién empieza, todavía
+no venció. Si el resultado llega a 3, pasa al socio a `INACTIVO` vía
+`Socio.pasarAInactivoPorMorosidad()` (ver [Patrones de dominio en `Socio`](../AGENTS.md)). Un
+socio que adeuda menos de 3 meses no se toca.
+
+> Al no depender de un contador persistido sino recalcular todo en cada corrida, es
+> idempotente: una corrida salteada no descuadra el resultado de la siguiente, y un socio que
+> se puso al día simplemente da 0 la próxima vez.
 
 ---
 

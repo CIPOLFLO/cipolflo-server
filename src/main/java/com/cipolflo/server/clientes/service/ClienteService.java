@@ -216,7 +216,6 @@ public class ClienteService implements IClienteService {
         socio.setNumeroSocio(numeroSocio);
         socio.setEstado(EstadoSocio.ACTIVO);
         socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
-        socio.setMesesSinPagar(0);
         try {
             return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null);
         } catch (DataIntegrityViolationException e) {
