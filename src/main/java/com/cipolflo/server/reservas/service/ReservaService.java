@@ -50,12 +50,6 @@ import java.util.stream.Collectors;
 public class ReservaService implements IReservaService {
     private static final int DIAS_VENTANA_RESERVAS_PROXIMAS = 60;
 
-    private static final List<EstadoReserva> ESTADOS_OCUPANTES = List.of(
-            EstadoReserva.PENDIENTE,
-            EstadoReserva.CONFIRMADA,
-            EstadoReserva.EN_CURSO
-    );
-
     private final ReservaRepository reservaRepository;
     private final IRegistroParticularService registroParticularService;
     private final ReservaCreacionValidator reservaCreacionValidator;
@@ -115,7 +109,7 @@ public class ReservaService implements IReservaService {
         return reservaRepository
                 .findByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                         servicioId,
-                        ESTADOS_OCUPANTES,
+                        EstadoReserva.ESTADOS_OCUPANTES,
                         hasta,
                         desde
                 );

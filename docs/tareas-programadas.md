@@ -59,6 +59,7 @@ de tres líneas; el trazado en base queda gratis.
 | `reservas/scheduled/ReporteSemanalReservasScheduler` | `ReporteSemanalReservasService` | Mail con las reservas de la semana. |
 | `shared/mantenimiento/LimpiezaLogsEmailScheduler` | `LimpiezaLogsEmailService` | Purga de `envio_emails_logs` viejos. |
 | `reservas/scheduled/CancelacionAutomaticaReservasScheduler` | `CancelacionAutomaticaReservasService` | Cancela reservas `PENDIENTE` con plazo de confirmación vencido. |
+| `reservas/scheduled/TransicionEstadoReservasPorFechaScheduler` | `TransicionEstadoReservasPorFechaService` | Pasa reservas a EN_CURSO/FINALIZADA/VENCIDA_SIN_PAGO según la fecha. |
 
 ---
 
@@ -159,6 +160,9 @@ cipolflo.tareas.limpieza-logs-email.retencion-dias=90
 # Cancelacion automatica de reservas pendientes vencidas: cada hora en punto (hora de Uruguay).
 cipolflo.tareas.cancelacion-automatica-reservas.cron=0 0 * * * *
 cipolflo.tareas.cancelacion-automatica-reservas.zona=America/Montevideo
+# Transicion de estados de reservas por fecha: todos los dias 00:00 (hora de Uruguay).
+cipolflo.tareas.transicion-estado-reservas.cron=0 0 0 * * *
+cipolflo.tareas.transicion-estado-reservas.zona=America/Montevideo
 ```
 
 Cada tarea bindea sus properties con un record `@ConfigurationProperties` (patrón
@@ -223,6 +227,19 @@ documentación) nunca entran en este flujo, porque su `fechaLimiteConfirmacion` 
 
 Con un job diario un plazo de 24 hs se cancelaría hasta ~24 hs tarde; por eso el cron es
 horario en vez de diario, a diferencia de las otras dos tareas de esta lista.
+### Transición de estados de reservas por fecha
+
+Corre **todos los días a las 00:00** (hora de Uruguay) y mueve reservas de estado según
+la fecha de hoy:
+
+1. **CONFIRMADA → EN_CURSO**: reservas cuya `fechaEntrada` es hoy.
+2. **EN_CURSO → FINALIZADA** (si `estaPaga()`) **o VENCIDA_SIN_PAGO** (si no): reservas
+   cuya `fechaSalida` fue ayer, es decir que terminaron el día anterior a que corre la
+   tarea.
+
+`VENCIDA_SIN_PAGO` es finalizable manualmente (`esFinalizable()` la incluye junto con
+`EN_CURSO`), pero no cuenta como estado "ocupante" del servicio (`esOcupante()`): al
+llegar a ese estado la estadía ya terminó, solo falta cobrar.
 
 ---
 

@@ -40,6 +40,14 @@ PENDIENTE | CONFIRMADA | EN_CURSO | FINALIZADA | CANCELADA
 ### `PlazoConfirmacion`
 VEINTICUATRO_HORAS | TRES_MESES
 
+```
+PENDIENTE | CONFIRMADA | EN_CURSO | VENCIDA_SIN_PAGO | FINALIZADA | CANCELADA
+```
+
+> `VENCIDA_SIN_PAGO` no se puede setear vía API: la asigna automáticamente una tarea programada diaria a las reservas `EN_CURSO` cuya `fechaSalida` ya pasó y siguen sin estar pagas. Se cierra (pasa a `FINALIZADA`) con `PATCH /api/v1/reservas/{id}/finalizacion`, igual que una reserva `EN_CURSO`.
+
+### `TipoCliente`
+
 > Plazo para confirmar (pagar seña y/o entregar documentación) una reserva antes de que se
 > cancele automáticamente. Solo aplica cuando `requiereSena` y/o `requiereDocumentacion` son
 > `true`. `VEINTICUATRO_HORAS` cancela 24 hs antes del inicio de la reserva; `TRES_MESES`
@@ -1389,6 +1397,81 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
 
 ---
 
+### `GET /api/v1/reservas/{id}/finalizacion`
+
+Verifica si una reserva `EN_CURSO` o `VENCIDA_SIN_PAGO` puede finalizarse sin completar un pago pendiente. Se usa para decidir qué pedirle al usuario antes de confirmar la finalización (checkout).
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:**
+
+```json
+{
+  "puedeFinalizarSinPago": true,
+  "montoImpago": 0.00
+}
+```
+
+| Campo                   | Tipo    | Descripción                                            |
+| ----------------------- | ------- | ------------------------------------------------------- |
+| `puedeFinalizarSinPago` | boolean | `true` si la reserva ya está paga (`estaPaga()`)         |
+| `montoImpago`           | number  | Saldo que falta pagar                                    |
+
+**Errores:**
+
+| HTTP Status | Código                   | Cuándo ocurre                                          |
+| ----------- | ------------------------ | -------------------------------------------------------- |
+| 400         | `ID_INVALIDO`            | `id` no es un entero positivo                            |
+| 400         | `RESERVA_NO_FINALIZABLE` | La reserva no está `EN_CURSO` ni `VENCIDA_SIN_PAGO`      |
+| 404         | `RESERVA_NO_ENCONTRADA`  | No existe una reserva con ese `id`                       |
+| 401         | —                        | Token ausente, inválido o expirado                        |
+
+---
+
+### `PATCH /api/v1/reservas/{id}/finalizacion`
+
+Finaliza una reserva `EN_CURSO` o `VENCIDA_SIN_PAGO`, opcionalmente completando el saldo pendiente en el mismo paso.
+
+**Path param:** `id` — integer positivo
+
+**Body** (`application/json`):
+
+```json
+{
+  "completarPago": true,
+  "formaPago": "EFECTIVO",
+  "notas": "Salda saldo al finalizar"
+}
+```
+
+| Campo           | Tipo        | Obligatorio | Validación                                                    |
+| ---------------- | ----------- | ----------- | --------------------------------------------------------------- |
+| `completarPago` | boolean     | Condicional | Requerido si la reserva no está paga                            |
+| `formaPago`     | `FormaPago` | Condicional | Requerido si `completarPago: true`                               |
+| `notas`         | string      | No          | —                                                                 |
+
+> Si la reserva ya está paga, `completarPago` y `formaPago` no son necesarios y se ignoran: la reserva pasa directo a `FINALIZADA`.
+>
+> Si `completarPago: true`, se salda exactamente el `montoImpago` actual (no altera el `importe` total de la reserva) y luego finaliza.
+>
+> Si `completarPago: false`, la reserva finaliza igual con el saldo pendiente sin saldar (queda como deuda histórica; no hay forma de distinguir después una `FINALIZADA` con deuda de una que no la tuvo).
+
+**Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código                           | Cuándo ocurre                                             |
+| ----------- | -------------------------------- | ------------------------------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA`             | Campo con formato inválido (Bean Validation)                 |
+| 400         | `ID_INVALIDO`                    | `id` no es un entero positivo                                 |
+| 400         | `RESERVA_NO_FINALIZABLE`         | La reserva no está `EN_CURSO` ni `VENCIDA_SIN_PAGO`           |
+| 400         | `DECISION_PAGO_REQUERIDA`        | La reserva no está paga y no se envió `completarPago`         |
+| 400         | `FORMA_PAGO_REQUERIDA_PARA_PAGO` | `completarPago: true` pero no se envió `formaPago`            |
+| 404         | `RESERVA_NO_ENCONTRADA`          | No existe una reserva con ese `id`                             |
+| 401         | —                                | Token ausente, inválido o expirado                             |
+
+---
+
 ## Reservas — DTOs
 
 ### Request DTOs
@@ -1442,6 +1525,16 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
   esPagoTotal: boolean     // obligatorio
   formaPago: FormaPago     // obligatorio
   notas?: string           // opcional
+}
+```
+
+#### `ReservaFinalizacionRequestDto` — body en `PATCH /api/v1/reservas/{id}/finalizacion`
+
+```typescript
+{
+  completarPago?: boolean // condicional, requerido si la reserva no está paga
+  formaPago?: FormaPago   // condicional, requerido si completarPago: true
+  notas?: string          // opcional
 }
 ```
 
@@ -1499,6 +1592,15 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
 ```typescript
 {
   costoTotal: number; // costo estimado de la reserva según la modalidad del servicio
+}
+```
+
+#### `ReservaFinalizacionCheckResponseDto` — respuesta de `GET /api/v1/reservas/{id}/finalizacion`
+
+```typescript
+{
+  puedeFinalizarSinPago: boolean; // true si la reserva ya está paga (estaPaga())
+  montoImpago: number;            // saldo pendiente de pago
 }
 ```
 
@@ -1640,7 +1742,7 @@ Elimina una finanza. La eliminación es **consciente del origen** del movimiento
 - **Ingreso de pago de cuota** (`pagoCuotaId != null`): **no** se permite eliminar → **400 `ELIMINACION_PAGO_CUOTA_NO_PERMITIDA`**. La anulación de cuotas es una funcionalidad pendiente.
 - **Egreso asociado a una reserva** (`reservaId != null`): **no** se permite eliminar → **400 `ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA`**. Si se cargó por error, la forma de compensarlo es registrar un ingreso que lo anule.
 - **Ingreso de pago de reserva** (`reservaId != null`): al eliminar se devuelve el importe al `montoImpago` de la reserva y se ajusta su `pago`/`estado` según el estado:
-  - **PENDIENTE / EN_CURSO**: se elimina el ingreso, `montoImpago += importe`, `pago` pasa a `false` si estaba en `true`; el estado no cambia → **204**.
+  - **PENDIENTE / EN_CURSO / VENCIDA_SIN_PAGO**: se elimina el ingreso, `montoImpago += importe`, `pago` pasa a `false` si estaba en `true`; el estado no cambia → **204**.
   - **CONFIRMADA**: además de lo anterior, si la reserva `requiereSena == true` y tras la devolución el saldo pagado queda por debajo del 50% del importe total, el estado vuelve a **PENDIENTE**; si `requiereSena == false`, permanece **CONFIRMADA** → **204**.
   - **FINALIZADA / CANCELADA**:
     - Con `confirmar = false` (o ausente) → **428 `CONFIRMACION_ELIMINACION_REQUERIDA`**; no se elimina nada ni se modifica la reserva. Se sugiere registrar un egreso asociado en su lugar; el front usa este error para mostrar la advertencia con las opciones "registrar egreso" / "eliminar de todas formas".
