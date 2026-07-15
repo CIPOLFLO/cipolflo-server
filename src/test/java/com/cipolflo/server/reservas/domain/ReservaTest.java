@@ -444,4 +444,38 @@ class ReservaTest {
 
         assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
     }
+
+    @Test
+    void cambiarEstadoDeberiaPermitirEnCursoAVencidaSinPago() {
+        Reserva reserva = crearComun(false, false);
+
+        reserva.cambiarEstado(EstadoReserva.EN_CURSO);
+        reserva.cambiarEstado(EstadoReserva.VENCIDA_SIN_PAGO);
+
+        assertEquals(EstadoReserva.VENCIDA_SIN_PAGO, reserva.getEstado());
+    }
+
+    @Test
+    void cambiarEstadoDeberiaPermitirVencidaSinPagoAFinalizada() {
+        Reserva reserva = crearComun(false, false);
+
+        reserva.cambiarEstado(EstadoReserva.EN_CURSO);
+        reserva.cambiarEstado(EstadoReserva.VENCIDA_SIN_PAGO);
+        reserva.cambiarEstado(EstadoReserva.FINALIZADA);
+
+        assertEquals(EstadoReserva.FINALIZADA, reserva.getEstado());
+    }
+
+    @Test
+    void cambiarEstadoDeberiaLanzarExcepcionEnTransicionInvalidaDesdeVencidaSinPago() {
+        Reserva reserva = crearComun(false, false);
+
+        reserva.cambiarEstado(EstadoReserva.EN_CURSO);
+        reserva.cambiarEstado(EstadoReserva.VENCIDA_SIN_PAGO);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> reserva.cambiarEstado(EstadoReserva.CANCELADA)
+        );
+    }
 }

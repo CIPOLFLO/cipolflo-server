@@ -203,7 +203,9 @@ public class Reserva extends AuditableEntity {
             case CONFIRMADA  -> nuevoEstado == EstadoReserva.EN_CURSO
                     || nuevoEstado == EstadoReserva.CANCELADA
                     || nuevoEstado == EstadoReserva.PENDIENTE;
-            case EN_CURSO    -> nuevoEstado == EstadoReserva.FINALIZADA;
+            case EN_CURSO         -> nuevoEstado == EstadoReserva.FINALIZADA
+                    || nuevoEstado == EstadoReserva.VENCIDA_SIN_PAGO;
+            case VENCIDA_SIN_PAGO -> nuevoEstado == EstadoReserva.FINALIZADA;
             case FINALIZADA, CANCELADA -> false;
         };
     }
