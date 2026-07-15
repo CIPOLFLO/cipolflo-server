@@ -58,6 +58,7 @@ de tres líneas; el trazado en base queda gratis.
 |---|---|---|
 | `reservas/scheduled/ReporteSemanalReservasScheduler` | `ReporteSemanalReservasService` | Mail con las reservas de la semana. |
 | `shared/mantenimiento/LimpiezaLogsEmailScheduler` | `LimpiezaLogsEmailService` | Purga de `envio_emails_logs` viejos. |
+| `reservas/scheduled/TransicionEstadoReservasPorFechaScheduler` | `TransicionEstadoReservasPorFechaService` | Pasa reservas a EN_CURSO/FINALIZADA/VENCIDA_SIN_PAGO según la fecha. |
 
 ---
 
@@ -167,6 +168,10 @@ cipolflo.reportes.reservas-semanal.destinatario=${REPORTE_RESERVAS_DESTINATARIO:
 cipolflo.tareas.limpieza-logs-email.cron=0 0 5 * * SUN
 cipolflo.tareas.limpieza-logs-email.zona=America/Montevideo
 cipolflo.tareas.limpieza-logs-email.retencion-dias=90
+
+# Transicion de estados de reservas por fecha: todos los dias 00:00 (hora de Uruguay).
+cipolflo.tareas.transicion-estado-reservas.cron=0 0 0 * * *
+cipolflo.tareas.transicion-estado-reservas.zona=America/Montevideo
 ```
 
 Cada tarea bindea sus properties con un record `@ConfigurationProperties` (patrón
@@ -205,6 +210,20 @@ en `envio_emails_logs`** (ver [Envío de Emails](envio-emails.md)). Si el SMTP f
 Los **domingos 05:00** elimina de `envio_emails_logs` los registros con más de **90 días**
 (configurable), usando `deleteByCreatedAtBefore` sobre el índice de `created_at`. Es
 idempotente: si no hay vencidos, no borra nada.
+
+### Transición de estados de reservas por fecha
+
+Corre **todos los días a las 00:00** (hora de Uruguay) y mueve reservas de estado según
+la fecha de hoy:
+
+1. **CONFIRMADA → EN_CURSO**: reservas cuya `fechaEntrada` es hoy.
+2. **EN_CURSO → FINALIZADA** (si `estaPaga()`) **o VENCIDA_SIN_PAGO** (si no): reservas
+   cuya `fechaSalida` fue ayer, es decir que terminaron el día anterior a que corre la
+   tarea.
+
+`VENCIDA_SIN_PAGO` es finalizable manualmente (`esFinalizable()` la incluye junto con
+`EN_CURSO`), pero no cuenta como estado "ocupante" del servicio (`esOcupante()`): al
+llegar a ese estado la estadía ya terminó, solo falta cobrar.
 
 ---
 

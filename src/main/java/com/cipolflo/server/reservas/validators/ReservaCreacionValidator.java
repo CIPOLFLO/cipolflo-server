@@ -16,16 +16,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Component
 public class ReservaCreacionValidator {
-
-    private static final List<EstadoReserva> ESTADOS_OCUPANTES = List.of(
-            EstadoReserva.PENDIENTE,
-            EstadoReserva.CONFIRMADA,
-            EstadoReserva.EN_CURSO
-    );
 
     private final ReservaRepository reservaRepository;
     private final ServicioRepository servicioRepository;
@@ -107,7 +100,7 @@ public class ReservaCreacionValidator {
         boolean solapado = reservaRepository
                 .existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                         dto.getServicioId(),
-                        ESTADOS_OCUPANTES,
+                        EstadoReserva.ESTADOS_OCUPANTES,
                         dto.getFechaFin(),
                         dto.getFechaInicio()
                 );

@@ -94,6 +94,18 @@ class ReporteSemanalReservasServiceTest {
     }
 
     @Test
+    void enCurso_incluyeVencidaSinPagoQueEmpezoAntesYSigueDentroDeLaSemana() {
+        Reserva vencidaSinPago = reserva(EstadoReserva.VENCIDA_SIN_PAGO, 4L,
+                LocalDate.of(2026, Month.JULY, 3), LocalDate.of(2026, Month.JULY, 9));
+
+        ReservasSemana resultado = ReporteSemanalReservasService.categorizar(
+                List.of(vencidaSinPago), LUNES, DOMINGO);
+
+        assertEquals(1, resultado.enCurso().size());
+        assertTrue(resultado.enCurso().contains(vencidaSinPago));
+    }
+
+    @Test
     void confirmadas_incluyeConfirmadasQueInicianEnLaSemana() {
         Reserva iniciaMitadSemana = reserva(EstadoReserva.CONFIRMADA, 1L,
                 LocalDate.of(2026, Month.JULY, 8), LocalDate.of(2026, Month.JULY, 15));
