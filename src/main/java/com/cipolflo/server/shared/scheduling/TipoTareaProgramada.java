@@ -7,5 +7,6 @@ package com.cipolflo.server.shared.scheduling;
 public enum TipoTareaProgramada {
     REPORTE_SEMANAL_RESERVAS,
     LIMPIEZA_LOGS_EMAIL,
-    TRANSICION_ESTADO_RESERVAS_POR_FECHA
+    TRANSICION_ESTADO_RESERVAS_POR_FECHA,
+    LIMPIEZA_RESERVAS_Y_FINANZAS
 }
