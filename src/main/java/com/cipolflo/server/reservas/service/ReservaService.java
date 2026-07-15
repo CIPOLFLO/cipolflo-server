@@ -175,7 +175,7 @@ public class ReservaService implements IReservaService {
                 Boolean.TRUE.equals(dto.getRequiereDocumentacion()),
                 Boolean.TRUE.equals(dto.getRequiereSena()),
                 calculoCosto.costoTotal(),
-                dto.getFechaLimite()
+                null // TODO(DEV-162): reemplazar por plazoConfirmacion cuando se actualice Reserva.crear()
         );
 
         Reserva guardada = reservaRepository.save(reserva);
