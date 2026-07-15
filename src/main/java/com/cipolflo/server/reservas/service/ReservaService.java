@@ -175,7 +175,7 @@ public class ReservaService implements IReservaService {
                 Boolean.TRUE.equals(dto.getRequiereDocumentacion()),
                 Boolean.TRUE.equals(dto.getRequiereSena()),
                 calculoCosto.costoTotal(),
-                null // TODO(DEV-162): reemplazar por plazoConfirmacion cuando se actualice Reserva.crear()
+                dto.getPlazoConfirmacion()
         );
 
         Reserva guardada = reservaRepository.save(reserva);
@@ -247,7 +247,11 @@ public class ReservaService implements IReservaService {
                 r.getRequiereDocumentacion(),
                 r.getTieneDocumentacion(),
                 r.getMontoImpago(),
-                r.getFechaLimitePago()
+                r.getPlazoConfirmacion(),
+                r.getFechaLimiteConfirmacion(),
+                r.getFechaInicioAlerta(),
+                r.getRequiereSena(),
+                r.getPago()
         ));
 
         return PaginationMapper.toPageResponse(dtoPage);
@@ -368,6 +372,8 @@ public class ReservaService implements IReservaService {
                 "Cantidad articulos",
                 "Requiere documentación",
                 "Tiene documentación",
+                "Plazo de confirmación",
+                "Fecha límite de confirmación",
                 "Notas"
         );
 
@@ -379,7 +385,7 @@ public class ReservaService implements IReservaService {
                 ))
                 .toList();
 
-        int[] anchos = {3000, 8000, 6000, 6000, 6000, 6000, 5000, 5000, 8000, 8000, 5000, 6000, 6000, 5000, 5000, 5000, 7000, 7000, 8000};
+        int[] anchos = {3000, 8000, 6000, 6000, 6000, 6000, 5000, 5000, 8000, 8000, 5000, 6000, 6000, 5000, 5000, 5000, 7000, 7000, 9000, 8000};
 
         byte[] contenido = exportService.generarExcel("Reservas", encabezados, filas, anchos);
 

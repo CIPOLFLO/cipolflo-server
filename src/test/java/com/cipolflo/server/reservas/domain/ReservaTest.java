@@ -1,12 +1,15 @@
 package com.cipolflo.server.reservas.domain;
 
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
-
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -443,5 +446,110 @@ class ReservaTest {
         reserva.cambiarEstado(EstadoReserva.PENDIENTE);
 
         assertEquals(EstadoReserva.PENDIENTE, reserva.getEstado());
+    }
+    // ── PlazoConfirmacion / fechaLimiteConfirmacion ──────────────────────────
+
+    private Reserva crearConPlazo(PlazoConfirmacion plazoConfirmacion, LocalDate fechaEntrada, LocalTime horaInicio) {
+        return Reserva.crear(
+                TipoReserva.COMUN,
+                5L,
+                10L,
+                Procedencia.CAMPING,
+                fechaEntrada,
+                fechaEntrada.plusDays(2),
+                horaInicio,
+                horaInicio != null ? horaInicio.plusHours(1) : null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                true,
+                BigDecimal.valueOf(2000),
+                plazoConfirmacion
+        );
+    }
+
+    @Test
+    void crearSinPlazoConfirmacionDejaFechaLimiteConfirmacionNull() {
+        Reserva reserva = crearComun(true, true);
+
+        assertNull(reserva.getPlazoConfirmacion());
+        assertNull(reserva.getFechaLimiteConfirmacion());
+        assertNull(reserva.getFechaInicioAlerta());
+    }
+
+    @Test
+    void crearConPlazoVeinticuatroHorasCalculaFechaLimiteConfirmacionSinHoraInicio() {
+        LocalDate fechaEntrada = LocalDate.of(2026, 7, 13);
+        Reserva reserva = crearConPlazo(PlazoConfirmacion.VEINTICUATRO_HORAS, fechaEntrada, null);
+
+        assertEquals(PlazoConfirmacion.VEINTICUATRO_HORAS, reserva.getPlazoConfirmacion());
+        assertEquals(LocalDateTime.of(2026, 7, 12, 0, 0), reserva.getFechaLimiteConfirmacion());
+    }
+
+    @Test
+    void crearConPlazoUsaHoraInicioParaCalcularElInicioDeLaReserva() {
+        LocalDate fechaEntrada = LocalDate.of(2026, 7, 13);
+        Reserva reserva = crearConPlazo(PlazoConfirmacion.VEINTICUATRO_HORAS, fechaEntrada, LocalTime.of(14, 0));
+
+        // inicioReserva = 13-jul 14:00 → límite = 12-jul 14:00 (no medianoche)
+        assertEquals(LocalDateTime.of(2026, 7, 12, 14, 0), reserva.getFechaLimiteConfirmacion());
+    }
+
+    @Test
+    void crearConPlazoTresMesesReproduceElEjemploDelTicket() {
+        LocalDate fechaEntrada = LocalDate.of(2026, 6, 7);
+        Reserva reserva = crearConPlazo(PlazoConfirmacion.TRES_MESES, fechaEntrada, null);
+
+        assertEquals(LocalDateTime.of(2026, 3, 7, 0, 0), reserva.getFechaLimiteConfirmacion());
+        assertEquals(LocalDateTime.of(2026, 2, 28, 0, 0), reserva.getFechaInicioAlerta());
+    }
+
+    @Test
+    void getFechaInicioAlertaEsNullCuandoNoHayPlazoConfirmacion() {
+        Reserva reserva = crearComun(false, false);
+
+        assertNull(reserva.getFechaInicioAlerta());
+    }
+
+    @Test
+    void modificarRecalculaFechaLimiteConfirmacionSegunLaNuevaFechaEntrada() {
+        LocalDate fechaEntradaOriginal = LocalDate.of(2026, 7, 13);
+        Reserva reserva = crearConPlazo(PlazoConfirmacion.VEINTICUATRO_HORAS, fechaEntradaOriginal, null);
+        assertEquals(LocalDateTime.of(2026, 7, 12, 0, 0), reserva.getFechaLimiteConfirmacion());
+
+        LocalDate nuevaFechaEntrada = LocalDate.of(2026, 8, 20);
+        reserva.modificar(
+                20L,
+                Procedencia.CAMPING,
+                nuevaFechaEntrada,
+                nuevaFechaEntrada.plusDays(2),
+                4,
+                1,
+                null,
+                "nota nueva"
+        );
+
+        assertEquals(LocalDateTime.of(2026, 8, 19, 0, 0), reserva.getFechaLimiteConfirmacion());
+    }
+
+    @Test
+    void modificarSinPlazoConfirmacionMantieneFechaLimiteConfirmacionNull() {
+        Reserva reserva = crearComun(false, false);
+        assertNull(reserva.getFechaLimiteConfirmacion());
+
+        reserva.modificar(
+                20L,
+                Procedencia.CAMPING,
+                LocalDate.now().plusDays(10),
+                LocalDate.now().plusDays(12),
+                4,
+                1,
+                null,
+                "nota nueva"
+        );
+
+        assertNull(reserva.getFechaLimiteConfirmacion());
     }
 }

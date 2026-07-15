@@ -28,7 +28,7 @@ class ComprobanteReservaContenidoPdfTest {
 
     @Test
     void deberiaArmarComprobanteConHorarioSinExcepciones() {
-        ReservaDetalleResponseDto detalle = detalle(LocalTime.of(10, 0), LocalTime.of(12, 0));
+        ReservaDetalleResponseDto detalle = detalle(LocalTime.of(10, 0), LocalTime.of(12, 0), null);
         ComprobanteReservaContenidoPdf contenido = new ComprobanteReservaContenidoPdf(detalle);
 
         byte[] pdf = assertDoesNotThrow(() -> generator.generar(contenido));
@@ -39,7 +39,7 @@ class ComprobanteReservaContenidoPdfTest {
     @Test
     void deberiaArmarComprobanteSinHorarioSinExcepciones() {
         // horaInicio/horaFin son opcionales.
-        ReservaDetalleResponseDto detalle = detalle(null, null);
+        ReservaDetalleResponseDto detalle = detalle(null, null, null);
         ComprobanteReservaContenidoPdf contenido = new ComprobanteReservaContenidoPdf(detalle);
 
         byte[] pdf = assertDoesNotThrow(() -> generator.generar(contenido));
@@ -83,11 +83,7 @@ class ComprobanteReservaContenidoPdfTest {
                 20L, "Antel S.A.", null, "211003420017", "099222222", "empresa@mail.com", TipoCliente.EMPRESA);
     }
 
-    private ReservaDetalleResponseDto detalle(LocalTime horaInicio, LocalTime horaFin) {
-        return detalle(horaInicio, horaFin, clienteSocio());
-    }
-
-    private ReservaDetalleResponseDto detalle(LocalTime horaInicio, LocalTime horaFin,
+   private ReservaDetalleResponseDto detalle(LocalTime horaInicio, LocalTime horaFin,
                                               ClienteDetalleReservaDto cliente) {
         ServicioDetalleReservaDto servicio = new ServicioDetalleReservaDto(
                 3L, "Cabaña del río", Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
@@ -106,6 +102,7 @@ class ComprobanteReservaContenidoPdfTest {
                 BigDecimal.ZERO,
                 true,
                 false, false, false,
+                null, null,
                 "Llegan a las 14hs",
                 cliente, servicio,
                 null, null, null, null);

@@ -1,6 +1,7 @@
 package com.cipolflo.server.reservas.dto;
 
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.shared.dto.ResponseDto;
 import lombok.Getter;
 
@@ -10,7 +11,6 @@ import java.time.LocalDateTime;
 
 @Getter
 public class ListadoReservasResponseDto implements ResponseDto {
-
     private final Long id;
     private final Long clienteId;
     private final String nombreCliente;
@@ -22,7 +22,11 @@ public class ListadoReservasResponseDto implements ResponseDto {
     private final boolean requiereDocumentacion;
     private final boolean tieneDocumentacion;
     private final BigDecimal montoImpago;
-    private final LocalDateTime fechaLimitePago;
+    private final PlazoConfirmacion plazoConfirmacion;
+    private final LocalDateTime fechaLimiteConfirmacion;
+    private final LocalDateTime fechaInicioAlerta;
+    private final boolean requiereSena;
+    private final boolean pago;
 
     public ListadoReservasResponseDto(
             Long id,
@@ -36,8 +40,12 @@ public class ListadoReservasResponseDto implements ResponseDto {
             boolean requiereDocumentacion,
             boolean tieneDocumentacion,
             BigDecimal montoImpago,
-            LocalDateTime fechaLimitePago
-    ){
+            PlazoConfirmacion plazoConfirmacion,
+            LocalDateTime fechaLimiteConfirmacion,
+            LocalDateTime fechaInicioAlerta,
+            boolean requiereSena,
+            boolean pago
+    ) {
         this.id = id;
         this.clienteId = clienteId;
         this.nombreCliente = nombreCliente;
@@ -49,6 +57,10 @@ public class ListadoReservasResponseDto implements ResponseDto {
         this.requiereDocumentacion = requiereDocumentacion;
         this.tieneDocumentacion = tieneDocumentacion;
         this.montoImpago = montoImpago;
-        this.fechaLimitePago = fechaLimitePago;
+        this.plazoConfirmacion = plazoConfirmacion;
+        this.fechaLimiteConfirmacion = fechaLimiteConfirmacion;
+        this.fechaInicioAlerta = fechaInicioAlerta;
+        this.requiereSena = requiereSena;
+        this.pago = pago;
     }
 }
