@@ -2,6 +2,7 @@ package com.cipolflo.server.servicios.service;
 
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.reservas.domain.Reserva;
+import com.cipolflo.server.reservas.events.MotivoCancelacionReserva;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
@@ -166,7 +167,7 @@ public class ServicioService implements IServicioService {
         validarQueSeanReservasProximas(reservasSeleccionadasValidas, idsAcancelar);
         validarConfirmacionDevolucion(reservasSeleccionadasValidas, request);
 
-        reservaService.cancelarTodas(reservasSeleccionadasValidas);
+        reservaService.cancelarTodas(reservasSeleccionadasValidas, MotivoCancelacionReserva.INHABILITACION_SERVICIO);
     }
 
     private void validarQueSeanReservasProximas(List<Reserva> reservasSeleccionadasValidas, Set<Long> idsAcancelar) {

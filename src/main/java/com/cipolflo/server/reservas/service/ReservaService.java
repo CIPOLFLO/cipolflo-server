@@ -14,6 +14,8 @@ import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.repository.ReservaSpecification;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
+import com.cipolflo.server.reservas.events.MotivoCancelacionReserva;
+import com.cipolflo.server.reservas.events.ReservaCanceladaEvent;
 import com.cipolflo.server.reservas.events.ReservaCreadaEvent;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
@@ -116,9 +118,12 @@ public class ReservaService implements IReservaService {
     }
 
     @Override
-    public void cancelarTodas(List<Reserva> reservas) {
+    public void cancelarTodas(List<Reserva> reservas, MotivoCancelacionReserva motivo) {
         reservas.forEach(Reserva::cancelar);
         reservaRepository.saveAll(reservas);
+
+        List<Long> reservaIds = reservas.stream().map(Reserva::getId).toList();
+        eventPublisher.publishEvent(new ReservaCanceladaEvent(reservaIds, motivo));
     }
 
     @Override
@@ -128,7 +133,7 @@ public class ReservaService implements IReservaService {
                 LocalDate.now(ZonaHoraria.URUGUAY),
                 List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA)
         );
-        cancelarTodas(reservas);
+        cancelarTodas(reservas, MotivoCancelacionReserva.BAJA_SOCIO);
     }
 
     @Override
