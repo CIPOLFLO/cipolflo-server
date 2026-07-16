@@ -7,7 +7,6 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.shared.dto.AuditInfoDto;
 import com.cipolflo.server.shared.dto.ResponseDto;
 import lombok.Getter;
-import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
 import java.time.Instant;
 import java.time.LocalDate;
 
