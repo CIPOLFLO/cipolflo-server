@@ -49,49 +49,43 @@ POR_DIA | POR_PERSONA | POR_DIA_POR_PERSONA | POR_UNIDAD | POR_HORA
 
 ```
 PENDIENTE | CONFIRMADA | EN_CURSO | FINALIZADA | CANCELADA
+
+### `PlazoConfirmacion`
+VEINTICUATRO_HORAS | TRES_MESES
+
 ```
+PENDIENTE | CONFIRMADA | EN_CURSO | VENCIDA_SIN_PAGO | FINALIZADA | CANCELADA
+```
+
+> `VENCIDA_SIN_PAGO` no se puede setear vía API: la asigna automáticamente una tarea programada diaria a las reservas `EN_CURSO` cuya `fechaSalida` ya pasó y siguen sin estar pagas. Se cierra (pasa a `FINALIZADA`) con `PATCH /api/v1/reservas/{id}/finalizacion`, igual que una reserva `EN_CURSO`.
 
 ### `TipoCliente`
 
-```
+> Plazo para confirmar (pagar seña y/o entregar documentación) una reserva antes de que se
+> cancele automáticamente. Solo aplica cuando `requiereSena` y/o `requiereDocumentacion` son
+> `true`. `VEINTICUATRO_HORAS` cancela 24 hs antes del inicio de la reserva; `TRES_MESES`
+> cancela 3 meses antes.
+
+### `TipoCliente`
 SOCIO | PARTICULAR | EMPRESA
-```
 
 ### `EstadoSocio`
-
-```
 ACTIVO | INACTIVO | DE_BAJA
-```
 
 ### `MetodoCobro`
-
-```
 COBRADORA | DESCUENTO_SALARIAL | TRANSFERENCIA | EN_SEDE | EFECTIVO
-```
 
 ### `TipoMovimiento`
-
-```
 INGRESO | EGRESO
-```
 
 ### `TipoReserva`
-
-```
 COMUN | COLABORACION_SIN_FINES_DE_LUCRO
-```
 
 ### `FormaPago`
-
-```
 EFECTIVO | TRANSFERENCIA | DEBITO | CREDITO
-```
 
 ### `Concepto`
-
-```
 PAGO_RESERVA | PAGO_CUOTA | UTE | OSE | ANTEL | SUELDOS | BARRACA | OTROS
-```
 
 ---
 
@@ -100,11 +94,11 @@ PAGO_RESERVA | PAGO_CUOTA | UTE | OSE | ANTEL | SUELDOS | BARRACA | OTROS
 ### `PageRequestDto` — query params de paginación
 
 | Campo       | Tipo    | Obligatorio | Validación                        | Default |
-| ----------- | ------- | ----------- | --------------------------------- | ------- |
-| `page`      | integer | No          | >= 0                              | 0       |
-| `size`      | integer | No          | > 0, máximo 100                   | 1       |
-| `sortField` | string  | No          | Valores permitidos según endpoint | —       |
-| `sortOrder` | string  | No          | `ASC` o `DESC`                    | `ASC`   |
+| ----------- | ------- | ----------- | ---------------------------------- | ------- |
+| `page`      | integer | No          | >= 0                               | 0       |
+| `size`      | integer | No          | > 0, máximo 100                    | 1       |
+| `sortField` | string  | No          | Valores permitidos según endpoint  | —       |
+| `sortOrder` | string  | No          | `ASC` o `DESC`                     | `ASC`   |
 
 > Si `sortField` no se envía o está vacío, los resultados no tienen ordenamiento explícito. Si `sortField` se envía y `sortOrder` se omite, se usa `ASC` por defecto.
 
@@ -317,13 +311,13 @@ Retorna las reservas futuras/activas asociadas al servicio (útil antes de desha
 ```
 
 | Campo          | Tipo               | Descripción                   |
-| -------------- | ------------------ | ----------------------------- |
-| `id`           | integer            | ID de la reserva              |
-| `clienteId`    | integer            | ID del cliente                |
-| `fechaEntrada` | string `LocalDate` | Día de entrada (`yyyy-MM-dd`) |
-| `fechaSalida`  | string `LocalDate` | Día de salida (`yyyy-MM-dd`)  |
-| `pago`         | boolean            | Si la reserva fue pagada      |
-| `estado`       | `EstadoReserva`    | Estado actual de la reserva   |
+| -------------- | ------------------ | ------------------------------ |
+| `id`           | integer            | ID de la reserva               |
+| `clienteId`    | integer            | ID del cliente                 |
+| `fechaEntrada` | string `LocalDate` | Día de entrada (`yyyy-MM-dd`)  |
+| `fechaSalida`  | string `LocalDate` | Día de salida (`yyyy-MM-dd`)   |
+| `pago`         | boolean            | Si la reserva fue pagada       |
+| `estado`       | `EstadoReserva`    | Estado actual de la reserva    |
 
 ---
 
@@ -336,9 +330,9 @@ Retorna las reservas activas del servicio que se solapan con la ventana `[desde,
 **Query params:**
 
 | Param   | Tipo                | Descripción                              |
-| ------- | ------------------- | ---------------------------------------- |
-| `desde` | string `yyyy-MM-dd` | obligatorio, inicio de la ventana        |
-| `hasta` | string `yyyy-MM-dd` | obligatorio, fin de la ventana inclusive |
+| ------- | ------------------- | ------------------------------------------ |
+| `desde` | string `yyyy-MM-dd` | obligatorio, inicio de la ventana         |
+| `hasta` | string `yyyy-MM-dd` | obligatorio, fin de la ventana inclusive  |
 
 **Reglas:**
 
@@ -360,20 +354,20 @@ Retorna las reservas activas del servicio que se solapan con la ventana `[desde,
 ]
 ```
 
-| Campo         | Tipo               | Descripción                   |
-| ------------- | ------------------ | ----------------------------- |
-| `reservaId`   | integer            | ID de la reserva ocupante     |
-| `estado`      | `EstadoReserva`    | Estado de la reserva          |
-| `fechaInicio` | string `LocalDate` | Día de entrada (`yyyy-MM-dd`) |
-| `fechaFin`    | string `LocalDate` | Día de salida (`yyyy-MM-dd`)  |
+| Campo         | Tipo               | Descripción                    |
+| ------------- | ------------------ | ------------------------------- |
+| `reservaId`   | integer            | ID de la reserva ocupante       |
+| `estado`      | `EstadoReserva`    | Estado de la reserva            |
+| `fechaInicio` | string `LocalDate` | Día de entrada (`yyyy-MM-dd`)   |
+| `fechaFin`    | string `LocalDate` | Día de salida (`yyyy-MM-dd`)    |
 
 **Errores:**
 
 | Status | Código                   | Caso                       |
-| ------ | ------------------------ | -------------------------- |
-| 400    | `ID_INVALIDO`            | `id` no es entero positivo |
-| 400    | `RANGO_FECHAS_INVALIDO`  | `desde` > `hasta`          |
-| 404    | `SERVICIO_NO_ENCONTRADO` | el servicio no existe      |
+| ------ | ------------------------ | --------------------------- |
+| 400    | `ID_INVALIDO`            | `id` no es entero positivo  |
+| 400    | `RANGO_FECHAS_INVALIDO`  | `desde` > `hasta`           |
+| 404    | `SERVICIO_NO_ENCONTRADO` | el servicio no existe       |
 
 ---
 
@@ -502,15 +496,15 @@ Retorna el listado paginado de clientes con filtros opcionales.
 **Query params** (todos opcionales):
 
 | Param           | Tipo          | Validación                                                                                                                       |
-| --------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `tipoCliente`   | `TipoCliente` | —                                                                                                                                |
-| `nombre`        | string        | máx 100 caracteres                                                                                                               |
+| --------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `tipoCliente`   | `TipoCliente` | —                                                                                                                                 |
+| `nombre`        | string        | máx 100 caracteres                                                                                                                |
 | `identificador` | string        | Solo dígitos (`12345678`) o formato parcial de cédula (`1.234`, `1.234.567-8`). Cualquier otro formato devuelve resultado vacío. |
-| `estado`        | `EstadoSocio` | Solo aplica a socios; combinarlo con `tipoCliente=PARTICULAR` devuelve resultado vacío                                           |
-| `page`          | integer       | >= 0, default 0                                                                                                                  |
-| `size`          | integer       | 1–100, default 1                                                                                                                 |
-| `sortField`     | string        | `nombreCompleto`, `cedula`, `numeroSocio`                                                                                        |
-| `sortOrder`     | string        | `ASC` o `DESC`, default `ASC`                                                                                                    |
+| `estado`        | `EstadoSocio` | Solo aplica a socios; combinarlo con `tipoCliente=PARTICULAR` devuelve resultado vacío                                            |
+| `page`          | integer       | >= 0, default 0                                                                                                                   |
+| `size`          | integer       | 1–100, default 1                                                                                                                  |
+| `sortField`     | string        | `nombreCompleto`, `cedula`, `numeroSocio`                                                                                         |
+| `sortOrder`     | string        | `ASC` o `DESC`, default `ASC`                                                                                                     |
 
 > El campo `identificador` busca por cédula, por número de socio o por RUT (clientes `EMPRESA`) usando el prefijo del valor ingresado (ej: `123` devuelve clientes cuya cédula, nro de socio o RUT comience con `123`). Los puntos y guiones del formato se normalizan automáticamente antes de la búsqueda.
 
@@ -625,10 +619,10 @@ Busca una empresa por su RUT. Es el punto de entrada del flujo de reserva para c
 **Errores:**
 
 | HTTP Status | Código                  | Cuándo ocurre                                        |
-|-------------|-------------------------|------------------------------------------------------|
-| 400         | `RUT_INVALIDO`          | El RUT no cumple el algoritmo de validación uruguayo |
-| 404         | `CLIENTE_NO_ENCONTRADO` | No existe una empresa registrada con ese RUT         |
-| 401         | —                       | Token ausente, inválido o expirado                   |
+|-------------|--------------------------|--------------------------------------------------------|
+| 400         | `RUT_INVALIDO`          | El RUT no cumple el algoritmo de validación uruguayo  |
+| 404         | `CLIENTE_NO_ENCONTRADO` | No existe una empresa registrada con ese RUT          |
+| 401         | —                       | Token ausente, inválido o expirado                     |
 
 ---
 
@@ -643,9 +637,9 @@ Da de baja a un socio y cancela automáticamente todas sus reservas futuras en e
 **Errores:**
 
 | HTTP Status | Código                | Cuándo ocurre                    |
-| ----------- | --------------------- | -------------------------------- |
-| 400         | `ID_INVALIDO`         | El `id` no es un número positivo |
-| 404         | `SOCIO_NO_ENCONTRADO` | No existe un socio con ese `id`  |
+| ----------- | ---------------------- | ---------------------------------- |
+| 400         | `ID_INVALIDO`         | El `id` no es un número positivo  |
+| 404         | `SOCIO_NO_ENCONTRADO` | No existe un socio con ese `id`   |
 
 ---
 
@@ -668,10 +662,10 @@ Devuelve el estado actual de un socio puntual (`ACTIVO`, `INACTIVO` o `DE_BAJA`)
 
 **Errores:**
 
-| HTTP Status | Código                | Cuándo ocurre                                                               |
-| ----------- | --------------------- | --------------------------------------------------------------------------- |
-| 400         | `ID_INVALIDO`         | El `id` no es un número positivo                                            |
-| 404         | `SOCIO_NO_ENCONTRADO` | No existe un socio con ese `id` (inexistente o corresponde a un particular) |
+| HTTP Status | Código                | Cuándo ocurre                                                                |
+| ----------- | ---------------------- | ------------------------------------------------------------------------------ |
+| 400         | `ID_INVALIDO`         | El `id` no es un número positivo                                              |
+| 404         | `SOCIO_NO_ENCONTRADO` | No existe un socio con ese `id` (inexistente o corresponde a un particular)   |
 
 ---
 
@@ -694,12 +688,12 @@ Modifica los datos de un cliente particular.
 ```
 
 | Campo            | Tipo   | Obligatorio | Validación                                    |
-| ---------------- | ------ | ----------- | --------------------------------------------- |
-| `cedula`         | string | Sí          | no vacío, algoritmo de cédula uruguaya, única |
-| `nombreCompleto` | string | Sí          | no vacío                                      |
-| `telefono`       | string | Sí          | no vacío                                      |
-| `mail`           | string | No          | formato email válido si se envía, único       |
-| `notas`          | string | No          | —                                             |
+| ---------------- | ------ | ----------- | ----------------------------------------------- |
+| `cedula`         | string | Sí          | no vacío, algoritmo de cédula uruguaya, única  |
+| `nombreCompleto` | string | Sí          | no vacío                                       |
+| `telefono`       | string | Sí          | no vacío                                       |
+| `mail`           | string | No          | formato email válido si se envía, único        |
+| `notas`          | string | No          | —                                               |
 
 **Respuestas:**
 
@@ -734,18 +728,18 @@ Modifica los datos de un socio.
 ```
 
 | Campo             | Tipo          | Obligatorio | Validación                                    |
-| ----------------- | ------------- | ----------- | --------------------------------------------- |
-| `cedula`          | string        | Sí          | no vacío, algoritmo de cédula uruguaya, única |
-| `nombreCompleto`  | string        | Sí          | no vacío                                      |
-| `telefono`        | string        | Sí          | no vacío                                      |
-| `mail`            | string        | No          | formato email válido si se envía, único       |
-| `notas`           | string        | No          | —                                             |
-| `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                  |
-| `pais`            | string        | Sí          | no vacío                                      |
-| `departamento`    | string        | Sí          | no vacío                                      |
-| `ciudad`          | string        | Sí          | no vacío                                      |
-| `direccion`       | string        | Sí          | no vacío                                      |
-| `metodoCobro`     | `MetodoCobro` | Sí          | —                                             |
+| ----------------- | ------------- | ----------- | ----------------------------------------------- |
+| `cedula`          | string        | Sí          | no vacío, algoritmo de cédula uruguaya, única  |
+| `nombreCompleto`  | string        | Sí          | no vacío                                       |
+| `telefono`        | string        | Sí          | no vacío                                       |
+| `mail`            | string        | No          | formato email válido si se envía, único        |
+| `notas`           | string        | No          | —                                               |
+| `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                   |
+| `pais`            | string        | Sí          | no vacío                                       |
+| `departamento`    | string        | Sí          | no vacío                                       |
+| `ciudad`          | string        | Sí          | no vacío                                       |
+| `direccion`       | string        | Sí          | no vacío                                       |
+| `metodoCobro`     | `MetodoCobro` | Sí          | —                                               |
 
 > Campos no modificables: `numeroSocio`, `estado`, `fechaIngreso`, `mesesSinPagar`, `fechaUltimoPago`.
 
@@ -780,18 +774,18 @@ Registra un nuevo cliente de tipo socio.
 ```
 
 | Campo             | Tipo          | Obligatorio | Validación                                                 |
-| ----------------- | ------------- | ----------- | ---------------------------------------------------------- |
-| `cedula`          | string        | Sí          | no vacío, algoritmo de cédula uruguaya, única              |
-| `nombreCompleto`  | string        | Sí          | no vacío                                                   |
-| `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                               |
-| `telefono`        | string        | Sí          | no vacío                                                   |
+| ----------------- | ------------- | ----------- | ------------------------------------------------------------ |
+| `cedula`          | string        | Sí          | no vacío, algoritmo de cédula uruguaya, única               |
+| `nombreCompleto`  | string        | Sí          | no vacío                                                    |
+| `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                                |
+| `telefono`        | string        | Sí          | no vacío                                                    |
 | `email`           | string        | No          | formato email válido si se envía, único (case-insensitive) |
-| `metodoCobro`     | `MetodoCobro` | Sí          | —                                                          |
-| `pais`            | string        | Sí          | no vacío                                                   |
-| `departamento`    | string        | Sí          | no vacío                                                   |
-| `ciudad`          | string        | Sí          | no vacío                                                   |
-| `direccion`       | string        | No          | —                                                          |
-| `observaciones`   | string        | No          | —                                                          |
+| `metodoCobro`     | `MetodoCobro` | Sí          | —                                                            |
+| `pais`            | string        | Sí          | no vacío                                                    |
+| `departamento`    | string        | Sí          | no vacío                                                    |
+| `ciudad`          | string        | Sí          | no vacío                                                    |
+| `direccion`       | string        | No          | —                                                            |
+| `observaciones`   | string        | No          | —                                                            |
 
 > La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO`, `mesesSinPagar = 0` y `fechaIngreso` igual a la fecha actual. El `numeroSocio` se asigna de forma incremental.
 
@@ -799,14 +793,14 @@ Registra un nuevo cliente de tipo socio.
 
 **Errores:**
 
-| HTTP Status | Código               | Cuándo ocurre                                               |
-| ----------- | -------------------- | ----------------------------------------------------------- |
-| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante, vacío, o `metodoCobro` inválido |
-| 400         | `CEDULA_INVALIDA`    | La cédula no cumple el algoritmo de validación uruguayo     |
-| 400         | `CEDULA_DUPLICADA`   | Ya existe un cliente con esa cédula                         |
-| 400         | `EMAIL_INVALIDO`     | El email no tiene formato válido                            |
-| 400         | `EMAIL_DUPLICADO`    | Ya existe un cliente con ese email                          |
-| 401         | —                    | Token ausente, inválido o expirado                          |
+| HTTP Status | Código               | Cuándo ocurre                                                |
+| ----------- | --------------------- | --------------------------------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante, vacío, o `metodoCobro` inválido    |
+| 400         | `CEDULA_INVALIDA`    | La cédula no cumple el algoritmo de validación uruguayo        |
+| 400         | `CEDULA_DUPLICADA`   | Ya existe un cliente con esa cédula                             |
+| 400         | `EMAIL_INVALIDO`     | El email no tiene formato válido                                |
+| 400         | `EMAIL_DUPLICADO`    | Ya existe un cliente con ese email                               |
+| 401         | —                    | Token ausente, inválido o expirado                               |
 
 ---
 
@@ -826,11 +820,11 @@ Registra un nuevo cliente de tipo particular.
 ```
 
 | Campo     | Tipo   | Obligatorio | Validación                     |
-| --------- | ------ | ----------- | ------------------------------ |
-| `cedula`  | string | Sí          | no vacío, cédula válida, única |
-| `nombre`  | string | Sí          | no vacío                       |
-| `celular` | string | Sí          | no vacío                       |
-| `mail`    | string | No          | —                              |
+| --------- | ------ | ----------- | -------------------------------- |
+| `cedula`  | string | Sí          | no vacío, cédula válida, única  |
+| `nombre`  | string | Sí          | no vacío                        |
+| `celular` | string | Sí          | no vacío                        |
+| `mail`    | string | No          | —                                |
 
 > El campo celular se persiste como telefono. La cédula se normaliza automáticamente, eliminando puntos y guion.
 
@@ -839,11 +833,11 @@ Registra un nuevo cliente de tipo particular.
 **Errores:**
 
 | HTTP Status | Código               | Cuándo ocurre                              |
-| ----------- | -------------------- | ------------------------------------------ |
-| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o vacío         |
-| 400         | `CEDULA_INVALIDA`    | La cédula no cumple la validación definida |
-| 400         | `CEDULA_DUPLICADA`   | Ya existe un cliente con esa cédula        |
-| 401         | —                    | Token ausente, inválido o expirado         |
+| ----------- | --------------------- | -------------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o vacío           |
+| 400         | `CEDULA_INVALIDA`    | La cédula no cumple la validación definida  |
+| 400         | `CEDULA_DUPLICADA`   | Ya existe un cliente con esa cédula          |
+| 401         | —                    | Token ausente, inválido o expirado           |
 
 ---
 
@@ -867,17 +861,17 @@ Registra un nuevo cliente de tipo empresa.
 }
 ```
 
-| Campo           | Tipo   | Obligatorio | Validación                                 |
-| --------------- | ------ | ----------- | ------------------------------------------ |
-| `razonSocial`   | string | Sí          | no vacío                                   |
-| `rut`           | string | Sí          | no vacío, algoritmo de RUT uruguayo, único |
-| `pais`          | string | Sí          | no vacío                                   |
-| `departamento`  | string | Sí          | no vacío                                   |
-| `ciudad`        | string | Sí          | no vacío                                   |
-| `direccion`     | string | Sí          | no vacío                                   |
-| `telefono`      | string | Sí          | no vacío                                   |
-| `mail`          | string | No          | formato email válido si se envía, único    |
-| `observaciones` | string | No          | —                                          |
+| Campo           | Tipo   | Obligatorio | Validación                                  |
+| --------------- | ------ | ----------- | ---------------------------------------------- |
+| `razonSocial`   | string | Sí          | no vacío                                       |
+| `rut`           | string | Sí          | no vacío, algoritmo de RUT uruguayo, único    |
+| `pais`          | string | Sí          | no vacío                                       |
+| `departamento`  | string | Sí          | no vacío                                       |
+| `ciudad`        | string | Sí          | no vacío                                       |
+| `direccion`     | string | Sí          | no vacío                                       |
+| `telefono`      | string | Sí          | no vacío                                       |
+| `mail`          | string | No          | formato email válido si se envía, único        |
+| `observaciones` | string | No          | —                                               |
 
 > El RUT se normaliza automáticamente (se eliminan puntos y guiones).
 
@@ -886,13 +880,13 @@ Registra un nuevo cliente de tipo empresa.
 **Errores:**
 
 | HTTP Status | Código               | Cuándo ocurre                                        |
-| ----------- | -------------------- | ---------------------------------------------------- |
-| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o vacío                   |
-| 400         | `RUT_INVALIDO`       | El RUT no cumple el algoritmo de validación uruguayo |
-| 400         | `RUT_DUPLICADO`      | Ya existe un cliente con ese RUT                     |
-| 400         | `EMAIL_INVALIDO`     | El email no tiene formato válido                     |
-| 400         | `EMAIL_DUPLICADO`    | Ya existe un cliente con ese email                   |
-| 401         | —                    | Token ausente, inválido o expirado                   |
+| ----------- | --------------------- | ------------------------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o vacío                      |
+| 400         | `RUT_INVALIDO`       | El RUT no cumple el algoritmo de validación uruguayo    |
+| 400         | `RUT_DUPLICADO`      | Ya existe un cliente con ese RUT                         |
+| 400         | `EMAIL_INVALIDO`     | El email no tiene formato válido                         |
+| 400         | `EMAIL_DUPLICADO`    | Ya existe un cliente con ese email                       |
+| 401         | —                    | Token ausente, inválido o expirado                       |
 
 ---
 
@@ -912,7 +906,7 @@ Registra un nuevo cliente de tipo empresa.
   metodoCobro: MetodoCobro    // obligatorio
   pais: string                // obligatorio, no vacío
   departamento: string        // obligatorio, no vacío
-  ciudad: string              // obligatorio, no vacío
+  ciudad: string               // obligatorio, no vacío
   direccion?: string          // opcional
   observaciones?: string      // opcional
 }
@@ -956,11 +950,11 @@ Registra un nuevo cliente de tipo empresa.
   mail?: string               // opcional, formato email válido si se envía, único
   notas?: string              // opcional
   fechaNacimiento: string     // obligatorio, LocalDate yyyy-MM-dd
-  pais: string                // obligatorio, no vacío
-  departamento: string        // obligatorio, no vacío
-  ciudad: string              // obligatorio, no vacío
-  direccion: string           // obligatorio, no vacío
-  metodoCobro: MetodoCobro    // obligatorio
+  pais: string                 // obligatorio, no vacío
+  departamento: string         // obligatorio, no vacío
+  ciudad: string                // obligatorio, no vacío
+  direccion: string             // obligatorio, no vacío
+  metodoCobro: MetodoCobro     // obligatorio
 }
 ```
 
@@ -1071,11 +1065,15 @@ Retorna el listado paginado de reservas con filtros opcionales.
       "servicioNombre": "Cabaña del río",
       "fechaEntrada": "2026-08-10",
       "fechaSalida": "2026-08-15",
-      "estadoReserva": "CONFIRMADA",
+      "estadoReserva": "PENDIENTE",
       "requiereDocumentacion": false,
       "tieneDocumentacion": false,
-      "montoImpago": 0.00,
-      "fechaLimitePago": null
+      "montoImpago": 5000.00,
+      "plazoConfirmacion": "VEINTICUATRO_HORAS",
+      "fechaLimiteConfirmacion": "2026-08-09T00:00:00",
+      "fechaInicioAlerta": "2026-08-08T00:00:00",
+      "requiereSena": true,
+      "pago": false
     }
   ],
   "page": 0,
@@ -1088,13 +1086,15 @@ Retorna el listado paginado de reservas con filtros opcionales.
 ```
 
 > Toda reserva tiene un cliente asociado: `clienteId` y `nombreCliente` nunca son `null`. Las reservas `COLABORACION_SIN_FINES_DE_LUCRO` se asocian a un cliente de tipo `EMPRESA`.
+>
+> `plazoConfirmacion`, `fechaLimiteConfirmacion` y `fechaInicioAlerta` son `null` cuando la reserva no requiere seña ni documentación. El front usa `fechaInicioAlerta`/`fechaLimiteConfirmacion` junto con `estadoReserva`, `requiereSena`, `pago`, `requiereDocumentacion` y `tieneDocumentacion` para mostrar el indicador de alerta de una reserva `PENDIENTE` próxima a cancelarse.
 
 **Errores:**
 
-| HTTP Status | Código               | Cuándo ocurre                                       |
-| ----------- | -------------------- | --------------------------------------------------- |
-| 400         | `SOLICITUD_INVALIDA` | `sortField` inválido o parámetro con valor inválido |
-| 401         | —                    | Token ausente, inválido o expirado                  |
+| HTTP Status | Código               | Cuándo ocurre                                        |
+| ----------- | --------------------- | -------------------------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA` | `sortField` inválido o parámetro con valor inválido      |
+| 401         | —                    | Token ausente, inválido o expirado                        |
 
 ---
 
@@ -1129,40 +1129,42 @@ Crea una nueva reserva. Toda reserva requiere un cliente del sistema y hay dos v
   "celular": null,
   "email": null,
   "notas": "Llegan a las 14hs",
-  "fechaLimite": null
+  "requiereDocumentacion": true,
+  "requiereSena": true,
+  "plazoConfirmacion": "VEINTICUATRO_HORAS"
 }
 ```
 
 | Campo           | Tipo            | Obligatorio | Validación                                                                       |
-|-----------------|-----------------|-------------|----------------------------------------------------------------------------------|
-| `tipoReserva`   | `TipoReserva`   | Sí          | —                                                                                |
-| `procedencia`   | `Procedencia`   | Sí          | —                                                                                |
-| `servicioId`    | integer         | Sí          | > 0, el servicio debe existir y estar habilitado                                 |
-| `fechaInicio`   | string (date)   | Sí          | `yyyy-MM-dd`, no puede ser anterior a hoy                                        |
-| `fechaFin`      | string (date)   | Sí          | `yyyy-MM-dd`, no puede ser anterior a `fechaInicio`                              |
-| `horaInicio`    | string (time)   | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                                |
-| `horaFin`       | string (time)   | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                                |
-| `cantidadTotal` | integer         | No          | >= 0                                                                             |
-| `cantidadMenores`| integer        | No          | >= 0                                                                             |
-| `cantidad`      | integer         | No          | >= 0                                                                             |
+|-----------------|-----------------|-------------|------------------------------------------------------------------------------------|
+| `tipoReserva`   | `TipoReserva`   | Sí          | —                                                                                  |
+| `procedencia`   | `Procedencia`   | Sí          | —                                                                                  |
+| `servicioId`    | integer         | Sí          | > 0, el servicio debe existir y estar habilitado                                  |
+| `fechaInicio`   | string (date)   | Sí          | `yyyy-MM-dd`, no puede ser anterior a hoy                                         |
+| `fechaFin`      | string (date)   | Sí          | `yyyy-MM-dd`, no puede ser anterior a `fechaInicio`                               |
+| `horaInicio`    | string (time)   | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                                 |
+| `horaFin`       | string (time)   | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                                 |
+| `cantidadTotal` | integer         | No          | >= 0                                                                               |
+| `cantidadMenores`| integer        | No          | >= 0                                                                               |
+| `cantidad`      | integer         | No          | >= 0                                                                               |
 | `clienteId`     | integer         | Condicional | Requerido si `crearCliente` no es `true`. El cliente debe existir; si `tipoReserva` es `COLABORACION_SIN_FINES_DE_LUCRO` debe ser de tipo `EMPRESA` |
-| `crearCliente`  | boolean         | No          | Si `true`, se crea un nuevo cliente particular con los campos siguientes         |
-| `tipoCliente`   | `TipoCliente`   | No          | Usado para calcular el costo (precio socio vs. particular)                       |
-| `cedula`        | string          | Condicional | Requerido si `crearCliente: true`                                                |
-| `nombre`        | string          | Condicional | Requerido si `crearCliente: true`                                                |
-| `celular`       | string          | Condicional | Requerido si `crearCliente: true`                                                |
-| `email`         | string          | No          | Solo usado si `crearCliente: true`                                               |
-| `notas`         | string          | No          | —                                                                                |
+| `crearCliente`  | boolean         | No          | Si `true`, se crea un nuevo cliente particular con los campos siguientes           |
+| `tipoCliente`   | `TipoCliente`   | No          | Usado para calcular el costo (precio socio vs. particular)                        |
+| `cedula`        | string          | Condicional | Requerido si `crearCliente: true`                                                  |
+| `nombre`        | string          | Condicional | Requerido si `crearCliente: true`                                                  |
+| `celular`       | string          | Condicional | Requerido si `crearCliente: true`                                                  |
+| `email`         | string          | No          | Solo usado si `crearCliente: true`                                                 |
+| `notas`         | string          | No          | —                                                                                  |
 | `requiereDocumentacion` | boolean | No          | Default `false`. Lo define el usuario al crear la reserva. Si es `true`, la reserva queda `PENDIENTE` hasta recibir la documentación |
 | `requiereSena`  | boolean         | No          | Default `false`. Lo define el usuario al crear la reserva. Si es `true`, la reserva queda `PENDIENTE` hasta pagar al menos el 50% |
-| `fechaLimite`   | string (datetime) | No        | `yyyy-MM-dd'T'HH:mm:ss`; fecha límite para el pago de la reserva. Si no se envía, la reserva no tiene límite de pago |
+| `plazoConfirmacion` | `PlazoConfirmacion` | Condicional | Requerido si `requiereDocumentacion` y/o `requiereSena` son `true`; no debe enviarse si ambos son `false`. Define cuándo se cancela automáticamente la reserva si no se confirma (ver [tarea programada de cancelación automática](tareas-programadas.md)) |
 
 **Estado inicial según tipo de reserva:**
 
 | `tipoReserva`                      | Estado inicial | Importe inicial |
-|------------------------------------|----------------|-----------------|
-| `COMUN`                            | `CONFIRMADA` si `requiereDocumentacion` y `requiereSena` son ambos `false`; en caso contrario `PENDIENTE` | calculado al crear (según servicio y tipo de cliente) |
-| `COLABORACION_SIN_FINES_DE_LUCRO`  | `CONFIRMADA` (siempre, ignora `requiereDocumentacion`/`requiereSena`) | `0`             |
+|--------------------------------------|----------------|-------------------|
+| `COMUN`                              | `CONFIRMADA` si `requiereDocumentacion` y `requiereSena` son ambos `false`; en caso contrario `PENDIENTE` | calculado al crear (según servicio y tipo de cliente) |
+| `COLABORACION_SIN_FINES_DE_LUCRO`    | `CONFIRMADA` (siempre, ignora `requiereDocumentacion`/`requiereSena`) | `0`             |
 
 **Respuesta 201:**
 
@@ -1174,22 +1176,25 @@ Crea una nueva reserva. Toda reserva requiere un cliente del sistema y hay dos v
 
 **Errores:**
 
-| HTTP Status | Código                                 | Cuándo ocurre                                                                                  |
-| ----------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 400         | `SOLICITUD_INVALIDA`                   | Campo obligatorio faltante o con formato inválido (validación Bean Validation)                 |
-| 400         | `FECHA_PASADA`                         | `fechaInicio` es anterior a hoy                                                                |
-| 400         | `FECHA_FIN_ANTERIOR_A_INICIO`          | `fechaFin` < `fechaInicio`                                                                     |
-| 400         | `SERVICIO_NO_DISPONIBLE`               | El servicio no existe o está deshabilitado                                                     |
-| 400         | `FECHAS_SOLAPADAS`                     | El servicio ya tiene una reserva activa en ese período                                         |
-| 400         | `CLIENTE_REQUERIDO`                    | No se envió `clienteId` ni `crearCliente: true`                                                |
-| 400         | `NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE`  | `crearCliente: true` pero `nombre` está vacío                                                  |
-| 400         | `CEDULA_REQUERIDA_PARA_CREAR_CLIENTE`  | `crearCliente: true` pero `cedula` está vacío                                                  |
-| 400         | `CELULAR_REQUERIDO_PARA_CREAR_CLIENTE` | `crearCliente: true` pero `celular` está vacío                                                 |
-| 400         | `CLIENTE_EMPRESA_REQUERIDO_PARA_COLABORACION` | `tipoReserva: COLABORACION_SIN_FINES_DE_LUCRO` con un `clienteId` que no es de tipo `EMPRESA` |
-| 400         | `CEDULA_INVALIDA`                      | La cédula del nuevo cliente no pasa la validación del algoritmo uruguayo                       |
-| 400         | `CEDULA_DUPLICADA`                     | La cédula del nuevo cliente ya existe en el sistema                                            |
-| 404         | `CLIENTE_NO_ENCONTRADO`                | El `clienteId` enviado no existe                                                               |
-| 401         | —                                      | Token ausente, inválido o expirado                                                             |
+| HTTP Status | Código                                        | Cuándo ocurre                                                                                  |
+| ----------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA`                           | Campo obligatorio faltante o con formato inválido (validación Bean Validation)                    |
+| 400         | `FECHA_PASADA`                                  | `fechaInicio` es anterior a hoy                                                                    |
+| 400         | `FECHA_FIN_ANTERIOR_A_INICIO`                   | `fechaFin` < `fechaInicio`                                                                          |
+| 400         | `SERVICIO_NO_DISPONIBLE`                        | El servicio no existe o está deshabilitado                                                         |
+| 400         | `FECHAS_SOLAPADAS`                              | El servicio ya tiene una reserva activa en ese período                                             |
+| 400         | `CLIENTE_REQUERIDO`                             | No se envió `clienteId` ni `crearCliente: true`                                                    |
+| 400         | `NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE`           | `crearCliente: true` pero `nombre` está vacío                                                      |
+| 400         | `CEDULA_REQUERIDA_PARA_CREAR_CLIENTE`           | `crearCliente: true` pero `cedula` está vacío                                                      |
+| 400         | `CELULAR_REQUERIDO_PARA_CREAR_CLIENTE`          | `crearCliente: true` pero `celular` está vacío                                                     |
+| 400         | `CLIENTE_EMPRESA_REQUERIDO_PARA_COLABORACION`   | `tipoReserva: COLABORACION_SIN_FINES_DE_LUCRO` con un `clienteId` que no es de tipo `EMPRESA`      |
+| 400         | `PLAZO_CONFIRMACION_REQUERIDO`                  | `requiereDocumentacion` y/o `requiereSena` son `true` pero no se envió `plazoConfirmacion`         |
+| 400         | `PLAZO_CONFIRMACION_NO_APLICA`                  | `requiereDocumentacion` y `requiereSena` son ambos `false` pero se envió `plazoConfirmacion`       |
+| 400         | `PLAZO_CONFIRMACION_VENCIDO`                    | La fecha límite de confirmación resultante ya pasó (ej. reserva para mañana con plazo de 3 meses) |
+| 400         | `CEDULA_INVALIDA`                               | La cédula del nuevo cliente no pasa la validación del algoritmo uruguayo                           |
+| 400         | `CEDULA_DUPLICADA`                              | La cédula del nuevo cliente ya existe en el sistema                                                |
+| 404         | `CLIENTE_NO_ENCONTRADO`                         | El `clienteId` enviado no existe                                                                    |
+| 401         | —                                                | Token ausente, inválido o expirado                                                                  |
 
 ---
 
@@ -1205,7 +1210,7 @@ Retorna el detalle completo de una reserva.
 {
   "id": 42,
   "tipoReserva": "COMUN",
-  "estado": "CONFIRMADA",
+  "estado": "PENDIENTE",
   "procedencia": "CAMPING",
   "fechaEntrada": "2026-08-10",
   "fechaSalida": "2026-08-15",
@@ -1215,11 +1220,13 @@ Retorna el detalle completo de una reserva.
   "cantidadMenores": 1,
   "cantidad": null,
   "importe": 15000.00,
-  "montoImpago": 0.00,
-  "pago": true,
-  "requiereDocumentacion": false,
+  "montoImpago": 15000.00,
+  "pago": false,
+  "requiereDocumentacion": true,
   "tieneDocumentacion": false,
-  "requiereSena": false,
+  "requiereSena": true,
+  "plazoConfirmacion": "VEINTICUATRO_HORAS",
+  "fechaLimiteConfirmacion": "2026-08-09T00:00:00",
   "notas": "Llegan a las 14hs",
   "cliente": {
     "id": 12,
@@ -1246,6 +1253,7 @@ Retorna el detalle completo de una reserva.
 > El campo `cliente` siempre viene informado: toda reserva tiene un cliente asociado. En las reservas `COLABORACION_SIN_FINES_DE_LUCRO` es el cliente de tipo `EMPRESA` (su `rut` se obtiene desde el detalle del cliente).
 > `importe` y `formaPago` son `null` mientras la reserva no haya sido pagada.
 > `requiereDocumentacion` y `requiereSena` se definen al crear la reserva; `tieneDocumentacion` se marca en `true` al confirmar la documentación vía `PATCH /api/v1/reservas/{id}/documentacion`.
+> `plazoConfirmacion` y `fechaLimiteConfirmacion` son de solo lectura (no editables en ningún flujo) y son `null` si la reserva no requiere seña ni documentación.
 
 **Errores:**
 
@@ -1392,14 +1400,89 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
 
 **Errores:**
 
-| HTTP Status | Código                              | Cuándo ocurre                                                       |
-| ----------- | ----------------------------------- | ------------------------------------------------------------------- |
-| 400         | `SOLICITUD_INVALIDA`                | Campo obligatorio faltante o con formato inválido (Bean Validation) |
-| 400         | `RESERVA_ESTADO_INVALIDO_PARA_PAGO` | La reserva está en estado `FINALIZADA` o `CANCELADA`                |
-| 400         | `PAGO_NO_APLICA_COLABORACION`       | La reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO`             |
-| 400         | `PAGO_IMPORTE_SUPERA_SALDO`         | El importe enviado supera el saldo impago actual                    |
-| 404         | `RESERVA_NO_ENCONTRADA`             | No existe una reserva con ese `id`                                  |
-| 401         | —                                   | Token ausente, inválido o expirado                                  |
+| HTTP Status | Código                              | Cuándo ocurre                                                        |
+| ----------- | -------------------------------------- | ------------------------------------------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA`                 | Campo obligatorio faltante o con formato inválido (Bean Validation)     |
+| 400         | `RESERVA_ESTADO_INVALIDO_PARA_PAGO`  | La reserva está en estado `FINALIZADA` o `CANCELADA`                    |
+| 400         | `PAGO_NO_APLICA_COLABORACION`        | La reserva es de tipo `COLABORACION_SIN_FINES_DE_LUCRO`                |
+| 400         | `PAGO_IMPORTE_SUPERA_SALDO`          | El importe enviado supera el saldo impago actual                        |
+| 404         | `RESERVA_NO_ENCONTRADA`              | No existe una reserva con ese `id`                                       |
+| 401         | —                                      | Token ausente, inválido o expirado                                       |
+
+---
+
+### `GET /api/v1/reservas/{id}/finalizacion`
+
+Verifica si una reserva `EN_CURSO` o `VENCIDA_SIN_PAGO` puede finalizarse sin completar un pago pendiente. Se usa para decidir qué pedirle al usuario antes de confirmar la finalización (checkout).
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:**
+
+```json
+{
+  "puedeFinalizarSinPago": true,
+  "montoImpago": 0.00
+}
+```
+
+| Campo                   | Tipo    | Descripción                                            |
+| ----------------------- | ------- | ------------------------------------------------------- |
+| `puedeFinalizarSinPago` | boolean | `true` si la reserva ya está paga (`estaPaga()`)         |
+| `montoImpago`           | number  | Saldo que falta pagar                                    |
+
+**Errores:**
+
+| HTTP Status | Código                   | Cuándo ocurre                                          |
+| ----------- | ------------------------ | -------------------------------------------------------- |
+| 400         | `ID_INVALIDO`            | `id` no es un entero positivo                            |
+| 400         | `RESERVA_NO_FINALIZABLE` | La reserva no está `EN_CURSO` ni `VENCIDA_SIN_PAGO`      |
+| 404         | `RESERVA_NO_ENCONTRADA`  | No existe una reserva con ese `id`                       |
+| 401         | —                        | Token ausente, inválido o expirado                        |
+
+---
+
+### `PATCH /api/v1/reservas/{id}/finalizacion`
+
+Finaliza una reserva `EN_CURSO` o `VENCIDA_SIN_PAGO`, opcionalmente completando el saldo pendiente en el mismo paso.
+
+**Path param:** `id` — integer positivo
+
+**Body** (`application/json`):
+
+```json
+{
+  "completarPago": true,
+  "formaPago": "EFECTIVO",
+  "notas": "Salda saldo al finalizar"
+}
+```
+
+| Campo           | Tipo        | Obligatorio | Validación                                                    |
+| ---------------- | ----------- | ----------- | --------------------------------------------------------------- |
+| `completarPago` | boolean     | Condicional | Requerido si la reserva no está paga                            |
+| `formaPago`     | `FormaPago` | Condicional | Requerido si `completarPago: true`                               |
+| `notas`         | string      | No          | —                                                                 |
+
+> Si la reserva ya está paga, `completarPago` y `formaPago` no son necesarios y se ignoran: la reserva pasa directo a `FINALIZADA`.
+>
+> Si `completarPago: true`, se salda exactamente el `montoImpago` actual (no altera el `importe` total de la reserva) y luego finaliza.
+>
+> Si `completarPago: false`, la reserva finaliza igual con el saldo pendiente sin saldar (queda como deuda histórica; no hay forma de distinguir después una `FINALIZADA` con deuda de una que no la tuvo).
+
+**Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código                           | Cuándo ocurre                                             |
+| ----------- | -------------------------------- | ------------------------------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA`             | Campo con formato inválido (Bean Validation)                 |
+| 400         | `ID_INVALIDO`                    | `id` no es un entero positivo                                 |
+| 400         | `RESERVA_NO_FINALIZABLE`         | La reserva no está `EN_CURSO` ni `VENCIDA_SIN_PAGO`           |
+| 400         | `DECISION_PAGO_REQUERIDA`        | La reserva no está paga y no se envió `completarPago`         |
+| 400         | `FORMA_PAGO_REQUERIDA_PARA_PAGO` | `completarPago: true` pero no se envió `formaPago`            |
+| 404         | `RESERVA_NO_ENCONTRADA`          | No existe una reserva con ese `id`                             |
+| 401         | —                                | Token ausente, inválido o expirado                             |
 
 ---
 
@@ -1444,7 +1527,7 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
   notas?: string                 // opcional
   requiereDocumentacion?: boolean // opcional, default false; si true la reserva nace PENDIENTE hasta recibir documentación
   requiereSena?: boolean          // opcional, default false; si true la reserva nace PENDIENTE hasta pagar >= 50%
-  fechaLimite?: string           // opcional; LocalDateTime yyyy-MM-dd'T'HH:mm:ss; fecha límite de pago
+  plazoConfirmacion?: PlazoConfirmacion // condicional; requerido si requiereDocumentacion y/o requiereSena son true; no debe enviarse si ambos son false
 }
 ```
 
@@ -1456,6 +1539,16 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
   esPagoTotal: boolean     // obligatorio
   formaPago: FormaPago     // obligatorio
   notas?: string           // opcional
+}
+```
+
+#### `ReservaFinalizacionRequestDto` — body en `PATCH /api/v1/reservas/{id}/finalizacion`
+
+```typescript
+{
+  completarPago?: boolean // condicional, requerido si la reserva no está paga
+  formaPago?: FormaPago   // condicional, requerido si completarPago: true
+  notas?: string          // opcional
 }
 ```
 
@@ -1482,25 +1575,21 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
 ```typescript
 {
   id: number;
-  clienteId: number | null; // null para reservas de colaboración sin cliente
-  nombreCliente: string | null; // nombre del cliente, o nombre de la organización si clienteId es null (temporal)
+  clienteId: number | null;      // null para reservas de colaboración sin cliente
+  nombreCliente: string | null;  // nombre del cliente, o nombre de la organización si clienteId es null (temporal)
   servicioId: number;
   servicioNombre: string;
-  fechaEntrada: string; // LocalDate yyyy-MM-dd
-  fechaSalida: string; // LocalDate yyyy-MM-dd
+  fechaEntrada: string;           // LocalDate yyyy-MM-dd
+  fechaSalida: string;            // LocalDate yyyy-MM-dd
   estadoReserva: EstadoReserva;
-  id: number
-  clienteId: number | null      // null para reservas de colaboración sin cliente
-  nombreCliente: string | null  // nombre del cliente, o nombre de la organización si clienteId es null (temporal)
-  servicioId: number
-  servicioNombre: string
-  fechaEntrada: string          // LocalDate yyyy-MM-dd
-  fechaSalida: string           // LocalDate yyyy-MM-dd
-  estadoReserva: EstadoReserva
-  requiereDocumentacion: boolean
-  tieneDocumentacion: boolean
-  montoImpago: number | null    // saldo pendiente de pago
-  fechaLimitePago: string | null // LocalDateTime yyyy-MM-dd'T'HH:mm:ss
+  requiereDocumentacion: boolean;
+  tieneDocumentacion: boolean;
+  montoImpago: number | null;     // saldo pendiente de pago
+  plazoConfirmacion: PlazoConfirmacion | null;      // null si no requiere seña ni documentación
+  fechaLimiteConfirmacion: string | null;           // LocalDateTime yyyy-MM-dd'T'HH:mm:ss; null si no aplica
+  fechaInicioAlerta: string | null;                 // LocalDateTime yyyy-MM-dd'T'HH:mm:ss; calculado, no persistido; null si no aplica
+  requiereSena: boolean;
+  pago: boolean;
 }
 ```
 
@@ -1517,6 +1606,15 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
 ```typescript
 {
   costoTotal: number; // costo estimado de la reserva según la modalidad del servicio
+}
+```
+
+#### `ReservaFinalizacionCheckResponseDto` — respuesta de `GET /api/v1/reservas/{id}/finalizacion`
+
+```typescript
+{
+  puedeFinalizarSinPago: boolean; // true si la reserva ya está paga (estaPaga())
+  montoImpago: number;            // saldo pendiente de pago
 }
 ```
 
@@ -1541,6 +1639,8 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
   requiereDocumentacion: boolean
   tieneDocumentacion: boolean
   requiereSena: boolean
+  plazoConfirmacion: PlazoConfirmacion | null       // solo lectura; null si no requiere seña ni documentación
+  fechaLimiteConfirmacion: string | null            // LocalDateTime yyyy-MM-dd'T'HH:mm:ss; solo lectura; null si no aplica
   notas: string | null
   cliente: ClienteDetalleReservaDto  // siempre presente; EMPRESA en reservas de colaboración
   servicio: ServicioDetalleReservaDto
@@ -1656,7 +1756,7 @@ Elimina una finanza. La eliminación es **consciente del origen** del movimiento
 - **Ingreso de pago de cuota** (`pagoCuotaId != null`): **no** se permite eliminar → **400 `ELIMINACION_PAGO_CUOTA_NO_PERMITIDA`**. La anulación de cuotas es una funcionalidad pendiente.
 - **Egreso asociado a una reserva** (`reservaId != null`): **no** se permite eliminar → **400 `ELIMINACION_EGRESO_RESERVA_NO_PERMITIDA`**. Si se cargó por error, la forma de compensarlo es registrar un ingreso que lo anule.
 - **Ingreso de pago de reserva** (`reservaId != null`): al eliminar se devuelve el importe al `montoImpago` de la reserva y se ajusta su `pago`/`estado` según el estado:
-  - **PENDIENTE / EN_CURSO**: se elimina el ingreso, `montoImpago += importe`, `pago` pasa a `false` si estaba en `true`; el estado no cambia → **204**.
+  - **PENDIENTE / EN_CURSO / VENCIDA_SIN_PAGO**: se elimina el ingreso, `montoImpago += importe`, `pago` pasa a `false` si estaba en `true`; el estado no cambia → **204**.
   - **CONFIRMADA**: además de lo anterior, si la reserva `requiereSena == true` y tras la devolución el saldo pagado queda por debajo del 50% del importe total, el estado vuelve a **PENDIENTE**; si `requiereSena == false`, permanece **CONFIRMADA** → **204**.
   - **FINALIZADA / CANCELADA**:
     - Con `confirmar = false` (o ausente) → **428 `CONFIRMACION_ELIMINACION_REQUERIDA`**; no se elimina nada ni se modifica la reserva. Se sugiere registrar un egreso asociado en su lugar; el front usa este error para mostrar la advertencia con las opciones "registrar egreso" / "eliminar de todas formas".

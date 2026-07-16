@@ -1,6 +1,7 @@
 package com.cipolflo.server.reservas.dto;
 
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.shared.dto.AuditInfoDto;
 import com.cipolflo.server.shared.dto.ResponseDto;
@@ -10,6 +11,7 @@ import lombok.Getter;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
@@ -32,6 +34,8 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
     private final Boolean requiereDocumentacion;
     private final Boolean tieneDocumentacion;
     private final Boolean requiereSena;
+    private final PlazoConfirmacion plazoConfirmacion;
+    private final LocalDateTime fechaLimiteConfirmacion;
     private final String notas;
     private final ClienteDetalleReservaDto cliente;
     private final ServicioDetalleReservaDto servicio;
@@ -42,6 +46,7 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
             Integer cantidadTotal, Integer cantidadMenores, Integer cantidad,
             BigDecimal importe, BigDecimal montoImpago, Boolean pago,
             Boolean requiereDocumentacion, Boolean tieneDocumentacion, Boolean requiereSena,
+            PlazoConfirmacion plazoConfirmacion, LocalDateTime fechaLimiteConfirmacion,
             String notas,
             ClienteDetalleReservaDto cliente, ServicioDetalleReservaDto servicio,
             Instant createdAt, Instant updatedAt, String createdBy, String updatedBy) {
@@ -63,6 +68,8 @@ public class ReservaDetalleResponseDto extends AuditInfoDto implements ResponseD
         this.requiereDocumentacion = requiereDocumentacion;
         this.tieneDocumentacion = tieneDocumentacion;
         this.requiereSena = requiereSena;
+        this.plazoConfirmacion = plazoConfirmacion;
+        this.fechaLimiteConfirmacion = fechaLimiteConfirmacion;
         this.notas = notas;
         this.cliente = cliente;
         this.servicio = servicio;
