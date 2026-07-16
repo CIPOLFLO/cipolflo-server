@@ -18,8 +18,6 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
 
 @Component
 public class ReservaCreacionValidator {
@@ -121,42 +119,48 @@ public class ReservaCreacionValidator {
 
     private void validarCliente(ReservaCreacionRequestDto dto) {
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
-            if (!StringUtils.hasText(dto.getNombre())) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE,
-                        "El nombre es requerido para crear el cliente"
-                );
-            }
-            if (!StringUtils.hasText(dto.getCedula())) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.CEDULA_REQUERIDA_PARA_CREAR_CLIENTE,
-                        "La cédula es requerida para crear el cliente"
-                );
-            }
-            if (!StringUtils.hasText(dto.getCelular())) {
-                throw new ReservaValidacionException(
-                        ReservaCodigoError.CELULAR_REQUERIDO_PARA_CREAR_CLIENTE,
-                        "El celular es requerido para crear el cliente"
-                );
-            }
+            validarDatosNuevoCliente(dto);
             return;
         }
-
         if (dto.getClienteId() == null) {
             throw new ReservaValidacionException(
                     ReservaCodigoError.CLIENTE_REQUERIDO,
                     "Se requiere un clienteId para la reserva"
             );
         }
+        validarClienteExistente(dto);
+    }
 
-        // Si el cliente no existe, se deja propagar ClienteNotFoundException tal cual.
+    private void validarDatosNuevoCliente(ReservaCreacionRequestDto dto) {
+        if (!StringUtils.hasText(dto.getNombre())) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE,
+                    "El nombre es requerido para crear el cliente"
+            );
+        }
+        if (!StringUtils.hasText(dto.getCedula())) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.CEDULA_REQUERIDA_PARA_CREAR_CLIENTE,
+                    "La cédula es requerida para crear el cliente"
+            );
+        }
+        if (!StringUtils.hasText(dto.getCelular())) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.CELULAR_REQUERIDO_PARA_CREAR_CLIENTE,
+                    "El celular es requerido para crear el cliente"
+            );
+        }
+    }
+
+    // Lanza ClienteNotFoundException (404) si el clienteId no existe.
+    private void validarClienteExistente(ReservaCreacionRequestDto dto) {
         ClienteDetalleReservaDto cliente = consultaClienteDetalle.getDetallClienteSimple(dto.getClienteId());
 
-        boolean esColaboracion = dto.getTipoReserva() == TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO;
+        boolean esColaboracion = TipoReserva.COLABORACION_SIN_FINES_DE_LUCRO.equals(dto.getTipoReserva());
         if (esColaboracion && cliente.tipoCliente() != TipoCliente.EMPRESA) {
             throw new ReservaValidacionException(
                     ReservaCodigoError.CLIENTE_EMPRESA_REQUERIDO_PARA_COLABORACION,
-                    "Las reservas de colaboración sin fines de lucro requieren un cliente de tipo Empresa"
+                    "Las reservas de colaboración sin fines de lucro requieren un cliente de tipo EMPRESA"
             );
         }
     }
@@ -186,10 +190,8 @@ public class ReservaCreacionValidator {
             );
         }
         if (plazoConfirmacion != null) {
-            LocalDateTime inicioReserva = dto.getFechaInicio().atTime(
-                    dto.getHoraInicio() != null ? dto.getHoraInicio() : LocalTime.MIDNIGHT
-            );
-            LocalDateTime fechaLimiteConfirmacion = plazoConfirmacion.calcularFechaLimiteConfirmacion(inicioReserva);
+            LocalDateTime fechaLimiteConfirmacion =
+                    plazoConfirmacion.calcularFechaLimiteConfirmacion(dto.getFechaInicio(), dto.getHoraInicio());
             if (!fechaLimiteConfirmacion.isAfter(LocalDateTime.now(ZonaHoraria.URUGUAY))) {
                 throw new ReservaValidacionException(
                         ReservaCodigoError.PLAZO_CONFIRMACION_VENCIDO,

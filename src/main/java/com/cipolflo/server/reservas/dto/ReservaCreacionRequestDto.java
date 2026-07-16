@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
@@ -66,8 +65,6 @@ public class ReservaCreacionRequestDto {
     private Boolean requiereDocumentacion;
 
     private Boolean requiereSena;
-    private LocalDateTime fechaLimite;
-
 
     private PlazoConfirmacion plazoConfirmacion;
 }

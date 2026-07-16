@@ -1,7 +1,9 @@
 package com.cipolflo.server.reservas.domain.enums;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.Period;
 import java.time.temporal.TemporalAmount;
 
@@ -23,9 +25,18 @@ public enum PlazoConfirmacion {
         return label;
     }
 
-   
     public LocalDateTime calcularFechaLimiteConfirmacion(LocalDateTime inicioReserva) {
         return inicioReserva.minus(offsetCancelacion);
+    }
+
+    /**
+     * Combina {@code fechaEntrada} con {@code horaInicio} (o medianoche si el servicio no es
+     * por hora) para obtener el inicio de la reserva, y delega en {@link #calcularFechaLimiteConfirmacion(LocalDateTime)}.
+     * Única fuente de esta combinación: la usan tanto {@code Reserva} como los validadores.
+     */
+    public LocalDateTime calcularFechaLimiteConfirmacion(LocalDate fechaEntrada, LocalTime horaInicio) {
+        LocalDateTime inicioReserva = fechaEntrada.atTime(horaInicio != null ? horaInicio : LocalTime.MIDNIGHT);
+        return calcularFechaLimiteConfirmacion(inicioReserva);
     }
 
  

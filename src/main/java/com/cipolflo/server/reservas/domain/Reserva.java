@@ -271,8 +271,7 @@ public class Reserva extends AuditableEntity {
         if (plazoConfirmacion == null) {
             return null;
         }
-        LocalDateTime inicioReserva = fechaEntrada.atTime(horaInicio != null ? horaInicio : LocalTime.MIDNIGHT);
-        return plazoConfirmacion.calcularFechaLimiteConfirmacion(inicioReserva);
+        return plazoConfirmacion.calcularFechaLimiteConfirmacion(fechaEntrada, horaInicio);
     }
 
     
