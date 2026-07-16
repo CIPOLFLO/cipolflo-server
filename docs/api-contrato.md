@@ -63,6 +63,12 @@ SOCIO | PARTICULAR | EMPRESA
 ACTIVO | INACTIVO | DE_BAJA
 ```
 
+### `CategoriaSocio`
+
+```
+POLICIA_ACTIVO | POLICIA_RETIRADO | SOCIO_COMUN
+```
+
 ### `MetodoCobro`
 
 ```
@@ -728,25 +734,30 @@ Modifica los datos de un socio.
   "departamento": "Montevideo",
   "ciudad": "Montevideo",
   "direccion": "Av. 18 de Julio 100",
-  "metodoCobro": "EN_SEDE"
+  "metodoCobro": "EN_SEDE", 
+   "categoriaSocio": "SOCIO_COMUN",
+   "fechaIngreso": "2020-01-01"
 }
 ```
 
-| Campo             | Tipo          | Obligatorio | Validación                                    |
-| ----------------- | ------------- | ----------- | --------------------------------------------- |
-| `cedula`          | string        | Sí          | no vacío, algoritmo de cédula uruguaya, única |
-| `nombreCompleto`  | string        | Sí          | no vacío                                      |
-| `telefono`        | string        | Sí          | no vacío                                      |
-| `mail`            | string        | No          | formato email válido si se envía, único       |
-| `notas`           | string        | No          | —                                             |
-| `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                  |
-| `pais`            | string        | Sí          | no vacío                                      |
-| `departamento`    | string        | Sí          | no vacío                                      |
-| `ciudad`          | string        | Sí          | no vacío                                      |
-| `direccion`       | string        | Sí          | no vacío                                      |
-| `metodoCobro`     | `MetodoCobro` | Sí          | —                                             |
+| Campo             | Tipo             | Obligatorio | Validación                                    |
+| ----------------- |------------------|-------------|-----------------------------------------------|
+| `cedula`          | string           | Sí          | no vacío, algoritmo de cédula uruguaya, única |
+| `nombreCompleto`  | string           | Sí          | no vacío                                      |
+| `telefono`        | string           | Sí          | no vacío                                      |
+| `mail`            | string           | No          | formato email válido si se envía, único       |
+| `notas`           | string           | No          | —                                             |
+| `fechaNacimiento` | string (date)    | Sí          | `yyyy-MM-dd`                                  |
+| `pais`            | string           | Sí          | no vacío                                      |
+| `departamento`    | string           | Sí          | no vacío                                      |
+| `ciudad`          | string           | Sí          | no vacío                                      |
+| `direccion`       | string           | Sí          | no vacío                                      |
+| `metodoCobro`     | `MetodoCobro`    | Sí          | —                                             |
+| `categoriaSocio` | `CategoriaSocio` | Sí          | —                                             |
+| `fechaIngreso` | string (date)    | Sí          | `yyyy-MM-dd`, no puede ser posterior a hoy    |
 
 > Campos no modificables: `numeroSocio`, `estado`, `fechaIngreso`, `mesesSinPagar`, `fechaUltimoPago`.
+> Los campos `categoriaSocio` y `fechaIngreso` solo se informan para clientes de tipo `SOCIO`; para `PARTICULAR` y `EMPRESA` son `null`.
 
 **Respuestas:**
 
@@ -774,12 +785,14 @@ Registra un nuevo cliente de tipo socio.
   "departamento": "Montevideo",
   "ciudad": "Montevideo",
   "direccion": "Av. Italia 1234",
-  "observaciones": "Sin observaciones"
+  "observaciones": "Sin observaciones",
+   "categoriaSocio": "SOCIO_COMUN",
+   "fechaIngreso": "2020-01-01"
 }
 ```
 
 | Campo             | Tipo          | Obligatorio | Validación                                                 |
-| ----------------- | ------------- | ----------- | ---------------------------------------------------------- |
+|-------------------| ------------- |-------------| ---------------------------------------------------------- |
 | `cedula`          | string        | Sí          | no vacío, algoritmo de cédula uruguaya, única              |
 | `nombreCompleto`  | string        | Sí          | no vacío                                                   |
 | `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                               |
@@ -791,6 +804,8 @@ Registra un nuevo cliente de tipo socio.
 | `ciudad`          | string        | Sí          | no vacío                                                   |
 | `direccion`       | string        | No          | —                                                          |
 | `observaciones`   | string        | No          | —                                                          |
+| `categoriaSocio`  | `CategoriaSocio` | Sí          | — |
+| `fechaIngreso`    | string (date) | Sí          | `yyyy-MM-dd`, no puede ser posterior a hoy |
 
 > La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO`, `mesesSinPagar = 0` y `fechaIngreso` igual a la fecha actual. El `numeroSocio` se asigna de forma incremental.
 
@@ -798,15 +813,15 @@ Registra un nuevo cliente de tipo socio.
 
 **Errores:**
 
-| HTTP Status | Código               | Cuándo ocurre                                               |
-| ----------- | -------------------- | ----------------------------------------------------------- |
-| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante, vacío, o `metodoCobro` inválido |
-| 400         | `CEDULA_INVALIDA`    | La cédula no cumple el algoritmo de validación uruguayo     |
-| 400         | `CEDULA_DUPLICADA`   | Ya existe un cliente con esa cédula                         |
-| 400         | `EMAIL_INVALIDO`     | El email no tiene formato válido                            |
-| 400         | `EMAIL_DUPLICADO`    | Ya existe un cliente con ese email                          |
-| 401         | —                    | Token ausente, inválido o expirado                          |
-
+| HTTP Status | Código                     | Cuándo ocurre                                               |
+|-------------|----------------------------| ----------------------------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA`       | Campo obligatorio faltante, vacío, o `metodoCobro` inválido |
+| 400         | `CEDULA_INVALIDA`          | La cédula no cumple el algoritmo de validación uruguayo     |
+| 400         | `CEDULA_DUPLICADA`         | Ya existe un cliente con esa cédula                         |
+| 400         | `EMAIL_INVALIDO`           | El email no tiene formato válido                            |
+| 400         | `EMAIL_DUPLICADO`          | Ya existe un cliente con ese email                          |
+| 401         | —                          | Token ausente, inválido o expirado                          |
+| 400         | `FECHA_INGRESO_INVALIDA`   | La fecha de ingreso es posterior a la fecha actual |
 ---
 
 ### `POST /api/v1/clientes/particulares`
@@ -914,6 +929,8 @@ Registra un nuevo cliente de tipo empresa.
   ciudad: string              // obligatorio, no vacío
   direccion?: string          // opcional
   observaciones?: string      // opcional
+  categoriaSocio: CategoriaSocio // obligatorio
+  fechaIngreso: string           // obligatorio, LocalDate yyyy-MM-dd, no futura
 }
 ```
 
@@ -960,6 +977,8 @@ Registra un nuevo cliente de tipo empresa.
   ciudad: string              // obligatorio, no vacío
   direccion: string           // obligatorio, no vacío
   metodoCobro: MetodoCobro    // obligatorio
+  categoriaSocio: CategoriaSocio // obligatorio
+  fechaIngreso: string           // obligatorio, LocalDate yyyy-MM-dd, no futura
 }
 ```
 
@@ -995,6 +1014,8 @@ Registra un nuevo cliente de tipo empresa.
   numeroSocio: number | null; // null para Particulares
   tipoCliente: TipoCliente;
   estado: EstadoSocio | null; // null para Particulares
+  categoriaSocio: CategoriaSocio | null; // null para Particulares y Empresas
+  fechaIngreso: string | null; // LocalDate yyyy-MM-dd; null para Particulares y Empresas
   observaciones: string | null;
   createdAt: string; // Instant ISO-8601 UTC
   updatedAt: string; // Instant ISO-8601 UTC

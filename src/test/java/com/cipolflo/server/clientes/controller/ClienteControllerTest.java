@@ -21,7 +21,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
+import com.cipolflo.server.clientes.domain.enums.CategoriaSocio;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
@@ -65,7 +65,7 @@ class ClienteControllerTest {
                 "099111111", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. 18 de Julio 100",
                 5, TipoCliente.SOCIO, EstadoSocio.ACTIVO, null,
-                null, null, null, null, null
+                null, null, null, null, null,null,null
         );
     }
 
@@ -728,7 +728,8 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 LocalDate.of(1990, Month.MAY, 10),
                 "099123456", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. Italia 1234",
-                7, TipoCliente.SOCIO, EstadoSocio.ACTIVO, "Sin observaciones",
+                7, TipoCliente.SOCIO, EstadoSocio.ACTIVO, CategoriaSocio.SOCIO_COMUN,
+                LocalDate.of(2020, 1, 1),"Sin observaciones",
                 null, null, null, null, null
         );
 
@@ -751,7 +752,9 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                                       "departamento": "Montevideo",
                                       "ciudad": "Montevideo",
                                       "direccion": "Av. Italia 1234",
-                                      "observaciones": "Sin observaciones"
+                                      "observaciones": "Sin observaciones",
+                                      "categoriaSocio": "SOCIO_COMUN",
+                                      "fechaIngreso": "2020-01-01"
                                     }
                                     """)
                 )
@@ -812,7 +815,9 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                                       "pais": "Uruguay",
                                       "departamento": "Montevideo",
                                       "ciudad": "Montevideo",
-                                      "direccion": "Av. Italia 1234"
+                                      "direccion": "Av. Italia 1234",
+                                      "categoriaSocio": "SOCIO_COMUN",
+                                      "fechaIngreso": "2020-01-01"
                                     }
                                     """)
                 )
@@ -838,6 +843,8 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                                       "departamento": "Montevideo",
                                       "ciudad": "Montevideo",
                                       "direccion": "Av. Italia 1234"
+                                      "categoriaSocio": "SOCIO_COMUN",
+                                      "fechaIngreso": "2020-01-01"
                                     }
                                     """)
                 )
@@ -870,7 +877,9 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                                       "pais": "Uruguay",
                                       "departamento": "Montevideo",
                                       "ciudad": "Montevideo",
-                                      "direccion": "Av. Italia 1234"
+                                      "direccion": "Av. Italia 1234",
+                                      "categoriaSocio": "SOCIO_COMUN",
+                                      "fechaIngreso": "2020-01-01"
                                     }
                                     """)
                 )
@@ -897,6 +906,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 null,
                 TipoCliente.PARTICULAR,
                 null,
+                null,null,
                 null,
                 null,
                 null,
@@ -1020,7 +1030,9 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                   "departamento": "Montevideo",
                   "ciudad": "Montevideo",
                   "direccion": "Av. 18 de Julio 100",
-                  "metodoCobro": "EFECTIVO"
+                  "metodoCobro": "EFECTIVO",
+                  "categoriaSocio": "SOCIO_COMUN",
+                  "fechaIngreso": "2020-01-01"
                 }
                 """.formatted(mailJson);
     }
@@ -1103,7 +1115,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 null,
                 "099123456", "empresa@mail.com", null,
                 "Uruguay", "Montevideo", "Montevideo", "Guatemala 1075",
-                null, TipoCliente.EMPRESA, null, "Sin observaciones",
+                null, TipoCliente.EMPRESA, null, null,null,"Sin observaciones",
                 null, null, null, null, null
         );
 
