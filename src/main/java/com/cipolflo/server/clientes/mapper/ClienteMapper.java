@@ -57,6 +57,8 @@ public class ClienteMapper {
                 socio != null ? socio.getNumeroSocio() : null,
                 tipoDeCliente(cliente),
                 socio != null ? socio.getEstado() : null,
+                socio != null ? socio.getCategoriaSocio() : null,
+                socio != null ? socio.getFechaIngreso() : null,
                 cliente.getNotas(),
                 ultimaCuotaDto,
                 cliente.getCreatedAt(),

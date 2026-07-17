@@ -58,7 +58,7 @@ user-invocable: true
 
     **Entidades con lógica especial**
     - `Reserva`: si se toca esta clase, verificar que el constructor sigue siendo `PROTECTED` y que `Reserva.crear(...)` es el único punto de entrada. Verificar que las transiciones de estado pasan por `cambiarEstado()` o los métodos `confirmarPago()`/`recibirDocumentacion()`, no asignando `estado` directamente desde fuera.
-    - `Socio`: si se toca esta clase, verificar que `mesesSinPagar` y `estado` no se modifican desde el servicio directamente; deben usarse `incrementarMesesSinPagar()` y `darDeBaja()`.
+    - `Socio`: si se toca esta clase, verificar que `estado` no se modifica desde el servicio directamente; deben usarse `pasarAInactivoPorMorosidad()` y `darDeBaja()`.
     - `AuditableEntity`: no debe recibir campos funcionales. Solo `createdAt` y `updatedAt`.
 
     **Validación y DTOs**

@@ -28,26 +28,15 @@
 ## Enums
 
 ### `Procedencia`
-
-```
 SEDE | CAMPING
-```
 
 ### `EstadoServicio`
-
-```
 HABILITADO | DESHABILITADO
-```
 
 ### `ModalidadPrecio`
-
-```
 POR_DIA | POR_PERSONA | POR_DIA_POR_PERSONA | POR_UNIDAD | POR_HORA
-```
 
 ### `EstadoReserva`
-
-```
 PENDIENTE | CONFIRMADA | EN_CURSO | FINALIZADA | CANCELADA
 
 ### `PlazoConfirmacion`
@@ -71,6 +60,12 @@ SOCIO | PARTICULAR | EMPRESA
 
 ### `EstadoSocio`
 ACTIVO | INACTIVO | DE_BAJA
+
+### `CategoriaSocio`
+
+```
+POLICIA_ACTIVO | POLICIA_RETIRADO | SOCIO_COMUN
+```
 
 ### `MetodoCobro`
 COBRADORA | DESCUENTO_SALARIAL | TRANSFERENCIA | EN_SEDE | EFECTIVO
@@ -655,8 +650,7 @@ Devuelve el estado actual de un socio puntual (`ACTIVO`, `INACTIVO` o `DE_BAJA`)
 {
   "id": 1,
   "estado": "ACTIVO",
-  "numeroSocio": 5,
-  "mesesSinPagar": 0
+  "numeroSocio": 5
 }
 ```
 
@@ -723,25 +717,30 @@ Modifica los datos de un socio.
   "departamento": "Montevideo",
   "ciudad": "Montevideo",
   "direccion": "Av. 18 de Julio 100",
-  "metodoCobro": "EN_SEDE"
+  "metodoCobro": "EN_SEDE", 
+   "categoriaSocio": "SOCIO_COMUN",
+   "fechaIngreso": "2020-01-01"
 }
 ```
 
-| Campo             | Tipo          | Obligatorio | Validación                                    |
-| ----------------- | ------------- | ----------- | ----------------------------------------------- |
-| `cedula`          | string        | Sí          | no vacío, algoritmo de cédula uruguaya, única  |
-| `nombreCompleto`  | string        | Sí          | no vacío                                       |
-| `telefono`        | string        | Sí          | no vacío                                       |
-| `mail`            | string        | No          | formato email válido si se envía, único        |
-| `notas`           | string        | No          | —                                               |
-| `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                   |
-| `pais`            | string        | Sí          | no vacío                                       |
-| `departamento`    | string        | Sí          | no vacío                                       |
-| `ciudad`          | string        | Sí          | no vacío                                       |
-| `direccion`       | string        | Sí          | no vacío                                       |
-| `metodoCobro`     | `MetodoCobro` | Sí          | —                                               |
+| Campo             | Tipo             | Obligatorio | Validación                                    |
+| ----------------- |------------------|-------------|-----------------------------------------------|
+| `cedula`          | string           | Sí          | no vacío, algoritmo de cédula uruguaya, única |
+| `nombreCompleto`  | string           | Sí          | no vacío                                      |
+| `telefono`        | string           | Sí          | no vacío                                      |
+| `mail`            | string           | No          | formato email válido si se envía, único       |
+| `notas`           | string           | No          | —                                             |
+| `fechaNacimiento` | string (date)    | Sí          | `yyyy-MM-dd`                                  |
+| `pais`            | string           | Sí          | no vacío                                      |
+| `departamento`    | string           | Sí          | no vacío                                      |
+| `ciudad`          | string           | Sí          | no vacío                                      |
+| `direccion`       | string           | Sí          | no vacío                                      |
+| `metodoCobro`     | `MetodoCobro`    | Sí          | —                                             |
+| `categoriaSocio` | `CategoriaSocio` | Sí          | —                                             |
+| `fechaIngreso` | string (date)    | Sí          | `yyyy-MM-dd`, no puede ser posterior a hoy    |
 
-> Campos no modificables: `numeroSocio`, `estado`, `fechaIngreso`, `mesesSinPagar`, `fechaUltimoPago`.
+> Campos no modificables: `numeroSocio`, `estado`, `fechaUltimoPago`.
+> Los campos `categoriaSocio` y `fechaIngreso` solo se informan para clientes de tipo `SOCIO`; para `PARTICULAR` y `EMPRESA` son `null`.
 
 **Respuestas:**
 
@@ -769,7 +768,9 @@ Registra un nuevo cliente de tipo socio.
   "departamento": "Montevideo",
   "ciudad": "Montevideo",
   "direccion": "Av. Italia 1234",
-  "observaciones": "Sin observaciones"
+  "observaciones": "Sin observaciones",
+   "categoriaSocio": "SOCIO_COMUN",
+   "fechaIngreso": "2020-01-01"
 }
 ```
 
@@ -780,14 +781,16 @@ Registra un nuevo cliente de tipo socio.
 | `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                                |
 | `telefono`        | string        | Sí          | no vacío                                                    |
 | `email`           | string        | No          | formato email válido si se envía, único (case-insensitive) |
-| `metodoCobro`     | `MetodoCobro` | Sí          | —                                                            |
-| `pais`            | string        | Sí          | no vacío                                                    |
-| `departamento`    | string        | Sí          | no vacío                                                    |
-| `ciudad`          | string        | Sí          | no vacío                                                    |
-| `direccion`       | string        | No          | —                                                            |
-| `observaciones`   | string        | No          | —                                                            |
+| `metodoCobro`     | `MetodoCobro` | Sí          | —                                                          |
+| `pais`            | string        | Sí          | no vacío                                                   |
+| `departamento`    | string        | Sí          | no vacío                                                   |
+| `ciudad`          | string        | Sí          | no vacío                                                   |
+| `direccion`       | string        | No          | —                                                          |
+| `observaciones`   | string        | No          | —                                                          |
+| `categoriaSocio`  | `CategoriaSocio` | Sí          | — |
+| `fechaIngreso`    | string (date) | Sí          | `yyyy-MM-dd`, no puede ser posterior a hoy |
 
-> La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO`, `mesesSinPagar = 0` y `fechaIngreso` igual a la fecha actual. El `numeroSocio` se asigna de forma incremental.
+> La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO` y `fechaIngreso` igual al valor recibido en el body. El `numeroSocio` se asigna de forma incremental.
 
 **Respuesta 201:** mismo body que `GET /api/v1/clientes/{id}`
 
@@ -909,6 +912,8 @@ Registra un nuevo cliente de tipo empresa.
   ciudad: string               // obligatorio, no vacío
   direccion?: string          // opcional
   observaciones?: string      // opcional
+  categoriaSocio: CategoriaSocio // obligatorio
+  fechaIngreso: string           // obligatorio, LocalDate yyyy-MM-dd, no futura
 }
 ```
 
@@ -950,11 +955,13 @@ Registra un nuevo cliente de tipo empresa.
   mail?: string               // opcional, formato email válido si se envía, único
   notas?: string              // opcional
   fechaNacimiento: string     // obligatorio, LocalDate yyyy-MM-dd
-  pais: string                 // obligatorio, no vacío
-  departamento: string         // obligatorio, no vacío
-  ciudad: string                // obligatorio, no vacío
-  direccion: string             // obligatorio, no vacío
-  metodoCobro: MetodoCobro     // obligatorio
+  pais: string                // obligatorio, no vacío
+  departamento: string        // obligatorio, no vacío
+  ciudad: string              // obligatorio, no vacío
+  direccion: string           // obligatorio, no vacío
+  metodoCobro: MetodoCobro    // obligatorio
+  categoriaSocio: CategoriaSocio // obligatorio
+  fechaIngreso: string           // obligatorio, LocalDate yyyy-MM-dd, no futura
 }
 ```
 
@@ -990,6 +997,8 @@ Registra un nuevo cliente de tipo empresa.
   numeroSocio: number | null; // null para Particulares
   tipoCliente: TipoCliente;
   estado: EstadoSocio | null; // null para Particulares
+  categoriaSocio: CategoriaSocio | null; // null para Particulares y Empresas
+  fechaIngreso: string | null; // LocalDate yyyy-MM-dd; null para Particulares y Empresas
   observaciones: string | null;
   createdAt: string; // Instant ISO-8601 UTC
   updatedAt: string; // Instant ISO-8601 UTC
@@ -1038,17 +1047,17 @@ Retorna el listado paginado de reservas con filtros opcionales.
 **Query params** (todos opcionales):
 
 | Param           | Tipo            | Validación                                     |
-| --------------- | --------------- | ---------------------------------------------- |
-| `procedencia`   | `Procedencia`   | —                                              |
-| `servicioId`    | integer         | >= 0                                           |
-| `nombreCliente` | string          | máx 100 caracteres                             |
-| `estadoReserva` | `EstadoReserva` | —                                              |
-| `fechaDesde`    | string (date)   | `yyyy-MM-dd`                                   |
-| `fechaHasta`    | string (date)   | `yyyy-MM-dd`                                   |
-| `page`          | integer         | >= 0, default 0                                |
-| `size`          | integer         | 1–100, default 1                               |
-| `sortField`     | string          | `fechaEntrada`, `fechaSalida`, `nombreCliente` |
-| `sortOrder`     | string          | `ASC` o `DESC`, default `ASC`                  |
+| --------------- | --------------- | ------------------------------------------------ |
+| `procedencia`   | `Procedencia`   | —                                                |
+| `servicioId`    | integer         | >= 0                                             |
+| `nombreCliente` | string          | máx 100 caracteres                               |
+| `estadoReserva` | `EstadoReserva` | —                                                |
+| `fechaDesde`    | string (date)   | `yyyy-MM-dd`                                     |
+| `fechaHasta`    | string (date)   | `yyyy-MM-dd`                                     |
+| `page`          | integer         | >= 0, default 0                                  |
+| `size`          | integer         | 1–100, default 1                                 |
+| `sortField`     | string          | `fechaEntrada`, `fechaSalida`, `nombreCliente`  |
+| `sortOrder`     | string          | `ASC` o `DESC`, default `ASC`                    |
 
 > `fechaDesde` filtra reservas cuya `fechaEntrada` sea igual o posterior a esa fecha. `fechaHasta` filtra reservas cuya `fechaSalida` sea igual o anterior. El filtro `nombreCliente` busca por coincidencia parcial (case-insensitive) en el nombre completo del cliente; si varios clientes comparten el nombre, se incluyen las reservas de todos ellos.
 
@@ -1257,11 +1266,11 @@ Retorna el detalle completo de una reserva.
 
 **Errores:**
 
-| HTTP Status | Código                    | Cuándo ocurre                         |
-|-------------|---------------------------|---------------------------------------|
-| 400         | `ID_INVALIDO`             | `id` no es un entero positivo         |
-| 404         | `RESERVA_NO_ENCONTRADA`   | No existe una reserva con ese `id`    |
-| 401         | —                         | Token ausente, inválido o expirado    |
+| HTTP Status | Código                    | Cuándo ocurre                          |
+|-------------|----------------------------|-------------------------------------------|
+| 400         | `ID_INVALIDO`             | `id` no es un entero positivo             |
+| 404         | `RESERVA_NO_ENCONTRADA`   | No existe una reserva con ese `id`        |
+| 401         | —                         | Token ausente, inválido o expirado         |
 
 ---
 
@@ -1274,11 +1283,11 @@ Confirma que se recibió la documentación de una reserva. Marca `tieneDocumenta
 
 **Errores:**
 
-| HTTP Status | Código                    | Cuándo ocurre                         |
-|-------------|---------------------------|---------------------------------------|
-| 400         | `ID_INVALIDO`             | `id` no es un entero positivo         |
-| 404         | `RESERVA_NO_ENCONTRADA`   | No existe una reserva con ese `id`    |
-| 401         | —                         | Token ausente, inválido o expirado    |
+| HTTP Status | Código                    | Cuándo ocurre                          |
+|-------------|----------------------------|-------------------------------------------|
+| 400         | `ID_INVALIDO`             | `id` no es un entero positivo             |
+| 404         | `RESERVA_NO_ENCONTRADA`   | No existe una reserva con ese `id`        |
+| 401         | —                         | Token ausente, inválido o expirado         |
 
 ---
 
@@ -1289,18 +1298,18 @@ Descarga el comprobante en PDF de una reserva (para entregar al cliente o archiv
 
 **Respuesta 200:** cuerpo binario.
 
-| Header                | Valor                                                        |
-|-----------------------|--------------------------------------------------------------|
-| `Content-Type`        | `application/pdf`                                             |
+| Header                | Valor                                                          |
+|------------------------|------------------------------------------------------------------|
+| `Content-Type`        | `application/pdf`                                                |
 | `Content-Disposition` | `attachment; filename="comprobante-reserva-{id}_yyyy-MM-dd_HHmm.pdf"` |
 
 **Errores:**
 
-| HTTP Status | Código                  | Cuándo ocurre                      |
-| ----------- | ----------------------- | ---------------------------------- |
-| 400         | `ID_INVALIDO`           | `id` no es un entero positivo      |
-| 404         | `RESERVA_NO_ENCONTRADA` | No existe una reserva con ese `id` |
-| 401         | —                       | Token ausente, inválido o expirado |
+| HTTP Status | Código                  | Cuándo ocurre                       |
+| ----------- | ------------------------- | -------------------------------------- |
+| 400         | `ID_INVALIDO`           | `id` no es un entero positivo         |
+| 404         | `RESERVA_NO_ENCONTRADA` | No existe una reserva con ese `id`    |
+| 401         | —                       | Token ausente, inválido o expirado     |
 
 ---
 
@@ -1324,17 +1333,17 @@ Calcula el costo estimado de una reserva en tiempo real, sin efectos secundarios
 }
 ```
 
-| Campo             | Tipo          | Obligatorio | Validación                                                                      |
-| ----------------- | ------------- | ----------- | ------------------------------------------------------------------------------- |
-| `servicioId`      | integer       | Sí          | > 0, el servicio debe existir                                                   |
-| `fechaInicio`     | string (date) | Sí          | `yyyy-MM-dd`                                                                    |
-| `fechaFin`        | string (date) | Sí          | `yyyy-MM-dd`, no puede ser anterior a `fechaInicio`                             |
-| `horaInicio`      | string (time) | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                               |
-| `horaFin`         | string (time) | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                               |
-| `cantidadTotal`   | integer       | No          | >= 0; personas totales (para modalidades `POR_PERSONA` y `POR_DIA_POR_PERSONA`) |
-| `cantidadMenores` | integer       | No          | >= 0; menores de 10 años (no generan recargo por excedente de capacidad)        |
-| `cantidad`        | integer       | No          | >= 0; unidades alquiladas (para modalidad `POR_UNIDAD`)                         |
-| `tipoCliente`     | `TipoCliente` | No          | Si no se envía, se asume `PARTICULAR`                                           |
+| Campo             | Tipo          | Obligatorio | Validación                                                                       |
+| ----------------- | ------------- | ----------- | ----------------------------------------------------------------------------------- |
+| `servicioId`      | integer       | Sí          | > 0, el servicio debe existir                                                       |
+| `fechaInicio`     | string (date) | Sí          | `yyyy-MM-dd`                                                                        |
+| `fechaFin`        | string (date) | Sí          | `yyyy-MM-dd`, no puede ser anterior a `fechaInicio`                                 |
+| `horaInicio`      | string (time) | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                                   |
+| `horaFin`         | string (time) | No          | `HH:mm`; obligatorio si el servicio es `POR_HORA`                                   |
+| `cantidadTotal`   | integer       | No          | >= 0; personas totales (para modalidades `POR_PERSONA` y `POR_DIA_POR_PERSONA`)    |
+| `cantidadMenores` | integer       | No          | >= 0; menores de 10 años (no generan recargo por excedente de capacidad)           |
+| `cantidad`        | integer       | No          | >= 0; unidades alquiladas (para modalidad `POR_UNIDAD`)                            |
+| `tipoCliente`     | `TipoCliente` | No          | Si no se envía, se asume `PARTICULAR`                                              |
 
 > El costo se calcula según la `modalidadPrecio` del servicio:
 >
@@ -1357,12 +1366,12 @@ Calcula el costo estimado de una reserva en tiempo real, sin efectos secundarios
 **Errores:**
 
 | HTTP Status | Código                                  | Cuándo ocurre                                                    |
-| ----------- | --------------------------------------- | ---------------------------------------------------------------- |
-| 400         | `SOLICITUD_INVALIDA`                    | Campo obligatorio faltante o con formato inválido                |
-| 400         | `FECHA_FIN_ANTERIOR_A_INICIO`           | `fechaFin` < `fechaInicio`                                       |
-| 400         | `HORA_REQUERIDA_PARA_SERVICIO_POR_HORA` | Servicio `POR_HORA` pero no se enviaron `horaInicio` y `horaFin` |
-| 404         | `SERVICIO_NO_ENCONTRADO`                | No existe un servicio con el `servicioId` indicado               |
-| 401         | —                                       | Token ausente, inválido o expirado                               |
+| ----------- | ------------------------------------------ | --------------------------------------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA`                     | Campo obligatorio faltante o con formato inválido                    |
+| 400         | `FECHA_FIN_ANTERIOR_A_INICIO`            | `fechaFin` < `fechaInicio`                                            |
+| 400         | `HORA_REQUERIDA_PARA_SERVICIO_POR_HORA`  | Servicio `POR_HORA` pero no se enviaron `horaInicio` y `horaFin`     |
+| 404         | `SERVICIO_NO_ENCONTRADO`                 | No existe un servicio con el `servicioId` indicado                    |
+| 401         | —                                          | Token ausente, inválido o expirado                                    |
 
 ---
 
@@ -1383,12 +1392,12 @@ Registra un pago sobre una reserva existente. Genera un ingreso en finanzas y ac
 }
 ```
 
-| Campo         | Tipo        | Obligatorio | Validación                                                                   |
-| ------------- | ----------- | ----------- | ---------------------------------------------------------------------------- |
-| `importe`     | number      | Sí          | > 0; no puede superar el saldo impago actual                                 |
-| `esPagoTotal` | boolean     | Sí          | Si `true`, la reserva queda marcada como paga independientemente del importe |
-| `formaPago`   | `FormaPago` | Sí          | —                                                                            |
-| `notas`       | string      | No          | —                                                                            |
+| Campo         | Tipo        | Obligatorio | Validación                                                                    |
+| ------------- | ------------- | ----------- | ------------------------------------------------------------------------------- |
+| `importe`     | number      | Sí          | > 0; no puede superar el saldo impago actual                                    |
+| `esPagoTotal` | boolean     | Sí          | Si `true`, la reserva queda marcada como paga independientemente del importe    |
+| `formaPago`   | `FormaPago` | Sí          | —                                                                                 |
+| `notas`       | string      | No          | —                                                                                 |
 
 > **Pago total** (`esPagoTotal: true`): se registra el ingreso con el importe enviado (puede ser menor al saldo para contemplar descuentos), `montoImpago` pasa a `0` y `pago` a `true`.
 >
@@ -1558,13 +1567,13 @@ Finaliza una reserva `EN_CURSO` o `VENCIDA_SIN_PAGO`, opcionalmente completando 
 {
   servicioId: number             // obligatorio, > 0
   fechaInicio: string            // obligatorio, LocalDate yyyy-MM-dd
-  fechaFin: string               // obligatorio, LocalDate yyyy-MM-dd
+  fechaFin: string                // obligatorio, LocalDate yyyy-MM-dd
   horaInicio?: string            // opcional, LocalTime HH:mm; obligatorio para servicios POR_HORA
-  horaFin?: string               // opcional, LocalTime HH:mm; obligatorio para servicios POR_HORA
-  cantidadTotal?: number         // opcional, >= 0; personas totales
-  cantidadMenores?: number       // opcional, >= 0; menores de 10 años (no generan recargo)
-  cantidad?: number              // opcional, >= 0; unidades para modalidad POR_UNIDAD
-  tipoCliente?: TipoCliente      // opcional; default PARTICULAR si no se envía
+  horaFin?: string                // opcional, LocalTime HH:mm; obligatorio para servicios POR_HORA
+  cantidadTotal?: number          // opcional, >= 0; personas totales
+  cantidadMenores?: number        // opcional, >= 0; menores de 10 años (no generan recargo)
+  cantidad?: number               // opcional, >= 0; unidades para modalidad POR_UNIDAD
+  tipoCliente?: TipoCliente       // opcional; default PARTICULAR si no se envía
 }
 ```
 
@@ -1701,14 +1710,14 @@ Registra manualmente un ingreso o egreso.
 ```
 
 | Campo            | Tipo             | Obligatorio | Validación   |
-| ---------------- | ---------------- | ----------- | ------------ |
-| `tipoMovimiento` | `TipoMovimiento` | Sí          | —            |
-| `fecha`          | string (date)    | No          | `yyyy-MM-dd` |
-| `importe`        | number (decimal) | Sí          | > 0          |
-| `concepto`       | `Concepto`       | Sí          | —            |
-| `procedencia`    | `Procedencia`    | Sí          | —            |
-| `formaPago`      | `FormaPago`      | Sí          | —            |
-| `notas`          | string           | No          | —            |
+| ----------------- | ------------------ | ------------- | -------------- |
+| `tipoMovimiento` | `TipoMovimiento` | Sí          | —              |
+| `fecha`          | string (date)    | No          | `yyyy-MM-dd`  |
+| `importe`        | number (decimal) | Sí          | > 0            |
+| `concepto`       | `Concepto`       | Sí          | —              |
+| `procedencia`    | `Procedencia`    | Sí          | —              |
+| `formaPago`      | `FormaPago`      | Sí          | —              |
+| `notas`          | string           | No          | —              |
 
 > Si no se envía `fecha`, se utilizará la fecha actual del sistema.
 
@@ -1732,9 +1741,9 @@ Registra manualmente un ingreso o egreso.
 **Errores:**
 
 | HTTP Status | Código               | Cuándo ocurre                               |
-| ----------- | -------------------- | ------------------------------------------- |
-| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o valor inválido |
-| 401         | —                    | Token ausente, inválido o expirado          |
+| ----------- | ---------------------- | ---------------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o valor inválido    |
+| 401         | —                    | Token ausente, inválido o expirado              |
 
 ---
 
@@ -1747,7 +1756,7 @@ Elimina una finanza. La eliminación es **consciente del origen** del movimiento
 **Query param:**
 
 | Parámetro   | Tipo    | Obligatorio | Default | Descripción                                                                                             |
-|-------------|---------|-------------|---------|---------------------------------------------------------------------------------------------------------|
+|-------------|---------|-------------|---------|-------------------------------------------------------------------------------------------------------------|
 | `confirmar` | boolean | No          | `false` | Confirma la eliminación de un ingreso cuya reserva ya está `FINALIZADA` o `CANCELADA` (ver comportamiento). |
 
 **Comportamiento según el origen del movimiento:**
@@ -1769,7 +1778,7 @@ Elimina una finanza. La eliminación es **consciente del origen** del movimiento
 **Errores:**
 
 | HTTP Status | Código                                  | Cuándo ocurre                                                                             |
-|-------------|-----------------------------------------|------------------------------------------------------------------------------------------|
+|-------------|--------------------------------------------|-------------------------------------------------------------------------------------------|
 | 400         | `ID_INVALIDO`                           | El `id` no es un número positivo                                                          |
 | 400         | `SOLICITUD_INVALIDA`                    | `confirmar` con un valor no booleano                                                      |
 | 400         | `ELIMINACION_PAGO_CUOTA_NO_PERMITIDA`   | La finanza es un ingreso de pago de cuota (`pagoCuotaId != null`)                         |
@@ -1870,4 +1879,4 @@ Todos los errores retornan el siguiente body:
 | 404         | Recurso no encontrado por el ID proporcionado                              |
 | 409         | Conflicto de negocio (ej: deshabilitar con reservas activas sin confirmar) |
 | 428         | Falta una precondición para proceder (ej: confirmar la eliminación de un ingreso de reserva ya cerrada) |
-| 500         | Error interno del servidor                                 |
+| 500         | Error interno del servidor                                                     |

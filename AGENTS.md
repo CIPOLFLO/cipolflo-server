@@ -144,10 +144,12 @@ Si se agrega un nuevo estado, actualizar `esTransicionValida()` en `Reserva.java
 
 `Socio` expone dos métodos de negocio:
 
-- `incrementarMesesSinPagar()`: incrementa el contador y pasa a `INACTIVO` automáticamente al llegar a 3.
+- `pasarAInactivoPorMorosidad()`: fuerza estado `INACTIVO`. Lo usa `InactivacionSociosService`,
+  que recalcula desde `pago_cuota` cuántos meses completos adeuda el socio (sin contador
+  persistido) y llama a este método al llegar a 3.
 - `darDeBaja()`: fuerza estado `DE_BAJA`.
 
-No modificar `mesesSinPagar` o `estado` directamente desde el servicio — usar estos métodos.
+No modificar `estado` directamente desde el servicio — usar estos métodos.
 
 ### `AuditableEntity`
 

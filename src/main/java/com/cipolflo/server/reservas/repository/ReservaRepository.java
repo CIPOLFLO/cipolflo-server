@@ -4,6 +4,9 @@ import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -79,4 +82,21 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
      * Usado por el scheduler de transición de estados por fecha (paso a FINALIZADA/VENCIDA_SIN_PAGO).
      */
     List<Reserva> findByEstadoAndFechaSalida(EstadoReserva estado, LocalDate fechaSalida);
+
+    /**
+     * IDs de reservas cuya fecha de salida es anterior o igual a {@code limite}, sin filtrar
+     * por estado. Usado por la limpieza de reservas vencidas, para saber qué finanzas
+     * asociadas hay que borrar antes de borrar la reserva.
+     */
+    @Query("SELECT r.id FROM Reserva r WHERE r.fechaSalida <= :limite")
+    List<Long> findIdsByFechaSalidaLessThanEqual(@Param("limite") LocalDate limite);
+
+    /**
+     * Borra en un único {@code DELETE} masivo las reservas cuyo id está en {@code ids}.
+     * Se usa {@code @Query} explícito (y no un derivado {@code deleteBy…}) para evitar que
+     * Spring Data cargue las entidades y las borre una a una.
+     */
+    @Modifying
+    @Query("DELETE FROM Reserva r WHERE r.id IN :ids")
+    int deleteByIdIn(@Param("ids") List<Long> ids);
 }

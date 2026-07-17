@@ -6,7 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
+import com.cipolflo.server.clientes.domain.enums.CategoriaSocio;
+import java.time.Period;
 import java.time.LocalDate;
 
 @Entity
@@ -15,9 +16,6 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 public class Socio extends Cliente implements ClienteConUbicacion {
-
-    /** Meses sin pagar a partir de los cuales el socio pasa a {@link EstadoSocio#INACTIVO}. */
-    public static final int MESES_PARA_INACTIVO = 3;
 
     private Integer numeroSocio;
 
@@ -48,14 +46,16 @@ public class Socio extends Cliente implements ClienteConUbicacion {
     @Column(nullable = false)
     private MetodoCobro metodoCobro;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Integer mesesSinPagar = 0;
+    private CategoriaSocio categoriaSocio;
 
-    public void incrementarMesesSinPagar() {
-        this.mesesSinPagar++;
-        if (this.mesesSinPagar >= MESES_PARA_INACTIVO) {
-            this.estado = EstadoSocio.INACTIVO;
-        }
+    public int calcularAntiguedadEnAnios(LocalDate fechaReferencia) {
+        return Period.between(this.fechaIngreso, fechaReferencia).getYears();
+    }
+
+    public void pasarAInactivoPorMorosidad() {
+        this.estado = EstadoSocio.INACTIVO;
     }
 
     public void darDeBaja() {
@@ -64,7 +64,8 @@ public class Socio extends Cliente implements ClienteConUbicacion {
 
     public void modificar(String cedula, String nombreCompleto, String telefono, String mail, String notas,
                           LocalDate fechaNacimiento, String pais, String departamento,
-                          String ciudad, String direccion, MetodoCobro metodoCobro) {
+                          String ciudad, String direccion, MetodoCobro metodoCobro,  CategoriaSocio categoriaSocio,
+                          LocalDate fechaIngreso) {
         this.setCedula(cedula);
         super.modificar(nombreCompleto, telefono, mail, notas);
         this.fechaNacimiento = fechaNacimiento;
@@ -73,6 +74,8 @@ public class Socio extends Cliente implements ClienteConUbicacion {
         this.ciudad = ciudad;
         this.direccion = direccion;
         this.metodoCobro = metodoCobro;
+        this.categoriaSocio = categoriaSocio;
+        this.fechaIngreso = fechaIngreso;
     }
 
 }
