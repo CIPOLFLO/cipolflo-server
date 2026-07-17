@@ -15,6 +15,8 @@ import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaEx
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import com.cipolflo.server.integraciones.telegram.exception.TelegramCodigoError;
+import com.cipolflo.server.integraciones.telegram.exception.TelegramSecretInvalidoException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -285,6 +287,14 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ServicioCodigoError.SOLICITUD_INVALIDA.name(),
                         "El parámetro '" + ex.getParameterName() + "' es requerido"));
+    }
+
+    @ExceptionHandler(TelegramSecretInvalidoException.class)
+    public ResponseEntity<ErrorResponse> handleTelegramSecretInvalidoException(TelegramSecretInvalidoException ex) {
+        log.warn("Secret de webhook de Telegram inválido: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(TelegramCodigoError.TELEGRAM_SECRET_INVALIDO.name(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

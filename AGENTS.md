@@ -24,10 +24,12 @@ src/main/java/com/cipolflo/server/
 ├── clientes/                   ← Módulo de clientes y socios
 ├── servicios/                  ← Módulo de servicios del club
 ├── reservas/                   ← Módulo de reservas
-└── finanzas/                   ← Módulo de ingresos y egresos
+├── finanzas/                   ← Módulo de ingresos y egresos
+└── integraciones/              ← Integración con servicios externos (no es un dominio de negocio)
 ```
 
-Cada módulo tiene esta estructura interna fija:
+Cada módulo de dominio (`clientes`, `servicios`, `reservas`, `finanzas`) tiene esta
+estructura interna fija:
 
 ```
 {modulo}/
@@ -40,6 +42,27 @@ Cada módulo tiene esta estructura interna fija:
 ```
 
 No crear carpetas fuera de este esquema salvo acuerdo explícito.
+
+### `integraciones/` — excepción acordada al esquema de módulo
+
+`integraciones/` no sigue la estructura `domain/repository/service/dto/controller` de los
+módulos de negocio: es la capa de integración con servicios externos (Telegram, y a
+futuro otros canales de mensajería o IA). Se parte en **núcleo agnóstico + adaptador**:
+
+```
+integraciones/
+├── mensajeria/      ← núcleo: no sabe qué es Telegram. Solo conoce sus propios
+│                       puertos (CanalMensajeria, RegistroDestinatarios) y tipos
+│                       genéricos (destinatarioId: String). Acá viven las tools de IA,
+│                       el asistente (Spring AI) y la memoria conversacional.
+└── telegram/        ← adaptador: conoce el formato de update de Telegram, implementa
+                        los puertos de mensajeria/, expone el webhook.
+```
+
+Regla: si se agrega un canal nuevo (ej. WhatsApp), se escribe un adaptador nuevo
+(`integraciones/whatsapp/`) implementando los mismos puertos de `mensajeria/` — el núcleo
+no cambia. Ver [`docs/telegram-bot-arquitectura.md`](docs/telegram-bot-arquitectura.md)
+para el detalle completo.
 
 ---
 

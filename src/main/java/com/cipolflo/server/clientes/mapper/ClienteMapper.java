@@ -94,11 +94,12 @@ public class ClienteMapper {
     );
 }
 
-    public static EstadoSocioResponseDto toEstadoSocioResponseDto(Socio socio) {
+    public static EstadoSocioResponseDto toEstadoSocioResponseDto(Socio socio, Integer mesesSinPagar) {
         return new EstadoSocioResponseDto(
                 socio.getId(),
                 socio.getEstado(),
-                socio.getNumeroSocio()
+                socio.getNumeroSocio(),
+                mesesSinPagar
         );
     }
 

@@ -16,6 +16,10 @@ version = "0.0.1-SNAPSHOT"
 // sin la regresión. Ver: https://github.com/liquibase/liquibase/issues/6666
 extra["postgresql.version"] = "42.7.4"
 
+// Spring AI 2.0.0 exige Spring Boot 4.x. Mientras el proyecto esté en Boot 3.5.x
+// se fija la última versión estable de la línea 1.x.
+val springAiVersion = "1.1.8"
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
@@ -49,6 +53,13 @@ dependencies {
 	testAnnotationProcessor ("org.projectlombok:lombok")
 	implementation("com.azure:azure-ai-documentintelligence:1.0.0-beta.4")
 	implementation("com.azure:azure-core:1.53.0")
+	implementation("org.springframework.ai:spring-ai-starter-model-openai")
+}
+
+dependencyManagement {
+	imports {
+		mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
+	}
 }
 
 tasks.withType<Test> {

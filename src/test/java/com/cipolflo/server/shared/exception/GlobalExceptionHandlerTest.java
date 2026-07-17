@@ -6,6 +6,8 @@ import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.finanzas.exception.FinanzaCodigoError;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
+import com.cipolflo.server.integraciones.telegram.exception.TelegramCodigoError;
+import com.cipolflo.server.integraciones.telegram.exception.TelegramSecretInvalidoException;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -295,5 +297,16 @@ void handleFinanzaNotFoundException_deberiaRetornar404() {
 
     assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     assertEquals(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), response.getBody().codigo());
+}
+
+@Test
+void handleTelegramSecretInvalidoException_deberiaRetornar401() {
+    TelegramSecretInvalidoException ex = new TelegramSecretInvalidoException("Secret inválido");
+
+    ResponseEntity<ErrorResponse> response = handler.handleTelegramSecretInvalidoException(ex);
+
+    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    assertEquals(TelegramCodigoError.TELEGRAM_SECRET_INVALIDO.name(), response.getBody().codigo());
+    assertEquals("Secret inválido", response.getBody().descripcion());
 }
 }

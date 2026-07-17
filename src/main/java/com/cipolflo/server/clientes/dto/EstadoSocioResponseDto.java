@@ -8,10 +8,12 @@ public class EstadoSocioResponseDto implements ResponseDto {
     private final Long id;
     private final EstadoSocio estado;
     private final Integer numeroSocio;
+    private final Integer mesesSinPagar;
 
-    public EstadoSocioResponseDto(Long id, EstadoSocio estado, Integer numeroSocio) {
+    public EstadoSocioResponseDto(Long id, EstadoSocio estado, Integer numeroSocio, Integer mesesSinPagar) {
         this.id = id;
         this.estado = estado;
         this.numeroSocio = numeroSocio;
+        this.mesesSinPagar = mesesSinPagar;
     }
 }

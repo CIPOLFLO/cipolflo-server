@@ -295,7 +295,7 @@ public class ClienteService implements IClienteService {
         if (!(cliente instanceof Socio socio)) {
             throw new SocioNotFoundException(id);
         }
-        return ClienteMapper.toEstadoSocioResponseDto(socio);
+        return ClienteMapper.toEstadoSocioResponseDto(socio, pagoCuotaService.calcularMesesAdeudados(socio));
     }
 
     @Override
