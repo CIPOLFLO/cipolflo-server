@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -19,6 +20,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
             LocalDate hasta,
             Collection<EstadoReserva> estados
     );
+
     List<Reserva> findByClienteIdAndFechaEntradaAfterAndEstadoIn(
             Long clienteId,
             LocalDate desde,
@@ -56,6 +58,17 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>, JpaSpec
             LocalDate fechaFin,
             LocalDate fechaInicio,
             Long idExcluir
+    );
+
+    /**
+     * Reservas en el estado dado cuya fecha límite de confirmación ya se cumplió o pasó.
+     * Usada por el job de cancelación automática, invocada con PENDIENTE y la fecha/hora
+     * actual: el guard de estado va acá (en la query), no en memoria, para que el job nunca
+     * pueda tocar una reserva CONFIRMADA, EN_CURSO, FINALIZADA ni CANCELADA.
+     */
+    List<Reserva> findByEstadoAndFechaLimiteConfirmacionLessThanEqual(
+            EstadoReserva estado,
+            LocalDateTime limite
     );
 
     /**

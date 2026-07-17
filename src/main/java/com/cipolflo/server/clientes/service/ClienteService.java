@@ -180,7 +180,9 @@ public class ClienteService implements IClienteService {
                 dto.getDepartamento(),
                 dto.getCiudad(),
                 dto.getDireccion(),
-                dto.getMetodoCobro()
+                dto.getMetodoCobro(),
+                dto.getCategoriaSocio(),
+                dto.getFechaIngreso()
         );
 
         try {
@@ -215,8 +217,8 @@ public class ClienteService implements IClienteService {
         socio.setNotas(dto.getObservaciones());
         socio.setNumeroSocio(numeroSocio);
         socio.setEstado(EstadoSocio.ACTIVO);
-        socio.setFechaIngreso(LocalDate.now(ZoneId.systemDefault()));
-        socio.setMesesSinPagar(0);
+        socio.setCategoriaSocio(dto.getCategoriaSocio());
+        socio.setFechaIngreso(dto.getFechaIngreso());
         try {
             return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null);
         } catch (DataIntegrityViolationException e) {

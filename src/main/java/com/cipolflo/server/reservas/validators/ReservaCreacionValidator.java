@@ -3,6 +3,7 @@ package com.cipolflo.server.reservas.validators;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Component
 public class ReservaCreacionValidator {
@@ -24,9 +26,11 @@ public class ReservaCreacionValidator {
     private final ServicioRepository servicioRepository;
     private final IConsultaClienteDetalle consultaClienteDetalle;
 
-    public ReservaCreacionValidator(ReservaRepository reservaRepository,
-                                    ServicioRepository servicioRepository,
-                                    IConsultaClienteDetalle consultaClienteDetalle) {
+    public ReservaCreacionValidator(
+            ReservaRepository reservaRepository,
+            ServicioRepository servicioRepository,
+            IConsultaClienteDetalle consultaClienteDetalle
+    ) {
         this.reservaRepository = reservaRepository;
         this.servicioRepository = servicioRepository;
         this.consultaClienteDetalle = consultaClienteDetalle;
@@ -38,6 +42,7 @@ public class ReservaCreacionValidator {
         validarHoras(dto);
         validarSolapamiento(dto);
         validarCliente(dto);
+        validarPlazoConfirmacion(dto);
     }
 
     private void validarFechas(ReservaCreacionRequestDto dto) {
@@ -111,6 +116,7 @@ public class ReservaCreacionValidator {
             );
         }
     }
+
     private void validarCliente(ReservaCreacionRequestDto dto) {
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
             validarDatosNuevoCliente(dto);
@@ -156,6 +162,42 @@ public class ReservaCreacionValidator {
                     ReservaCodigoError.CLIENTE_EMPRESA_REQUERIDO_PARA_COLABORACION,
                     "Las reservas de colaboración sin fines de lucro requieren un cliente de tipo EMPRESA"
             );
+        }
+    }
+
+    /**
+     * El plazo de confirmación es obligatorio cuando la reserva requiere seña y/o
+     * documentación, y no aplica en caso contrario. Cuando viene informado, además se valida
+     * que la fecha límite de confirmación resultante no esté ya vencida (ej. reserva para
+     * mañana con plazo de 3 meses), para que el job de cancelación automática no la cancele
+     * en su siguiente corrida.
+     */
+    private void validarPlazoConfirmacion(ReservaCreacionRequestDto dto) {
+        boolean requiereAlguno = Boolean.TRUE.equals(dto.getRequiereSena())
+                || Boolean.TRUE.equals(dto.getRequiereDocumentacion());
+        PlazoConfirmacion plazoConfirmacion = dto.getPlazoConfirmacion();
+
+        if (requiereAlguno && plazoConfirmacion == null) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.PLAZO_CONFIRMACION_REQUERIDO,
+                    "El plazo para confirmar la reserva es obligatorio cuando se requiere seña y/o documentación"
+            );
+        }
+        if (!requiereAlguno && plazoConfirmacion != null) {
+            throw new ReservaValidacionException(
+                    ReservaCodigoError.PLAZO_CONFIRMACION_NO_APLICA,
+                    "El plazo para confirmar la reserva no aplica si no se requiere seña ni documentación"
+            );
+        }
+        if (plazoConfirmacion != null) {
+            LocalDateTime fechaLimiteConfirmacion =
+                    plazoConfirmacion.calcularFechaLimiteConfirmacion(dto.getFechaInicio(), dto.getHoraInicio());
+            if (!fechaLimiteConfirmacion.isAfter(LocalDateTime.now(ZonaHoraria.URUGUAY))) {
+                throw new ReservaValidacionException(
+                        ReservaCodigoError.PLAZO_CONFIRMACION_VENCIDO,
+                        "El plazo de confirmación seleccionado ya se encuentra vencido para la fecha de inicio indicada"
+                );
+            }
         }
     }
 }

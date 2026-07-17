@@ -2,6 +2,7 @@ package com.cipolflo.server.reservas.validators;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ReservaModificacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
@@ -54,6 +55,14 @@ class ReservaModificacionValidatorTest {
         lenient().when(reserva.getId()).thenReturn(id);
         lenient().when(reserva.getTipoReserva()).thenReturn(tipoReserva);
         lenient().when(reserva.getFechaEntrada()).thenReturn(fechaEntrada);
+        return reserva;
+    }
+
+    private Reserva mockReservaConPlazo(
+            Long id, TipoReserva tipoReserva, LocalDate fechaEntrada, PlazoConfirmacion plazoConfirmacion
+    ) {
+        Reserva reserva = mockReserva(id, tipoReserva, fechaEntrada);
+        lenient().when(reserva.getPlazoConfirmacion()).thenReturn(plazoConfirmacion);
         return reserva;
     }
 
@@ -175,6 +184,76 @@ class ReservaModificacionValidatorTest {
                 fechaInicio, LocalDate.now(ZonaHoraria.URUGUAY).plusDays(5)
         );
         Reserva reserva = mockReserva(reservaId, TipoReserva.COMUN, fechaInicio);
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqualAndIdNot(
+                any(), any(), any(), any(), eq(reservaId)
+        )).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar(reserva, dto));
+    }
+
+    // ── validarPlazoConfirmacion ─────────────────────────────────────────────
+
+    @Test
+    void deberiaLanzarExcepcionCuandoLaNuevaFechaInicioDejaElPlazoDeConfirmacionVencido() {
+        Long reservaId = 1L;
+        // Reserva con plazo de 3 meses: mover fechaInicio a mañana deja el límite (mañana - 3 meses) vencido.
+        LocalDate nuevaFechaInicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1);
+        ReservaModificacionRequestDto dto = mockDto(
+                1L,
+                nuevaFechaInicio, nuevaFechaInicio.plusDays(2)
+        );
+        Reserva reserva = mockReservaConPlazo(
+                reservaId, TipoReserva.COMUN,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(90),
+                PlazoConfirmacion.TRES_MESES
+        );
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqualAndIdNot(
+                any(), any(), any(), any(), eq(reservaId)
+        )).thenReturn(false);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> validator.validar(reserva, dto)
+        );
+        assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_VENCIDO.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaPasarValidacionCuandoElPlazoDeConfirmacionSigueVigenteTrasModificar() {
+        Long reservaId = 1L;
+        LocalDate nuevaFechaInicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(90);
+        ReservaModificacionRequestDto dto = mockDto(
+                1L,
+                nuevaFechaInicio, nuevaFechaInicio.plusDays(2)
+        );
+        Reserva reserva = mockReservaConPlazo(
+                reservaId, TipoReserva.COMUN,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(2),
+                PlazoConfirmacion.VEINTICUATRO_HORAS
+        );
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqualAndIdNot(
+                any(), any(), any(), any(), eq(reservaId)
+        )).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar(reserva, dto));
+    }
+
+    @Test
+    void deberiaPasarValidacionCuandoLaReservaNoTienePlazoConfirmacion() {
+        Long reservaId = 1L;
+        LocalDate nuevaFechaInicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1);
+        ReservaModificacionRequestDto dto = mockDto(
+                1L,
+                nuevaFechaInicio, nuevaFechaInicio.plusDays(2)
+        );
+        Reserva reserva = mockReservaConPlazo(
+                reservaId, TipoReserva.COMUN,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(2),
+                null
+        );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqualAndIdNot(
                 any(), any(), any(), any(), eq(reservaId)
