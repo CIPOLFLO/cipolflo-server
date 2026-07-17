@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,41 +23,57 @@ class ConsultaSociosAtrasadosTest {
     @Mock
     private ClienteRepository clienteRepository;
 
+    @Mock
+    private IPagoCuotaService pagoCuotaService;
+
     @InjectMocks
     private ConsultaSociosAtrasados consultaSociosAtrasados;
 
-    private Socio socio(Long id, String cedula, Integer mesesSinPagar, EstadoSocio estado) {
+    private Socio socio(Long id, String cedula, EstadoSocio estado) {
         Socio socio = new Socio();
         socio.setId(id);
         socio.setNombreCompleto("Socio " + id);
         socio.setCedula(cedula);
-        socio.setMesesSinPagar(mesesSinPagar);
         socio.setEstado(estado);
         return socio;
     }
 
+    @SuppressWarnings("unchecked")
+    private void mockSocios(List<Socio> socios) {
+        when(clienteRepository.findAll(any(Specification.class))).thenReturn((List) socios);
+    }
+
     @Test
-    void buscarAtrasados_deberiaMapearLosSociosDevueltosPorElRepositorio() {
-        when(clienteRepository.findByEstadoInAndMesesSinPagarGreaterThanEqual(
-                eq(List.of(EstadoSocio.ACTIVO, EstadoSocio.INACTIVO)), eq(1)))
-                .thenReturn(List.of(
-                        socio(1L, "11111111", 1, EstadoSocio.ACTIVO),
-                        socio(2L, "22222222", 4, EstadoSocio.INACTIVO)));
+    void buscarAtrasados_deberiaMapearLosSociosConAlMenosUnMesAdeudado() {
+        Socio activo = socio(1L, "11111111", EstadoSocio.ACTIVO);
+        Socio inactivo = socio(2L, "22222222", EstadoSocio.INACTIVO);
+        mockSocios(List.of(activo, inactivo));
+
+        when(pagoCuotaService.calcularMesesAdeudados(activo)).thenReturn(1);
+        when(pagoCuotaService.calcularMesesAdeudados(inactivo)).thenReturn(4);
 
         List<SocioAtrasadoDto> resultado = consultaSociosAtrasados.buscarAtrasados();
 
         assertEquals(2, resultado.size());
         assertEquals(new SocioAtrasadoDto(1L, "Socio 1", "11111111", 1, EstadoSocio.ACTIVO), resultado.get(0));
         assertEquals(new SocioAtrasadoDto(2L, "Socio 2", "22222222", 4, EstadoSocio.INACTIVO), resultado.get(1));
-        verify(clienteRepository).findByEstadoInAndMesesSinPagarGreaterThanEqual(
-                List.of(EstadoSocio.ACTIVO, EstadoSocio.INACTIVO), 1);
+    }
+
+    @Test
+    void buscarAtrasados_deberiaExcluirSociosAlDia() {
+        Socio alDia = socio(1L, "11111111", EstadoSocio.ACTIVO);
+        mockSocios(List.of(alDia));
+
+        when(pagoCuotaService.calcularMesesAdeudados(alDia)).thenReturn(0);
+
+        List<SocioAtrasadoDto> resultado = consultaSociosAtrasados.buscarAtrasados();
+
+        assertEquals(0, resultado.size());
     }
 
     @Test
     void buscarAtrasados_sinCoincidencias_deberiaDevolverListaVacia() {
-        when(clienteRepository.findByEstadoInAndMesesSinPagarGreaterThanEqual(
-                eq(List.of(EstadoSocio.ACTIVO, EstadoSocio.INACTIVO)), eq(1)))
-                .thenReturn(List.of());
+        mockSocios(List.of());
 
         List<SocioAtrasadoDto> resultado = consultaSociosAtrasados.buscarAtrasados();
 
