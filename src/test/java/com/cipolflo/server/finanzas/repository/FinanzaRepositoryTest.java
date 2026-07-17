@@ -15,11 +15,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -122,6 +124,57 @@ class FinanzaRepositoryTest {
 
         assertThrows(DataIntegrityViolationException.class,
                 () -> finanzaRepository.saveAndFlush(ingreso));
+    }
+
+    @Test
+    void deberiaBorrarIngresosYEgresosDeLasReservasDadasEnUnDeleteMasivo() {
+        Ingreso ingresoReserva1 = Ingreso.crearDesdeReserva(LocalDate.now(), BigDecimal.TEN,
+                FormaPago.EFECTIVO, Procedencia.SEDE, null, 1L);
+        Egreso egresoReserva1 = Egreso.crearDesdeCancelacionReserva(LocalDate.now(), BigDecimal.TEN,
+                FormaPago.EFECTIVO, Procedencia.SEDE, null, 1L);
+        Ingreso ingresoReserva2 = Ingreso.crearDesdeReserva(LocalDate.now(), BigDecimal.TEN,
+                FormaPago.EFECTIVO, Procedencia.SEDE, null, 2L);
+        Ingreso ingresoDeOtraReserva = Ingreso.crearDesdeReserva(LocalDate.now(), BigDecimal.TEN,
+                FormaPago.EFECTIVO, Procedencia.SEDE, null, 99L);
+        Long idAConservar = finanzaRepository.saveAndFlush(ingresoDeOtraReserva).getId();
+        finanzaRepository.saveAndFlush(ingresoReserva1);
+        finanzaRepository.saveAndFlush(egresoReserva1);
+        finanzaRepository.saveAndFlush(ingresoReserva2);
+
+        int ingresosBorrados = finanzaRepository.deleteIngresosByReservaIdIn(List.of(1L, 2L));
+        int egresosBorrados = finanzaRepository.deleteEgresosByReservaIdIn(List.of(1L, 2L));
+        entityManager.clear();
+
+        assertEquals(2, ingresosBorrados);
+        assertEquals(1, egresosBorrados);
+        assertTrue(finanzaRepository.findById(idAConservar).isPresent());
+    }
+
+    @Test
+    void deberiaBorrarSoloFinanzasSueltasConFechaAnteriorAlLimite() {
+        LocalDate limite = LocalDate.now().minusYears(3);
+        Ingreso ingresoSueltoVencido = Ingreso.crearManual(limite.minusDays(1), BigDecimal.TEN,
+                Concepto.PAGO_RESERVA, FormaPago.EFECTIVO, Procedencia.SEDE, null);
+        Ingreso ingresoSueltoVigente = Ingreso.crearManual(limite.plusDays(1), BigDecimal.TEN,
+                Concepto.PAGO_RESERVA, FormaPago.EFECTIVO, Procedencia.SEDE, null);
+        Egreso egresoSueltoVencido = Egreso.crearManual(limite.minusDays(1), BigDecimal.TEN,
+                Concepto.UTE, FormaPago.EFECTIVO, Procedencia.SEDE, null);
+        Ingreso ingresoDeReservaVencido = Ingreso.crearDesdeReserva(limite.minusDays(1), BigDecimal.TEN,
+                FormaPago.EFECTIVO, Procedencia.SEDE, null, 1L);
+        Long idVigente = finanzaRepository.saveAndFlush(ingresoSueltoVigente).getId();
+        Long idDeReserva = finanzaRepository.saveAndFlush(ingresoDeReservaVencido).getId();
+        finanzaRepository.saveAndFlush(ingresoSueltoVencido);
+        finanzaRepository.saveAndFlush(egresoSueltoVencido);
+
+        int ingresosBorrados = finanzaRepository.deleteIngresosSueltosConFechaAnteriorA(limite);
+        int egresosBorrados = finanzaRepository.deleteEgresosSueltosConFechaAnteriorA(limite);
+        entityManager.clear();
+
+        assertEquals(1, ingresosBorrados);
+        assertEquals(1, egresosBorrados);
+        assertTrue(finanzaRepository.findById(idVigente).isPresent());
+        assertTrue(finanzaRepository.findById(idDeReserva).isPresent(),
+                "una finanza con reservaId no debe borrarse por la regla de finanzas sueltas, aunque sea vieja");
     }
 
     private String tipoEnBaseDe(Long id) {
