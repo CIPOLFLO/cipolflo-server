@@ -1,6 +1,7 @@
 package com.cipolflo.server.reservas.domain;
 
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.shared.AuditableEntity;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -75,7 +76,12 @@ public class Reserva extends AuditableEntity {
     @Setter(AccessLevel.NONE)
     private BigDecimal montoImpago;
 
-    private LocalDateTime fechaLimitePago;
+    @Enumerated(EnumType.STRING)
+    @Setter(AccessLevel.NONE)
+    private PlazoConfirmacion plazoConfirmacion;
+
+    @Setter(AccessLevel.NONE)
+    private LocalDateTime fechaLimiteConfirmacion;
 
     @Column(nullable = false)
     @Setter(AccessLevel.NONE)
@@ -96,7 +102,7 @@ public class Reserva extends AuditableEntity {
                                 Integer cantidadTotal, Integer cantidadMenores,
                                 Integer cantidad, String notas,
                                 boolean requiereDocumentacion, boolean requiereSena,
-                                BigDecimal importe, LocalDateTime fechaLimite) {
+                                BigDecimal importe, PlazoConfirmacion plazoConfirmacion) {
         Reserva r = new Reserva();
         r.tipoReserva = tipoReserva;
         r.clienteId = clienteId;
@@ -115,7 +121,8 @@ public class Reserva extends AuditableEntity {
         r.estado = resolverEstado(tipoReserva, requiereDocumentacion, requiereSena);
         r.importe = resolverImporte(importe, tipoReserva);
         r.montoImpago = resolverImporte(importe, tipoReserva);
-        r.fechaLimitePago = fechaLimite;
+        r.plazoConfirmacion = plazoConfirmacion;
+        r.fechaLimiteConfirmacion = calcularFechaLimiteConfirmacion(plazoConfirmacion, fechaEntrada, horaInicio);
         return r;
     }
 
@@ -221,6 +228,7 @@ public class Reserva extends AuditableEntity {
         this.cantidadMenores = cantidadMenores;
         this.cantidad = cantidad;
         this.notas = notas;
+        this.fechaLimiteConfirmacion = calcularFechaLimiteConfirmacion(this.plazoConfirmacion, fechaEntrada, this.horaInicio);
     }
 
     public void cancelar() {
@@ -249,6 +257,29 @@ public class Reserva extends AuditableEntity {
             imp = importe;
         }
         return imp;
+    }
+
+    /**
+     * Fecha y hora derivada de {@code plazoConfirmacion} y {@code fechaEntrada} (más
+     * {@code horaInicio} si el servicio es por hora), o {@code null} si no hay plazo asociado
+     * (la reserva no requiere seña ni documentación). Se recalcula en {@code crear()} y en
+     * {@code modificar()} para no quedar desactualizada si cambia la fecha de entrada.
+     */
+    private static LocalDateTime calcularFechaLimiteConfirmacion(
+            PlazoConfirmacion plazoConfirmacion, LocalDate fechaEntrada, LocalTime horaInicio
+    ) {
+        if (plazoConfirmacion == null) {
+            return null;
+        }
+        return plazoConfirmacion.calcularFechaLimiteConfirmacion(fechaEntrada, horaInicio);
+    }
+
+    
+    public LocalDateTime getFechaInicioAlerta() {
+        if (plazoConfirmacion == null) {
+            return null;
+        }
+        return plazoConfirmacion.calcularFechaInicioAlerta(fechaLimiteConfirmacion);
     }
 
     public boolean estaPaga() {

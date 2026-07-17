@@ -4,6 +4,7 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
@@ -102,6 +103,35 @@ class ReservaCreacionValidatorTest {
         lenient().when(dto.getHoraInicio()).thenReturn(horaInicio);
         lenient().when(dto.getHoraFin()).thenReturn(horaFin);
         return dto;
+    }
+
+    /**
+     * Helper específico para los tests de validarPlazoConfirmacion: agrega requiereSena,
+     * requiereDocumentacion, plazoConfirmacion y (opcionalmente) horaInicio sobre el mockDto
+     * base, sin tocar el helper genérico existente.
+     */
+    private ReservaCreacionRequestDto mockDtoConPlazo(
+            LocalDate fechaInicio, LocalDate fechaFin,
+            boolean requiereSena, boolean requiereDocumentacion,
+            PlazoConfirmacion plazoConfirmacion,
+            Long servicioId, Long clienteId
+    ) {
+        ReservaCreacionRequestDto dto = mockDto(
+                TipoReserva.COMUN, servicioId,
+                fechaInicio, fechaFin,
+                clienteId, false, null, null, null
+        );
+        lenient().when(dto.getRequiereSena()).thenReturn(requiereSena);
+        lenient().when(dto.getRequiereDocumentacion()).thenReturn(requiereDocumentacion);
+        lenient().when(dto.getPlazoConfirmacion()).thenReturn(plazoConfirmacion);
+        return dto;
+    }
+
+    private void mockearServicioYSinSolapamiento(Long servicioId) {
+        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicioHabilitado(servicioId)));
+        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                any(), any(), any(), any()
+        )).thenReturn(false);
     }
 
     // ── validarFechas ──────────────────────────────────────────────────────────
@@ -438,6 +468,91 @@ class ReservaCreacionValidatorTest {
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                 any(), any(), any(), any()
         )).thenReturn(false);
+
+        assertDoesNotThrow(() -> validator.validar(dto));
+    }
+
+    // ── validarPlazoConfirmacion ─────────────────────────────────────────────
+
+    @Test
+    void deberiaLanzarExcepcionCuandoRequiereSenaSinPlazoConfirmacion() {
+        LocalDate inicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(10);
+        ReservaCreacionRequestDto dto = mockDtoConPlazo(
+                inicio, inicio.plusDays(2),
+                true, false, null,
+                1L, 42L
+        );
+        mockearServicioYSinSolapamiento(1L);
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_REQUERIDO.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoRequiereDocumentacionSinPlazoConfirmacion() {
+        LocalDate inicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(10);
+        ReservaCreacionRequestDto dto = mockDtoConPlazo(
+                inicio, inicio.plusDays(2),
+                false, true, null,
+                1L, 42L
+        );
+        mockearServicioYSinSolapamiento(1L);
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_REQUERIDO.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoNoRequiereNadaYEnviaPlazoConfirmacion() {
+        LocalDate inicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(10);
+        ReservaCreacionRequestDto dto = mockDtoConPlazo(
+                inicio, inicio.plusDays(2),
+                false, false, PlazoConfirmacion.TRES_MESES,
+                1L, 42L
+        );
+        mockearServicioYSinSolapamiento(1L);
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_NO_APLICA.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoLaFechaLimiteConfirmacionYaVencio() {
+        // Reserva para mañana con plazo de 3 meses: el límite (mañana - 3 meses) ya pasó.
+        LocalDate inicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1);
+        ReservaCreacionRequestDto dto = mockDtoConPlazo(
+                inicio, inicio.plusDays(2),
+                true, false, PlazoConfirmacion.TRES_MESES,
+                1L, 42L
+        );
+        mockearServicioYSinSolapamiento(1L);
+
+        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
+        assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_VENCIDO.name(), ex.getCodigo());
+    }
+
+    @Test
+    void deberiaPasarValidacionConPlazoConfirmacionVigente() {
+        LocalDate inicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(90);
+        ReservaCreacionRequestDto dto = mockDtoConPlazo(
+                inicio, inicio.plusDays(2),
+                true, false, PlazoConfirmacion.VEINTICUATRO_HORAS,
+                1L, 42L
+        );
+        mockearServicioYSinSolapamiento(1L);
+
+        assertDoesNotThrow(() -> validator.validar(dto));
+    }
+
+    @Test
+    void deberiaPasarValidacionSinRequerirNadaYSinPlazoConfirmacion() {
+        LocalDate inicio = LocalDate.now(ZonaHoraria.URUGUAY).plusDays(10);
+        ReservaCreacionRequestDto dto = mockDtoConPlazo(
+                inicio, inicio.plusDays(2),
+                false, false, null,
+                1L, 42L
+        );
+        mockearServicioYSinSolapamiento(1L);
 
         assertDoesNotThrow(() -> validator.validar(dto));
     }
