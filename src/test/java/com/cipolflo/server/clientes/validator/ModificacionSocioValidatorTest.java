@@ -63,6 +63,16 @@ import static org.mockito.Mockito.verifyNoInteractions;
         }
 
         @Test
+        void deberiaAceptarFechaIngresoPasada() {
+            ModificacionSocioRequestDto dto = crearDto();
+            dto.setFechaIngreso(LocalDate.now().minusYears(5));
+
+            assertDoesNotThrow(
+                    () -> validator.validar(ID, dto, CEDULA_NORMALIZADA, MAIL_NORMALIZADO)
+            );
+        }
+
+        @Test
         void deberiaRechazarFechaIngresoFutura() {
             ModificacionSocioRequestDto dto = crearDto();
             dto.setFechaIngreso(LocalDate.now().plusDays(1));

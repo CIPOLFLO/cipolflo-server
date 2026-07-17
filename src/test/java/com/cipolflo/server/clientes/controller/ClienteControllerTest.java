@@ -543,6 +543,63 @@ class ClienteControllerTest {
 
     @Test
     @WithMockUser
+    void deberiaRetornarBadRequestCuandoFechaIngresoEsFuturaEnModificarSocio() throws Exception {
+        when(clienteService.modificarSocio(eq(1L), any()))
+                .thenThrow(new ClienteValidacionException(
+                        ClienteCodigoError.FECHA_INGRESO_INVALIDA.name(),
+                        "La fecha de ingreso no puede ser posterior a la fecha actual"
+                ));
+
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "cedula": "12345672",
+                                  "nombreCompleto": "Juan Pérez",
+                                  "telefono": "099111111",
+                                  "fechaNacimiento": "1990-01-01",
+                                  "pais": "Uruguay",
+                                  "departamento": "Montevideo",
+                                  "ciudad": "Montevideo",
+                                  "direccion": "Av. 18 de Julio 100",
+                                  "metodoCobro": "EFECTIVO",
+                                  "categoriaSocio": "SOCIO_COMUN",
+                                  "fechaIngreso": "2099-01-01"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("FECHA_INGRESO_INVALIDA"));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltaCategoriaSocioEnModificarSocio() throws Exception {
+        mockMvc.perform(put("/api/v1/clientes/socios/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "cedula": "12345672",
+                                  "nombreCompleto": "Juan Pérez",
+                                  "telefono": "099111111",
+                                  "fechaNacimiento": "1990-01-01",
+                                  "pais": "Uruguay",
+                                  "departamento": "Montevideo",
+                                  "ciudad": "Montevideo",
+                                  "direccion": "Av. 18 de Julio 100",
+                                  "metodoCobro": "EFECTIVO",
+                                  "fechaIngreso": "2020-01-01"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(clienteService, never()).modificarSocio(anyLong(), any());
+    }
+
+    @Test
+    @WithMockUser
     void deberiaRetornarBadRequestCuandoCedulaEsInvalidaEnModificarParticular() throws Exception {
         when(clienteService.modificarParticular(eq(1L), any()))
                 .thenThrow(new ClienteValidacionException("CEDULA_INVALIDA", "La cédula ingresada no es válida"));
@@ -758,9 +815,72 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.tipoCliente").value("SOCIO"))
-                .andExpect(jsonPath("$.estado").value("ACTIVO"));
+                .andExpect(jsonPath("$.estado").value("ACTIVO"))
+                .andExpect(jsonPath("$.categoriaSocio").value("SOCIO_COMUN"))
+                .andExpect(jsonPath("$.fechaIngreso").value("2020-01-01"));
 
         verify(clienteService).registrarSocio(any(RegistroSocioRequestDto.class));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFechaIngresoEsFuturaEnRegistroSocio() throws Exception {
+        when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
+                .thenThrow(new ClienteValidacionException(
+                        ClienteCodigoError.FECHA_INGRESO_INVALIDA.name(),
+                        "La fecha de ingreso no puede ser posterior a la fecha actual"
+                ));
+
+        mockMvc.perform(
+                        post("/api/v1/clientes/socios")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "cedula": "1.234.567-8",
+                                      "nombreCompleto": "Juan Pérez",
+                                      "fechaNacimiento": "1990-05-10",
+                                      "telefono": "099123456",
+                                      "metodoCobro": "EFECTIVO",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Av. Italia 1234",
+                                      "categoriaSocio": "SOCIO_COMUN",
+                                      "fechaIngreso": "2099-01-01"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("FECHA_INGRESO_INVALIDA"));
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoFaltaCategoriaSocioEnRegistroSocio() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/clientes/socios")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                    {
+                                      "cedula": "1.234.567-8",
+                                      "nombreCompleto": "Juan Pérez",
+                                      "fechaNacimiento": "1990-05-10",
+                                      "telefono": "099123456",
+                                      "metodoCobro": "EFECTIVO",
+                                      "pais": "Uruguay",
+                                      "departamento": "Montevideo",
+                                      "ciudad": "Montevideo",
+                                      "direccion": "Av. Italia 1234",
+                                      "fechaIngreso": "2020-01-01"
+                                    }
+                                    """)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("SOLICITUD_INVALIDA"));
+
+        verify(clienteService, never()).registrarSocio(any());
     }
 
     @Test
@@ -840,7 +960,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                                       "pais": "Uruguay",
                                       "departamento": "Montevideo",
                                       "ciudad": "Montevideo",
-                                      "direccion": "Av. Italia 1234"
+                                      "direccion": "Av. Italia 1234",
                                       "categoriaSocio": "SOCIO_COMUN",
                                       "fechaIngreso": "2020-01-01"
                                     }
