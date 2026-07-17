@@ -78,9 +78,9 @@ Elegir el comando más acotado posible:
 - Causa probable: constructor público usado por error.
 - Sugerencia: reemplazar por `Reserva.crear(...)`. Verificar que el constructor protegido no fue cambiado.
 
-**`estado` o `mesesSinPagar` de `Socio` asignados directamente desde el servicio**
+**`estado` de `Socio` asignado directamente desde el servicio**
 - Causa probable: setter invocado sin usar los métodos de negocio.
-- Sugerencia: reemplazar por `socio.incrementarMesesSinPagar()` o `socio.darDeBaja()` según el caso.
+- Sugerencia: reemplazar por `socio.pasarAInactivoPorMorosidad()` o `socio.darDeBaja()` según el caso.
 
 **Enum de módulo ubicado en `shared/enums/`**
 - Causa probable: carpeta equivocada al crear el archivo.

@@ -46,9 +46,6 @@ public class Socio extends Cliente implements ClienteConUbicacion {
     @Column(nullable = false)
     private MetodoCobro metodoCobro;
 
-    @Column(nullable = false)
-    private Integer mesesSinPagar = 0;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CategoriaSocio categoriaSocio;
@@ -57,11 +54,8 @@ public class Socio extends Cliente implements ClienteConUbicacion {
         return Period.between(this.fechaIngreso, fechaReferencia).getYears();
     }
 
-    public void incrementarMesesSinPagar() {
-        this.mesesSinPagar++;
-        if (this.mesesSinPagar >= 3) {
-            this.estado = EstadoSocio.INACTIVO;
-        }
+    public void pasarAInactivoPorMorosidad() {
+        this.estado = EstadoSocio.INACTIVO;
     }
 
     public void darDeBaja() {

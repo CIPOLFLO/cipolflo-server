@@ -60,6 +60,7 @@ de tres líneas; el trazado en base queda gratis.
 | `shared/mantenimiento/LimpiezaLogsEmailScheduler` | `LimpiezaLogsEmailService` | Purga de `envio_emails_logs` viejos. |
 | `reservas/scheduled/CancelacionAutomaticaReservasScheduler` | `CancelacionAutomaticaReservasService` | Cancela reservas `PENDIENTE` con plazo de confirmación vencido. |
 | `reservas/scheduled/TransicionEstadoReservasPorFechaScheduler` | `TransicionEstadoReservasPorFechaService` | Pasa reservas a EN_CURSO/FINALIZADA/VENCIDA_SIN_PAGO según la fecha. |
+| `clientes/scheduled/InactivacionSociosScheduler` | `InactivacionSociosService` | Inactivación automática de socios morosos. |
 
 ---
 
@@ -163,6 +164,10 @@ cipolflo.tareas.cancelacion-automatica-reservas.zona=America/Montevideo
 # Transicion de estados de reservas por fecha: todos los dias 00:00 (hora de Uruguay).
 cipolflo.tareas.transicion-estado-reservas.cron=0 0 0 * * *
 cipolflo.tareas.transicion-estado-reservas.zona=America/Montevideo
+
+# Inactivación automática de socios morosos: primer día de cada mes 03:00 (hora de Uruguay).
+cipolflo.tareas.inactivacion-socios.cron=0 0 3 1 * *
+cipolflo.tareas.inactivacion-socios.zona=America/Montevideo
 ```
 
 Cada tarea bindea sus properties con un record `@ConfigurationProperties` (patrón
@@ -240,6 +245,20 @@ la fecha de hoy:
 `VENCIDA_SIN_PAGO` es finalizable manualmente (`esFinalizable()` la incluye junto con
 `EN_CURSO`), pero no cuenta como estado "ocupante" del servicio (`esOcupante()`): al
 llegar a ese estado la estadía ya terminó, solo falta cobrar.
+
+### Inactivación automática de socios
+
+El **primer día de cada mes a las 03:00** evalúa a todos los socios `ACTIVO`. Para cada uno,
+recalcula desde cero (consultando `pago_cuota`) cuántos meses **completos** adeuda: compara
+el primer período pendiente (mes siguiente al último pagado, o `fechaIngreso` si nunca pagó)
+contra el mes en curso. El mes en curso nunca cuenta como adeudado — recién empieza, todavía
+no venció. Si el resultado llega a 3, pasa al socio a `INACTIVO` vía
+`Socio.pasarAInactivoPorMorosidad()` (ver [Patrones de dominio en `Socio`](../AGENTS.md)). Un
+socio que adeuda menos de 3 meses no se toca.
+
+> Al no depender de un contador persistido sino recalcular todo en cada corrida, es
+> idempotente: una corrida salteada no descuadra el resultado de la siguiente, y un socio que
+> se puso al día simplemente da 0 la próxima vez.
 
 ---
 
