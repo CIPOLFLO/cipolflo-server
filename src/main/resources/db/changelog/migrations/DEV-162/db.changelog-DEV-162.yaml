@@ -1,0 +1,4 @@
+
+databaseChangeLog:
+  - include:
+      file: db/changelog/migrations/DEV-162/alter_reserva_plazo_confirmacion.sql

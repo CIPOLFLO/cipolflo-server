@@ -1,7 +1,11 @@
 package com.cipolflo.server.clientes.validator;
 
 import com.cipolflo.server.clientes.dto.RegistroSocioRequestDto;
+import com.cipolflo.server.clientes.exception.ClienteCodigoError;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
 
 @Component
 public class RegistroSocioValidator {
@@ -24,9 +28,18 @@ public class RegistroSocioValidator {
     }
 
     public void validar(RegistroSocioRequestDto dto, String cedulaNormalizada, String mailNormalizado) {
+        validarFechaIngreso(dto.getFechaIngreso());
         cedulaFormatoValidator.validar(dto.getCedula());
         cedulaUnicaValidator.validar(cedulaNormalizada);
         emailFormatoValidator.validar(dto.getEmail());
         emailUnicoValidator.validar(mailNormalizado);
+    }
+    private void validarFechaIngreso(LocalDate fechaIngreso) {
+        if (fechaIngreso != null && fechaIngreso.isAfter(LocalDate.now())) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.FECHA_INGRESO_INVALIDA.name(),
+                    "La fecha de ingreso no puede ser posterior a la fecha actual"
+            );
+        }
     }
 }

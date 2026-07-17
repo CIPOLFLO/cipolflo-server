@@ -40,6 +40,8 @@ public class ReservaMapper {
                 reserva.getRequiereDocumentacion(),
                 reserva.getTieneDocumentacion(),
                 reserva.getRequiereSena(),
+                reserva.getPlazoConfirmacion(),
+                reserva.getFechaLimiteConfirmacion(),
                 reserva.getNotas(),
                 cliente,
                 servicio,
@@ -69,6 +71,8 @@ public class ReservaMapper {
                 orEmpty(reserva.getCantidad()),
                 formatearBooleano(reserva.getRequiereDocumentacion()),
                 formatearBooleano(reserva.getTieneDocumentacion()),
+                orEmpty(reserva.getPlazoConfirmacion() != null ? reserva.getPlazoConfirmacion().getLabel() : null),
+                orEmpty(reserva.getFechaLimiteConfirmacion()),
                 orEmpty(reserva.getNotas())
         );
     }

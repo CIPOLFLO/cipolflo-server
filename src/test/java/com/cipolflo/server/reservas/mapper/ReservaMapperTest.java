@@ -3,6 +3,7 @@ package com.cipolflo.server.reservas.mapper;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
@@ -263,12 +264,40 @@ class ReservaMapperTest {
     }
 
     @Test
+    void deberiaMapearPlazoConfirmacionYFechaLimiteCuandoLaReservaLosTiene() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
+                12L,
+                10L,
+                Procedencia.CAMPING,
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 3),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                true,
+                BigDecimal.valueOf(5000),
+                PlazoConfirmacion.VEINTICUATRO_HORAS
+        );
+
+        ReservaDetalleResponseDto dto =
+                ReservaMapper.toDetalleResponseDto(reserva, clienteDto(), servicioDto());
+
+        assertEquals(PlazoConfirmacion.VEINTICUATRO_HORAS, dto.getPlazoConfirmacion());
+        assertNotNull(dto.getFechaLimiteConfirmacion());
+    }
+
+    @Test
     void toExportFila_reservaComunConCliente_devuelveFilaConTodosLosCampos() {
         Reserva reserva = crearReserva(12L);
 
         List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
 
-        assertEquals(18, fila.size());
+        assertEquals(20, fila.size());
         assertEquals("42",                fila.get(0));   // id
         assertEquals("Común",             fila.get(1));   // tipoReserva
         assertEquals("Confirmada",        fila.get(2));   // estado
@@ -286,7 +315,9 @@ class ReservaMapperTest {
         assertEquals("",                  fila.get(14));  // cantidad null → ""
         assertEquals("No",                fila.get(15));  // requiereDocumentacion = false
         assertEquals("No",                fila.get(16));  // tieneDocumentacion = false
-        assertEquals("Llegan a las 14hs", fila.get(17));  // notas
+        assertEquals("",                  fila.get(17));  // plazoConfirmacion null → ""
+        assertEquals("",                  fila.get(18));  // fechaLimiteConfirmacion null → ""
+        assertEquals("Llegan a las 14hs", fila.get(19));  // notas
     }
 
     @Test
@@ -298,6 +329,26 @@ class ReservaMapperTest {
 
         assertEquals("15000", fila.get(10));  // importe
         assertEquals("Sí",    fila.get(11));  // pago = true
+    }
+
+    @Test
+    void toExportFila_plazoConfirmacionPresente_devuelveElLabelYLaFecha() {
+        Reserva reserva = Reserva.crear(
+                TipoReserva.COMUN,
+                12L,
+                10L,
+                Procedencia.CAMPING,
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 3),
+                null, null, 2, 0, null, null, true, true,
+                BigDecimal.valueOf(5000),
+                PlazoConfirmacion.TRES_MESES
+        );
+
+        List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
+
+        assertEquals("3 meses", fila.get(17));
+        assertFalse(fila.get(18).isEmpty());
     }
 
     @Test
@@ -333,7 +384,7 @@ void toExportFila_notasNulas_devuelveVacio() {
 
     List<String> fila = ReservaMapper.toExportFila(reserva, "Juan Pérez", "Cabaña del río");
 
-    assertEquals("", fila.get(17));
+    assertEquals("", fila.get(19));
 }
 
 @Test
