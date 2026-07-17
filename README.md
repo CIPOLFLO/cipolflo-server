@@ -350,7 +350,7 @@ Cliente (abstracta)
 └── Socio        (tipo = "SOCIO")
 ```
 
-`Socio` incluye lógica de negocio: control de meses sin pagar, cambio automático de estado a `INACTIVO` al superar 3 meses, y baja.
+`Socio` incluye lógica de negocio: cambio automático de estado a `INACTIVO` al acumular 3 meses de cuotas adeudadas (calculado a partir de `pago_cuota`, sin contador persistido), y baja.
 
 | Clase                                      | Rol                                                                                  |
 | ------------------------------------------ | ------------------------------------------------------------------------------------ |

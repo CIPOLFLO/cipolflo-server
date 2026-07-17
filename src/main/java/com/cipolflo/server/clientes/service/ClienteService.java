@@ -219,7 +219,6 @@ public class ClienteService implements IClienteService {
         socio.setEstado(EstadoSocio.ACTIVO);
         socio.setCategoriaSocio(dto.getCategoriaSocio());
         socio.setFechaIngreso(dto.getFechaIngreso());
-        socio.setMesesSinPagar(0);
         try {
             return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null);
         } catch (DataIntegrityViolationException e) {
