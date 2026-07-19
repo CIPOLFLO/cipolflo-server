@@ -1,7 +1,8 @@
 # API Contrato — CIPOLFLO Server
 
 > Base URL: `http://localhost:8080`  
-> Todos los endpoints requieren autenticación (Bearer Token JWT).  
+> Todos los endpoints requieren autenticación (Bearer Token JWT), **salvo el webhook de
+> Telegram** (`/api/public/**`), que se autentica con un secret token propio.  
 > Las fechas/horas se manejan como `Instant` (ISO-8601 UTC, ej: `"2025-01-15T10:30:00Z"`).
 
 ---
@@ -19,7 +20,8 @@
 8. [Reservas — DTOs](#reservas--dtos)
 9. [Finanzas — Endpoints](#finanzas--endpoints)
 10. [Finanzas — DTOs](#finanzas--dtos)
-11. [Manejo de errores](#manejo-de-errores)
+11. [Integraciones — Endpoints](#integraciones--endpoints)
+12. [Manejo de errores](#manejo-de-errores)
 
 ---
 
@@ -58,6 +60,12 @@ SOCIO | PARTICULAR | EMPRESA
 
 ### `EstadoSocio`
 ACTIVO | INACTIVO | DE_BAJA
+
+### `CategoriaSocio`
+
+```
+POLICIA_ACTIVO | POLICIA_RETIRADO | SOCIO_COMUN
+```
 
 ### `MetodoCobro`
 COBRADORA | DESCUENTO_SALARIAL | TRANSFERENCIA | EN_SEDE | EFECTIVO | DEBITO
@@ -765,25 +773,30 @@ Modifica los datos de un socio.
   "departamento": "Montevideo",
   "ciudad": "Montevideo",
   "direccion": "Av. 18 de Julio 100",
-  "metodoCobro": "EN_SEDE"
+  "metodoCobro": "EN_SEDE", 
+   "categoriaSocio": "SOCIO_COMUN",
+   "fechaIngreso": "2020-01-01"
 }
 ```
 
-| Campo             | Tipo          | Obligatorio | Validación                                    |
-| ----------------- | ------------- | ----------- | ----------------------------------------------- |
-| `cedula`          | string        | Sí          | no vacío, algoritmo de cédula uruguaya, única  |
-| `nombreCompleto`  | string        | Sí          | no vacío                                       |
-| `telefono`        | string        | Sí          | no vacío                                       |
-| `mail`            | string        | No          | formato email válido si se envía, único        |
-| `notas`           | string        | No          | —                                               |
-| `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                   |
-| `pais`            | string        | Sí          | no vacío                                       |
-| `departamento`    | string        | Sí          | no vacío                                       |
-| `ciudad`          | string        | Sí          | no vacío                                       |
-| `direccion`       | string        | Sí          | no vacío                                       |
-| `metodoCobro`     | `MetodoCobro` | Sí          | —                                               |
+| Campo             | Tipo             | Obligatorio | Validación                                    |
+| ----------------- |------------------|-------------|-----------------------------------------------|
+| `cedula`          | string           | Sí          | no vacío, algoritmo de cédula uruguaya, única |
+| `nombreCompleto`  | string           | Sí          | no vacío                                      |
+| `telefono`        | string           | Sí          | no vacío                                      |
+| `mail`            | string           | No          | formato email válido si se envía, único       |
+| `notas`           | string           | No          | —                                             |
+| `fechaNacimiento` | string (date)    | Sí          | `yyyy-MM-dd`                                  |
+| `pais`            | string           | Sí          | no vacío                                      |
+| `departamento`    | string           | Sí          | no vacío                                      |
+| `ciudad`          | string           | Sí          | no vacío                                      |
+| `direccion`       | string           | Sí          | no vacío                                      |
+| `metodoCobro`     | `MetodoCobro`    | Sí          | —                                             |
+| `categoriaSocio` | `CategoriaSocio` | Sí          | —                                             |
+| `fechaIngreso` | string (date)    | Sí          | `yyyy-MM-dd`, no puede ser posterior a hoy    |
 
-> Campos no modificables: `numeroSocio`, `estado`, `fechaIngreso`, `mesesSinPagar`, `fechaUltimoPago`.
+> Campos no modificables: `numeroSocio`, `estado`, `fechaUltimoPago`.
+> Los campos `categoriaSocio` y `fechaIngreso` solo se informan para clientes de tipo `SOCIO`; para `PARTICULAR` y `EMPRESA` son `null`.
 
 **Respuestas:**
 
@@ -811,7 +824,9 @@ Registra un nuevo cliente de tipo socio.
   "departamento": "Montevideo",
   "ciudad": "Montevideo",
   "direccion": "Av. Italia 1234",
-  "observaciones": "Sin observaciones"
+  "observaciones": "Sin observaciones",
+   "categoriaSocio": "SOCIO_COMUN",
+   "fechaIngreso": "2020-01-01"
 }
 ```
 
@@ -822,14 +837,16 @@ Registra un nuevo cliente de tipo socio.
 | `fechaNacimiento` | string (date) | Sí          | `yyyy-MM-dd`                                                |
 | `telefono`        | string        | Sí          | no vacío                                                    |
 | `email`           | string        | No          | formato email válido si se envía, único (case-insensitive) |
-| `metodoCobro`     | `MetodoCobro` | Sí          | —                                                            |
-| `pais`            | string        | Sí          | no vacío                                                    |
-| `departamento`    | string        | Sí          | no vacío                                                    |
-| `ciudad`          | string        | Sí          | no vacío                                                    |
-| `direccion`       | string        | No          | —                                                            |
-| `observaciones`   | string        | No          | —                                                            |
+| `metodoCobro`     | `MetodoCobro` | Sí          | —                                                          |
+| `pais`            | string        | Sí          | no vacío                                                   |
+| `departamento`    | string        | Sí          | no vacío                                                   |
+| `ciudad`          | string        | Sí          | no vacío                                                   |
+| `direccion`       | string        | No          | —                                                          |
+| `observaciones`   | string        | No          | —                                                          |
+| `categoriaSocio`  | `CategoriaSocio` | Sí          | — |
+| `fechaIngreso`    | string (date) | Sí          | `yyyy-MM-dd`, no puede ser posterior a hoy |
 
-> La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO`, `mesesSinPagar = 0` y `fechaIngreso` igual a la fecha actual. El `numeroSocio` se asigna de forma incremental.
+> La cédula se normaliza automáticamente (se eliminan puntos y guión). El socio se crea con estado `ACTIVO` y `fechaIngreso` igual al valor recibido en el body. El `numeroSocio` se asigna de forma incremental.
 
 **Respuesta 201:** mismo body que `GET /api/v1/clientes/{id}`
 
@@ -951,6 +968,8 @@ Registra un nuevo cliente de tipo empresa.
   ciudad: string               // obligatorio, no vacío
   direccion?: string          // opcional
   observaciones?: string      // opcional
+  categoriaSocio: CategoriaSocio // obligatorio
+  fechaIngreso: string           // obligatorio, LocalDate yyyy-MM-dd, no futura
 }
 ```
 
@@ -992,11 +1011,13 @@ Registra un nuevo cliente de tipo empresa.
   mail?: string               // opcional, formato email válido si se envía, único
   notas?: string              // opcional
   fechaNacimiento: string     // obligatorio, LocalDate yyyy-MM-dd
-  pais: string                 // obligatorio, no vacío
-  departamento: string         // obligatorio, no vacío
-  ciudad: string                // obligatorio, no vacío
-  direccion: string             // obligatorio, no vacío
-  metodoCobro: MetodoCobro     // obligatorio
+  pais: string                // obligatorio, no vacío
+  departamento: string        // obligatorio, no vacío
+  ciudad: string              // obligatorio, no vacío
+  direccion: string           // obligatorio, no vacío
+  metodoCobro: MetodoCobro    // obligatorio
+  categoriaSocio: CategoriaSocio // obligatorio
+  fechaIngreso: string           // obligatorio, LocalDate yyyy-MM-dd, no futura
 }
 ```
 
@@ -1032,6 +1053,8 @@ Registra un nuevo cliente de tipo empresa.
   numeroSocio: number | null; // null para Particulares
   tipoCliente: TipoCliente;
   estado: EstadoSocio | null; // null para Particulares
+  categoriaSocio: CategoriaSocio | null; // null para Particulares y Empresas
+  fechaIngreso: string | null; // LocalDate yyyy-MM-dd; null para Particulares y Empresas
   observaciones: string | null;
   createdAt: string; // Instant ISO-8601 UTC
   updatedAt: string; // Instant ISO-8601 UTC
@@ -1862,6 +1885,37 @@ Elimina una finanza. La eliminación es **consciente del origen** del movimiento
 
 ---
 
+## Integraciones — Endpoints
+
+### `POST /api/public/telegram/webhook`
+
+Recibe los updates del bot de Telegram (RF6, ticket DEV-149). **Es el único endpoint del
+sistema que no requiere JWT de Auth0** — Telegram no puede enviar nuestro Bearer Token.
+Va bajo `/api/public/**`, fuera del esquema de autenticación general de este documento.
+
+**Autenticación:** header `X-Telegram-Bot-Api-Secret-Token`, comparado en tiempo
+constante contra el secret configurado (`cipolflo.telegram.webhook-secret`) — no JWT.
+
+| Header | Requerido | Descripción |
+|---|---|---|
+| `X-Telegram-Bot-Api-Secret-Token` | Sí | Secret acordado con Telegram al registrar el webhook (`setWebhook`) |
+
+**Body:** el payload de update de Telegram (solo se mapean `update_id`, `message.text`,
+`message.chat.id`, `message.chat.username` — sin Bean Validation, un campo desconocido no
+rompe el binding).
+
+**Respuesta:**
+
+| HTTP Status | Cuándo |
+|---|---|
+| `200` | Siempre, una vez validado el secret — aun si el mensaje se descarta o falla el procesamiento. El procesamiento ocurre de forma asíncrona, no bloquea la respuesta. |
+| `401` (`TELEGRAM_SECRET_INVALIDO`) | El header falta o no coincide con el secret configurado. No se procesa nada. |
+
+Ver arquitectura completa en
+[`telegram-bot-arquitectura.md`](telegram-bot-arquitectura.md).
+
+---
+
 ## Manejo de errores
 
 Todos los errores retornan el siguiente body:
@@ -1874,11 +1928,11 @@ Todos los errores retornan el siguiente body:
 ```
 
 | HTTP Status | Cuándo ocurre                                                              |
-| ----------- | ------------------------------------------------------------------------------ |
-| 400         | Validación fallida en body o query params                                     |
-| 401         | Token ausente, inválido o expirado                                             |
-| 403         | Usuario autenticado sin permisos para la operación                            |
-| 404         | Recurso no encontrado por el ID proporcionado                                 |
-| 409         | Conflicto de negocio (ej: deshabilitar con reservas activas sin confirmar)     |
+| ----------- | -------------------------------------------------------------------------- |
+| 400         | Validación fallida en body o query params                                  |
+| 401         | Token ausente, inválido o expirado (o, en el webhook de Telegram, `TELEGRAM_SECRET_INVALIDO`) |
+| 403         | Usuario autenticado sin permisos para la operación                         |
+| 404         | Recurso no encontrado por el ID proporcionado                              |
+| 409         | Conflicto de negocio (ej: deshabilitar con reservas activas sin confirmar) |
 | 428         | Falta una precondición para proceder (ej: confirmar la eliminación de un ingreso de reserva ya cerrada) |
 | 500         | Error interno del servidor                                                     |

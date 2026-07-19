@@ -3,6 +3,7 @@ package com.cipolflo.server.clientes.mapper;
 import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
+import com.cipolflo.server.clientes.domain.enums.CategoriaSocio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
@@ -37,6 +38,7 @@ class ClienteMapperTest {
         socio.setDireccion("Av. 18 de Julio 100");
         socio.setFechaIngreso(LocalDate.of(2022, 1, 1));
         socio.setMetodoCobro(MetodoCobro.EFECTIVO);
+        socio.setCategoriaSocio(CategoriaSocio.SOCIO_COMUN);
         return socio;
     }
 
@@ -149,6 +151,14 @@ class ClienteMapperTest {
         assertEquals(5, dto.getNumeroSocio());
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
         assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
+        assertEquals(CategoriaSocio.SOCIO_COMUN, dto.getCategoriaSocio());
+        assertEquals(LocalDate.of(2022, 1, 1), dto.getFechaIngreso());
+    }
+
+    @Test
+    void deberiaMapearCategoriaSocioNulaParaParticularYEmpresaEnDetalle() {
+        assertNull(ClienteMapper.toDetalleResponseDto(crearParticular(), null).getCategoriaSocio());
+        assertNull(ClienteMapper.toDetalleResponseDto(crearEmpresa(), null).getCategoriaSocio());
     }
 
     @Test
@@ -183,6 +193,8 @@ class ClienteMapperTest {
         assertNull(dto.getDireccion());
         assertNull(dto.getNumeroSocio());
         assertNull(dto.getEstado());
+        assertNull(dto.getCategoriaSocio());
+        assertNull(dto.getFechaIngreso());
     }
 
     @Test
@@ -199,11 +211,14 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearEstadoSocioResponseDto() {
-        EstadoSocioResponseDto dto = ClienteMapper.toEstadoSocioResponseDto(crearSocio());
+        Socio socio = crearSocio();
+
+        EstadoSocioResponseDto dto = ClienteMapper.toEstadoSocioResponseDto(socio, 3);
 
         assertEquals(1L, dto.getId());
         assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
         assertEquals(5, dto.getNumeroSocio());
+        assertEquals(3, dto.getMesesSinPagar());
     }
 
     @Test

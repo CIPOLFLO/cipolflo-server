@@ -4,6 +4,7 @@ import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.Empresa;
 import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.Socio;
+import com.cipolflo.server.clientes.domain.enums.CategoriaSocio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
@@ -154,6 +155,8 @@ private RutFormatoValidator rutFormatoValidator;
         dto.setCiudad("Montevideo");
         dto.setDireccion("Calle 1");
         dto.setMetodoCobro(MetodoCobro.TRANSFERENCIA);
+        dto.setCategoriaSocio(CategoriaSocio.SOCIO_COMUN);
+        dto.setFechaIngreso(LocalDate.of(2020, Month.JANUARY, 1));
         return dto;
     }
 
@@ -170,6 +173,8 @@ private RutFormatoValidator rutFormatoValidator;
         dto.setCiudad("Montevideo");
         dto.setDireccion("Av. Italia 1234");
         dto.setObservaciones("Sin observaciones");
+        dto.setCategoriaSocio(CategoriaSocio.SOCIO_COMUN);
+        dto.setFechaIngreso(LocalDate.of(2020, Month.JANUARY, 1));
         return dto;
     }
 
@@ -520,6 +525,8 @@ private RutFormatoValidator rutFormatoValidator;
         dto.setMail("nuevo@mail.com");
         dto.setPais("Argentina");
         dto.setCiudad("Buenos Aires");
+        dto.setCategoriaSocio(CategoriaSocio.POLICIA_ACTIVO);
+        dto.setFechaIngreso(LocalDate.of(2019, Month.MARCH, 15));
 
         ClienteResponseDto resultado = clienteService.modificarSocio(1L, dto);
 
@@ -531,8 +538,30 @@ private RutFormatoValidator rutFormatoValidator;
         assertEquals("Argentina", socio.getPais());
         assertEquals("Buenos Aires", socio.getCiudad());
         assertEquals(MetodoCobro.TRANSFERENCIA, socio.getMetodoCobro());
+        assertEquals(CategoriaSocio.POLICIA_ACTIVO, socio.getCategoriaSocio());
+        assertEquals(LocalDate.of(2019, Month.MARCH, 15), socio.getFechaIngreso());
         verify(clienteRepository).saveAndFlush(socio);
         verify(modificacionSocioValidator).validar(anyLong(), any(ModificacionSocioRequestDto.class), anyString(), any());
+    }
+
+    @Test
+    void deberiaLanzarFechaIngresoInvalidaAlModificarSocio() {
+        Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+
+        ModificacionSocioRequestDto dto = dtoSocio("Juan Pérez", "099000000");
+        dto.setFechaIngreso(LocalDate.now().plusDays(1));
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.FECHA_INGRESO_INVALIDA.name(),
+                "La fecha de ingreso no puede ser posterior a la fecha actual"
+        )).when(modificacionSocioValidator).validar(anyLong(), any(ModificacionSocioRequestDto.class), anyString(), any());
+
+        ClienteValidacionException exception = assertThrows(ClienteValidacionException.class,
+                () -> clienteService.modificarSocio(1L, dto));
+
+        assertEquals(ClienteCodigoError.FECHA_INGRESO_INVALIDA.name(), exception.getCodigo());
+        verify(clienteRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -605,10 +634,29 @@ private RutFormatoValidator rutFormatoValidator;
         assertEquals(1, response.getNumeroSocio());
         assertEquals(TipoCliente.SOCIO, response.getTipoCliente());
         assertEquals(EstadoSocio.ACTIVO, response.getEstado());
+        assertEquals(CategoriaSocio.SOCIO_COMUN, response.getCategoriaSocio());
+        assertEquals(LocalDate.of(2020, Month.JANUARY, 1), response.getFechaIngreso());
 
         verify(clienteRepository).findMaxNumeroSocio();
         verify(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
         verify(clienteRepository).saveAndFlush(any(Socio.class));
+    }
+
+    @Test
+    void deberiaLanzarFechaIngresoInvalidaAlRegistrarSocio() {
+        RegistroSocioRequestDto dto = crearRegistroSocioRequest();
+        dto.setFechaIngreso(LocalDate.now().plusDays(1));
+
+        doThrow(new ClienteValidacionException(
+                ClienteCodigoError.FECHA_INGRESO_INVALIDA.name(),
+                "La fecha de ingreso no puede ser posterior a la fecha actual"
+        )).when(registroSocioValidator).validar(any(RegistroSocioRequestDto.class), anyString(), any());
+
+        ClienteValidacionException exception = assertThrows(ClienteValidacionException.class,
+                () -> clienteService.registrarSocio(dto));
+
+        assertEquals(ClienteCodigoError.FECHA_INGRESO_INVALIDA.name(), exception.getCodigo());
+        verify(clienteRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -767,12 +815,14 @@ void deberiaRetornarDtoCuandoCedulaCorrespondeASocio() {
     void deberiaRetornarEstadoDelSocioCuandoExiste() {
         Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 5, EstadoSocio.INACTIVO);
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaService.calcularMesesAdeudados(socio)).thenReturn(4);
 
         EstadoSocioResponseDto resultado = clienteService.consultarEstadoSocio(1L);
 
         assertEquals(1L, resultado.getId());
         assertEquals(EstadoSocio.INACTIVO, resultado.getEstado());
         assertEquals(5, resultado.getNumeroSocio());
+        assertEquals(4, resultado.getMesesSinPagar());
         verify(clienteRepository).findById(1L);
     }
 

@@ -36,6 +36,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.Comparator;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.IntStream;
@@ -160,6 +161,13 @@ public class PagoCuotaService implements IPagoCuotaService {
                 socio.getNombreCompleto(), periodos, montoTotal, metodoCobro));
         String nombre = NombreArchivoPdf.generar("comprobante-pago-cuota-" + socioId);
         return new ArchivoExportado(nombre, contenido);
+    // El mes en curso no cuenta como adeudado (recién empieza, todavía no venció). Mismo
+    // cálculo que InactivacionSociosService.calcularMesesAdeudados.
+    @Override
+    public int calcularMesesAdeudados(Socio socio) {
+        YearMonth mesActual = YearMonth.now(ZonaHoraria.URUGUAY);
+        YearMonth primerPeriodoPendiente = calcularPrimerPeriodoPendiente(socio);
+        return (int) Math.max(0, ChronoUnit.MONTHS.between(primerPeriodoPendiente, mesActual));
     }
 
     private Socio validarSocio(Long socioId) {

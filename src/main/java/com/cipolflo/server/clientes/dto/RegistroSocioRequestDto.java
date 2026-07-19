@@ -1,5 +1,6 @@
 package com.cipolflo.server.clientes.dto;
 
+import com.cipolflo.server.clientes.domain.enums.CategoriaSocio;
 import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -43,4 +44,10 @@ public class RegistroSocioRequestDto {
     private String direccion;
 
     private String observaciones;
+
+    @NotNull(message = "La categoría de socio es obligatoria")
+    private CategoriaSocio categoriaSocio;
+
+    @NotNull(message = "La fecha de ingreso es obligatoria")
+    private LocalDate fechaIngreso;
 }
