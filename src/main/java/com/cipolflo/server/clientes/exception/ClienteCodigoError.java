@@ -11,4 +11,5 @@ public enum ClienteCodigoError {
     EMAIL_INVALIDO,
     EMAIL_DUPLICADO,
     SOLICITUD_INVALIDA,
+    PAGO_CUOTA_NO_ENCONTRADO,
 }

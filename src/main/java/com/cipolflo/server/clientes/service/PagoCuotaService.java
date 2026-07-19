@@ -3,13 +3,16 @@ package com.cipolflo.server.clientes.service;
 import com.cipolflo.server.clientes.domain.Cliente;
 import com.cipolflo.server.clientes.domain.PagoCuota;
 import com.cipolflo.server.clientes.domain.Socio;
+import com.cipolflo.server.clientes.domain.enums.MetodoCobro;
 import com.cipolflo.server.clientes.dto.PagoCuotaResponseDto;
 import com.cipolflo.server.clientes.dto.PeriodoCuotaDto;
 import com.cipolflo.server.clientes.dto.RegistroPagoCuotaRequestDto;
 import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
+import com.cipolflo.server.clientes.pdf.ComprobantePagoCuotaContenidoPdf;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.repository.PagoCuotaRepository;
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
@@ -18,16 +21,21 @@ import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
 import com.cipolflo.server.finanzas.service.IFinanzaService;
 import com.cipolflo.server.shared.ZonaHoraria;
 import com.cipolflo.server.shared.enums.Procedencia;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.pdf.IPdfGeneratorService;
+import com.cipolflo.server.shared.pdf.NombreArchivoPdf;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.clientes.helper.MetodoCobroFormaPagoHelper;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.IntStream;
@@ -38,16 +46,19 @@ public class PagoCuotaService implements IPagoCuotaService {
     private final PagoCuotaRepository pagoCuotaRepository;
     private final ClienteRepository clienteRepository;
     private final IFinanzaService finanzaService;
+    private final IPdfGeneratorService pdfGeneratorService;
     private static final Locale LOCALE = Locale.forLanguageTag("es-UY");
 
     public PagoCuotaService(
             PagoCuotaRepository pagoCuotaRepository,
             ClienteRepository clienteRepository,
-            IFinanzaService finanzaService
+            IFinanzaService finanzaService,
+            IPdfGeneratorService pdfGeneratorService
     ) {
         this.pagoCuotaRepository = pagoCuotaRepository;
         this.clienteRepository = clienteRepository;
         this.finanzaService = finanzaService;
+        this.pdfGeneratorService = pdfGeneratorService;
     }
 
     @Override
@@ -118,6 +129,37 @@ public class PagoCuotaService implements IPagoCuotaService {
                     "La cuota del período ya fue registrada"
             );
         }
+    }
+
+    @Override
+    public ArchivoExportado generarComprobantePago(Long socioId, List<Long> ids) {
+        Socio socio = validarSocio(socioId);
+
+        List<PagoCuota> pagos = pagoCuotaRepository.findAllById(ids);
+        boolean algunoDeOtroSocio = pagos.stream()
+                .anyMatch(pago -> !pago.getSocioId().equals(socioId));
+        if (pagos.size() < ids.size() || algunoDeOtroSocio) {
+            throw new PagoCuotaNotFoundException(ids);
+        }
+
+        List<PagoCuota> ordenados = pagos.stream()
+                .sorted(Comparator.comparing(PagoCuota::getAnio).thenComparing(PagoCuota::getMes))
+                .toList();
+
+        List<YearMonth> periodos = ordenados.stream()
+                .map(pago -> YearMonth.of(pago.getAnio(), pago.getMes()))
+                .toList();
+
+        BigDecimal montoTotal = ordenados.stream()
+                .map(PagoCuota::getImporte)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        MetodoCobro metodoCobro = ordenados.get(0).getMetodoCobro();
+
+        byte[] contenido = pdfGeneratorService.generar(new ComprobantePagoCuotaContenidoPdf(
+                socio.getNombreCompleto(), periodos, montoTotal, metodoCobro));
+        String nombre = NombreArchivoPdf.generar("comprobante-pago-cuota-" + socioId);
+        return new ArchivoExportado(nombre, contenido);
     }
 
     private Socio validarSocio(Long socioId) {

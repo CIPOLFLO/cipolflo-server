@@ -11,6 +11,7 @@ import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
+import com.cipolflo.server.clientes.pdf.ComprobanteAltaSocioContenidoPdf;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.validator.*;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
@@ -21,6 +22,9 @@ import com.cipolflo.server.shared.export.ExportProperties;
 import com.cipolflo.server.shared.export.IExportService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
+import com.cipolflo.server.shared.pdf.IPdfGeneratorService;
+import com.cipolflo.server.clientes.pdf.ComprobanteAltaSocioContenidoPdf;
+import com.cipolflo.server.shared.pdf.IPdfGeneratorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,7 +32,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
-import com.cipolflo.server.clientes.validator.RutFormatoValidator;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -57,7 +60,8 @@ private ModificacionParticularValidator modificacionParticularValidator;
 
 @Mock
 private ModificacionSocioValidator modificacionSocioValidator;
-
+@Mock
+private IPdfGeneratorService pdfGeneratorService;
 @Mock
 private RegistroSocioValidator registroSocioValidator;
 
@@ -998,4 +1002,41 @@ void deberiaIncluirColumnaRutEnLaExportacion() {
 
         verify(clienteRepository).findByRut("211003420017");
     }
+    // --- generarComprobanteAltaSocio ---
+
+@Test
+void deberiaGenerarComprobanteAltaSocioCuandoSocioExiste() {
+    Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 5, EstadoSocio.ACTIVO);
+    when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+    when(pdfGeneratorService.generar(any(ComprobanteAltaSocioContenidoPdf.class)))
+            .thenReturn("pdf".getBytes());
+
+    ArchivoExportado archivo = clienteService.generarComprobanteAltaSocio(1L);
+
+    assertNotNull(archivo);
+    assertTrue(archivo.getNombre().contains("comprobante-alta-socio-1"));
+    assertArrayEquals("pdf".getBytes(), archivo.getContenido());
+    verify(clienteRepository).findById(1L);
+    verify(pdfGeneratorService).generar(any(ComprobanteAltaSocioContenidoPdf.class));
+}
+
+@Test
+void deberiaLanzarSocioNotFoundExceptionCuandoIdNoExisteEnComprobanteAltaSocio() {
+    when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
+
+    assertThrows(SocioNotFoundException.class, () -> clienteService.generarComprobanteAltaSocio(99L));
+
+    verify(clienteRepository).findById(99L);
+    verify(pdfGeneratorService, never()).generar(any());
+}
+
+@Test
+void deberiaLanzarSocioNotFoundExceptionCuandoEsParticularEnComprobanteAltaSocio() {
+    Particular particular = crearParticular(1L, "Laura Fernández", "12345678");
+    when(clienteRepository.findById(1L)).thenReturn(Optional.of(particular));
+
+    assertThrows(SocioNotFoundException.class, () -> clienteService.generarComprobanteAltaSocio(1L));
+
+    verify(pdfGeneratorService, never()).generar(any());
+}
 }

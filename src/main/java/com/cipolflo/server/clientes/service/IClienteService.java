@@ -35,4 +35,5 @@ public interface IClienteService {
 
     BusquedaRutResponseDto buscarPorRut(String rut);
 
+    ArchivoExportado generarComprobanteAltaSocio(Long id);
 }

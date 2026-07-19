@@ -27,7 +27,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
-
+import com.cipolflo.server.clientes.pdf.ComprobanteAltaSocioContenidoPdf;
+import com.cipolflo.server.shared.pdf.IPdfGeneratorService;
+import com.cipolflo.server.shared.pdf.NombreArchivoPdf;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -49,7 +51,7 @@ public class ClienteService implements IClienteService {
     private final ExportProperties exportProperties;
     private final IExportService exportService;
     private final IPagoCuotaService pagoCuotaService;
-
+    private final IPdfGeneratorService pdfGeneratorService;
     public ClienteService(ClienteRepository clienteRepository,
                           IReservaService reservaService,
                           ModificacionParticularValidator modificacionParticularValidator,
@@ -61,7 +63,8 @@ public class ClienteService implements IClienteService {
                           RegistroEmpresaValidator registroEmpresaValidator,
                           ExportProperties exportProperties,
                           IExportService exportService,
-                          IPagoCuotaService pagoCuotaService) {
+                          IPagoCuotaService pagoCuotaService,
+                          IPdfGeneratorService pdfGeneratorService) {
         this.clienteRepository = clienteRepository;
         this.reservaService = reservaService;
         this.modificacionParticularValidator = modificacionParticularValidator;
@@ -74,6 +77,7 @@ public class ClienteService implements IClienteService {
         this.exportProperties = exportProperties;
         this.exportService = exportService;
         this.pagoCuotaService = pagoCuotaService;
+        this.pdfGeneratorService = pdfGeneratorService;
     }
 
     @Override
@@ -348,5 +352,17 @@ public class ClienteService implements IClienteService {
         return new ArchivoExportado(nombre,contenido);
 
     }
+
+    @Override
+public ArchivoExportado generarComprobanteAltaSocio(Long id) {
+    Cliente cliente = clienteRepository.findById(id)
+            .orElseThrow(() -> new SocioNotFoundException(id));
+    if (!(cliente instanceof Socio socio)) {
+        throw new SocioNotFoundException(id);
+    }
+    byte[] contenido = pdfGeneratorService.generar(new ComprobanteAltaSocioContenidoPdf(socio));
+    String nombre = NombreArchivoPdf.generar("comprobante-alta-socio-" + id);
+    return new ArchivoExportado(nombre, contenido);
+}
 
 }

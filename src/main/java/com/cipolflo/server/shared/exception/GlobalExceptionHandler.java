@@ -1,8 +1,9 @@
 package com.cipolflo.server.shared.exception;
-
+import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.finanzas.exception.ConfirmacionEliminacionReservaRequeridaException;
 import com.cipolflo.server.finanzas.exception.EliminacionEgresoReservaNoPermitidaException;
 import com.cipolflo.server.finanzas.exception.EliminacionPagoCuotaNoPermitidaException;
@@ -210,11 +211,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(SocioNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleSocioNotFoundException(SocioNotFoundException ex) {
-        log.warn("Socio no encontrado: {}", ex.getMessage());
+        log.warn("Socio no encontrado: {}", ex.getMessage()); 
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(ClienteCodigoError.SOCIO_NO_ENCONTRADO.name(), ex.getMessage()));
     }
+
+
+@ExceptionHandler(PagoCuotaNotFoundException.class)
+public ResponseEntity<ErrorResponse> handlePagoCuotaNotFoundException(PagoCuotaNotFoundException ex) {
+    log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
+    return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(new ErrorResponse(ClienteCodigoError.PAGO_CUOTA_NO_ENCONTRADO.name(), ex.getMessage()));
+}
 
     @ExceptionHandler(FinanzaNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleFinanzaNotFoundException(FinanzaNotFoundException ex) {

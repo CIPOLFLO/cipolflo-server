@@ -60,7 +60,7 @@ SOCIO | PARTICULAR | EMPRESA
 ACTIVO | INACTIVO | DE_BAJA
 
 ### `MetodoCobro`
-COBRADORA | DESCUENTO_SALARIAL | TRANSFERENCIA | EN_SEDE | EFECTIVO
+COBRADORA | DESCUENTO_SALARIAL | TRANSFERENCIA | EN_SEDE | EFECTIVO | DEBITO
 
 ### `TipoMovimiento`
 INGRESO | EGRESO
@@ -654,6 +654,62 @@ Devuelve el estado actual de un socio puntual (`ACTIVO`, `INACTIVO` o `DE_BAJA`)
 | 404         | `SOCIO_NO_ENCONTRADO` | No existe un socio con ese `id` (inexistente o corresponde a un particular)   |
 
 ---
+---
+
+### `GET /api/v1/clientes/socios/{id}/comprobante`
+
+Descarga el comprobante en PDF de alta de un socio (para entregarle al confirmar su ingreso). El PDF se genera en el backend con Apache PDFBox y contiene, en prosa, el nombre completo del socio y el número de socio asignado. Todo comprobante incluye arriba, de forma automática, la fecha/hora de generación del documento.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:** cuerpo binario.
+
+| Header                | Valor                                                                    |
+|------------------------|--------------------------------------------------------------------------|
+| `Content-Type`        | `application/pdf`                                                        |
+| `Content-Disposition` | `attachment; filename="comprobante-alta-socio-{id}_yyyy-MM-dd_HHmm.pdf"` |
+
+**Errores:**
+
+| HTTP Status | Código                  | Cuándo ocurre                                                              |
+| ----------- | ------------------------- | ------------------------------------------------------------------------------ |
+| 400         | `ID_INVALIDO`           | `id` no es un entero positivo                                                 |
+| 404         | `SOCIO_NO_ENCONTRADO`   | No existe un socio con ese `id` (inexistente o corresponde a un particular/empresa) |
+| 401         | —                       | Token ausente, inválido o expirado                                             |
+
+---
+
+### `GET /api/v1/clientes/socios/{id}/pago-cuota/comprobante`
+
+Descarga el comprobante en PDF de uno o varios pagos de cuota registrados en una misma operación de alta. El PDF se genera en el backend con Apache PDFBox y contiene, en prosa, el/los mes(es) cubierto(s), el monto total abonado y el medio de pago utilizado. Todo comprobante incluye arriba, de forma automática, la fecha/hora de generación del documento.
+
+**Path param:** `id` — integer positivo; ID del socio.
+
+**Query param:**
+
+| Param | Tipo        | Obligatorio | Validación                     |
+| ----- | ------------- | ----------- | --------------------------------- |
+| `ids` | integer[]   | Sí          | no vacío; lista separada por comas (ej. `ids=1,2,3`) |
+
+> Los `ids` son, sin transformación, los mismos `id` que vienen en cada elemento del `List<PagoCuotaResponseDto>` que devuelve `POST /api/v1/clientes/socios/{id}/pago-cuota` (201). El front junta esos ids de la respuesta de esa misma llamada de alta y arma el query param con ellos; no requiere ninguna consulta adicional para obtenerlos.
+
+**Respuesta 200:** cuerpo binario.
+
+| Header                | Valor                                                                    |
+|------------------------|--------------------------------------------------------------------------|
+| `Content-Type`        | `application/pdf`                                                        |
+| `Content-Disposition` | `attachment; filename="comprobante-pago-cuota-{id}_yyyy-MM-dd_HHmm.pdf"` |
+
+**Errores:**
+
+| HTTP Status | Código                        | Cuándo ocurre                                                                                          |
+| ----------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 400         | `ID_INVALIDO`                 | `id` (del socio) no es un entero positivo                                                                    |
+| 400         | `SOLICITUD_INVALIDA`          | `ids` viene vacío o ausente                                                                                   |
+| 404         | `SOCIO_NO_ENCONTRADO`         | El `id` de la ruta no existe o no corresponde a un socio                                                     |
+| 404         | `PAGO_CUOTA_NO_ENCONTRADO`    | Algún `id` de `ids` no corresponde a un `PagoCuota` existente, o corresponde a un pago de otro socio (no se distingue entre ambos casos, para no filtrar información de otros socios) |
+| 401         | —                             | Token ausente, inválido o expirado                                                                             |
+
 
 ### `PUT /api/v1/clientes/particulares/{id}`
 
