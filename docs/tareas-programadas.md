@@ -158,8 +158,9 @@ cipolflo.tareas.limpieza-logs-email.cron=0 0 5 * * SUN
 cipolflo.tareas.limpieza-logs-email.zona=America/Montevideo
 cipolflo.tareas.limpieza-logs-email.retencion-dias=90
 
-# Cancelacion automatica de reservas pendientes vencidas: cada hora en punto (hora de Uruguay).
-cipolflo.tareas.cancelacion-automatica-reservas.cron=0 0 * * * *
+# Cancelacion automatica de reservas pendientes vencidas: todos los dias 00:10 (hora de
+# Uruguay), 10 min despues de transicion-estado-reservas para no encolarse detras de ella.
+cipolflo.tareas.cancelacion-automatica-reservas.cron=0 10 0 * * *
 cipolflo.tareas.cancelacion-automatica-reservas.zona=America/Montevideo
 # Transicion de estados de reservas por fecha: todos los dias 00:00 (hora de Uruguay).
 cipolflo.tareas.transicion-estado-reservas.cron=0 0 0 * * *
@@ -210,9 +211,9 @@ idempotente: si no hay vencidos, no borra nada.
 
 ### Cancelación automática de reservas vencidas
 
-Corre **cada hora en punto** (hora de Uruguay) y cancela las reservas en estado `PENDIENTE`
-cuya `fechaLimiteConfirmacion` ya pasó. Esa fecha se deriva del `plazoConfirmacion` elegido
-al crear la reserva (ver el contrato de API):
+Corre **todos los días a las 00:10** (hora de Uruguay) y cancela las reservas en estado
+`PENDIENTE` cuya `fechaLimiteConfirmacion` ya pasó. Esa fecha se deriva del
+`plazoConfirmacion` elegido al crear la reserva (ver el contrato de API):
 
 | Plazo | Se cancela | Ventana de alerta previa |
 |---|---|---|
@@ -230,8 +231,15 @@ Es idempotente: al cancelar, la reserva sale del predicado de la query, así que
 corrida no la vuelve a tocar. Reservas sin `plazoConfirmacion` (no requieren seña ni
 documentación) nunca entran en este flujo, porque su `fechaLimiteConfirmacion` es `null`.
 
-Con un job diario un plazo de 24 hs se cancelaría hasta ~24 hs tarde; por eso el cron es
-horario en vez de diario, a diferencia de las otras dos tareas de esta lista.
+> **Cron diario, no horario.** Con un `plazoConfirmacion` de `VEINTICUATRO_HORAS`, un cron
+> diario puede dejar una reserva cancelada hasta ~24 hs después de vencido el plazo (en vez
+> de a la hora exacta, como sería con un cron horario). Se decidió aceptar ese margen: la
+> `fechaEntrada` de una reserva normalmente no lleva hora, así que un desfasaje de hasta un
+> día no es crítico para el negocio hoy. El cron corre 10 minutos después de
+> `transicion-estado-reservas` (00:00) para no encolarse detrás de esa tarea. Si en el
+> futuro el negocio pide precisión horaria para el plazo de 24 hs, ajustar el cron a
+> `0 0 * * * *` (cada hora en punto).
+
 ### Transición de estados de reservas por fecha
 
 Corre **todos los días a las 00:00** (hora de Uruguay) y mueve reservas de estado según
