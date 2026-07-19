@@ -161,8 +161,7 @@ public class PagoCuotaService implements IPagoCuotaService {
                 socio.getNombreCompleto(), periodos, montoTotal, metodoCobro));
         String nombre = NombreArchivoPdf.generar("comprobante-pago-cuota-" + socioId);
         return new ArchivoExportado(nombre, contenido);
-    // El mes en curso no cuenta como adeudado (recién empieza, todavía no venció). Mismo
-    // cálculo que InactivacionSociosService.calcularMesesAdeudados.
+        }
     @Override
     public int calcularMesesAdeudados(Socio socio) {
         YearMonth mesActual = YearMonth.now(ZonaHoraria.URUGUAY);
