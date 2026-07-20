@@ -108,7 +108,6 @@ class ReservaEmailListenerTest {
         when(reservaService.getDetalle(10L)).thenReturn(detalleCon(cliente("   ", "juan@mail.com")));
 
         listener.onReservaCreada(new ReservaCreadaEvent(10L));
-
         verify(emailService).enviar(any(SolicitudEmail.class));
     }
 
