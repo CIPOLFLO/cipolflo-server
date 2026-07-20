@@ -1,8 +1,11 @@
 package com.cipolflo.server.servicios.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
+
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.enums.Procedencia;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -41,4 +44,8 @@ public class ServicioRegistroRequestDto {
 
     @DecimalMin(value = "0.0", inclusive = true, message = "El costo por persona extra debe ser mayor o igual a cero")
     private BigDecimal costoPersonaExtra;
+
+    @Valid
+    @NotNull(message = "Las tarifas son requeridas")
+    private List<TarifaServicioRequestDto> tarifas;
 }

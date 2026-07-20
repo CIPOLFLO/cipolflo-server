@@ -1,6 +1,7 @@
 package com.cipolflo.server.servicios.dto;
 
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -38,4 +40,8 @@ public class ModificacionServicioDto {
 
     @PositiveOrZero(message = "El costo por persona extra debe ser mayor o igual a cero")
     private BigDecimal costoPersonaExtra;
+
+    @Valid
+    @NotNull(message = "Las tarifas son requeridas")
+    private List<TarifaServicioRequestDto> tarifas;
 }

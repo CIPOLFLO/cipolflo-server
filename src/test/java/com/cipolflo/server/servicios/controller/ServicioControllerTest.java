@@ -97,6 +97,7 @@ public class ServicioControllerTest {
                 null,
                 EstadoServicio.HABILITADO,
                 ModalidadPrecio.POR_DIA,
+                List.of(),
                 null, null, null, null
         );
 
@@ -139,6 +140,7 @@ public class ServicioControllerTest {
                 null,
                 EstadoServicio.DESHABILITADO,
                 ModalidadPrecio.POR_DIA,
+                List.of(),
                 null, null, null, null
         );
 
@@ -262,6 +264,7 @@ public class ServicioControllerTest {
                 null,
                 EstadoServicio.HABILITADO,
                 ModalidadPrecio.POR_DIA,
+                List.of(),
                 null, null, null, null
         );
 
@@ -278,7 +281,19 @@ public class ServicioControllerTest {
                             "precioSocio": 2000,
                             "modalidadPrecio": "POR_DIA",
                             "capacidad": 4,
-                            "cantidad": 2
+                            "cantidad": 2,
+                            "tarifas": [
+                                {
+                                    "tipoCliente": "PARTICULAR",
+                                    "precio": 3000,
+                                    "modalidadPrecio": "POR_DIA"
+                                },
+                                {
+                                    "tipoCliente": "SOCIO_COMUN",
+                                    "precio": 2000,
+                                    "modalidadPrecio": "POR_DIA"
+                                }
+                            ]
                         }
                         """)
         ).andExpect(status().isOk());
@@ -304,7 +319,19 @@ public class ServicioControllerTest {
                             "precioSocio": 1500,
                             "modalidadPrecio": "POR_DIA",
                             "capacidad": 4,
-                            "cantidad": 2
+                            "cantidad": 2,
+                            "tarifas": [
+                                {
+                                    "tipoCliente": "PARTICULAR",
+                                    "precio": 3000,
+                                    "modalidadPrecio": "POR_DIA"
+                                },
+                                {
+                                    "tipoCliente": "SOCIO_COMUN",
+                                    "precio": 2000,
+                                    "modalidadPrecio": "POR_DIA"
+                                }
+                            ]
                         }
                         """)
         ).andExpect(status().isNotFound());
@@ -332,6 +359,7 @@ public class ServicioControllerTest {
                 null,
                 EstadoServicio.HABILITADO,
                 ModalidadPrecio.POR_DIA,
+                List.of(),
                 null, null, null, null
         );
 
@@ -349,7 +377,19 @@ public class ServicioControllerTest {
                             "precioSocio": 1500,
                             "modalidadPrecio": "POR_DIA",
                             "capacidad": 4,
-                            "cantidad": 2
+                            "cantidad": 2,
+                            "tarifas": [
+                                {
+                                  "tipoCliente": "PARTICULAR",
+                                  "precio": 2500,
+                                  "modalidadPrecio": "POR_DIA"
+                                },
+                                {
+                                  "tipoCliente": "SOCIO_COMUN",
+                                  "precio": 1500,
+                                  "modalidadPrecio": "POR_DIA"
+                                }
+                            ]
                         }
                         """)
         ).andExpect(status().isCreated());
@@ -572,7 +612,19 @@ public class ServicioControllerTest {
                             "procedencia": "CAMPING",
                             "precioParticular": 2500,
                             "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA"
+                            "modalidadPrecio": "POR_DIA",
+                            "tarifas": [
+                              {
+                                "tipoCliente": "PARTICULAR",
+                                "precio": 2500,
+                                "modalidadPrecio": "POR_DIA"
+                              },
+                              {
+                                "tipoCliente": "SOCIO_COMUN",
+                                "precio": 1500,
+                                "modalidadPrecio": "POR_DIA"
+                              }
+                            ]
                         }
                         """)
         ).andExpect(status().isBadRequest());
@@ -625,6 +677,7 @@ public class ServicioControllerTest {
                 null,
                 EstadoServicio.HABILITADO,
                 ModalidadPrecio.POR_DIA,
+                List.of(),
                 null, null, null, null
         );
 
@@ -640,7 +693,19 @@ public class ServicioControllerTest {
                             "procedencia": "CAMPING",
                             "precioParticular": 2500,
                             "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA"
+                            "modalidadPrecio": "POR_DIA",
+                            "tarifas": [
+                              {
+                                "tipoCliente": "PARTICULAR",
+                                "precio": 2500,
+                                "modalidadPrecio": "POR_DIA"
+                              },
+                              {
+                                "tipoCliente": "SOCIO_COMUN",
+                                "precio": 1500,
+                                "modalidadPrecio": "POR_DIA"
+                              }
+                            ]
                         }
                         """)
         ).andExpect(status().isCreated());

@@ -11,10 +11,7 @@ import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
-import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
-import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
-import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
-import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import com.cipolflo.server.servicios.exception.*;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramCodigoError;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramSecretInvalidoException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
@@ -78,6 +75,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(TarifaServicioNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTarifaServicioNotFoundException(
+            TarifaServicioNotFoundException ex) {
+
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        ServicioCodigoError.TARIFA_NO_ENCONTRADA.name(),
+                        ex.getMessage()
+                ));
     }
 
     @ExceptionHandler(ConfirmacionDevolucionRequeridaException.class)

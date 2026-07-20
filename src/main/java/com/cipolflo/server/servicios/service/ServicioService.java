@@ -5,14 +5,7 @@ import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
-import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
-import com.cipolflo.server.servicios.dto.ServicioReservaOcupacionDto;
-import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
-import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
-import com.cipolflo.server.servicios.dto.ServicioRequestDto;
-import com.cipolflo.server.servicios.dto.ListadoServiciosRequestDto;
-import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
-import com.cipolflo.server.servicios.dto.ServicioResponseDto;
+import com.cipolflo.server.servicios.dto.*;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
@@ -51,17 +44,20 @@ public class ServicioService implements IServicioService {
     private final IClienteService clienteService;
     private final ModificacionServicioValidator modificacionServicioValidator;
     private final ServicioRegistroValidator servicioRegistroValidator;
+    private final TarifaServicioService tarifaServicioService;
 
     public ServicioService(ServicioRepository servicioRepository,
                            IReservaService reservaService,
                            IClienteService clienteService,
                            ModificacionServicioValidator modificacionServicioValidator,
-                           ServicioRegistroValidator servicioRegistroValidator) {
+                           ServicioRegistroValidator servicioRegistroValidator,
+                           TarifaServicioService tarifaServicioService) {
         this.servicioRepository = servicioRepository;
         this.reservaService = reservaService;
         this.clienteService = clienteService;
         this.modificacionServicioValidator = modificacionServicioValidator;
         this.servicioRegistroValidator = servicioRegistroValidator;
+        this.tarifaServicioService = tarifaServicioService;
     }
 
     @Override
@@ -116,11 +112,14 @@ public class ServicioService implements IServicioService {
 
     @Override
     @Transactional
-    public ServicioResponseDto modificarServicio(Long id, ModificacionServicioDto dto) {
+    public ServicioResponseDto modificarServicio( Long id, ModificacionServicioDto dto
+    ) {
         Servicio servicio = servicioRepository.findById(id)
                 .orElseThrow(() -> new ServicioNotFoundException(id));
 
-        modificacionServicioValidator.validar(ModificacionValidationContext.from(id, dto));
+        modificacionServicioValidator.validar(
+                ModificacionValidationContext.from(id, dto)
+        );
 
         servicio.modificar(
                 dto.getNombre(),
@@ -132,7 +131,13 @@ public class ServicioService implements IServicioService {
                 dto.getCostoPersonaExtra()
         );
 
-        return mapToResponse(servicioRepository.save(servicio));
+        Servicio servicioGuardado = servicioRepository.save(servicio);
+
+        tarifaServicioService.modificarTarifas(
+                servicioGuardado,
+                dto.getTarifas()
+        );
+        return mapToResponse(servicioGuardado);
     }
 
     @Override
@@ -192,7 +197,9 @@ public class ServicioService implements IServicioService {
 
     @Override
     @Transactional
-    public ServicioResponseDto registrarServicio(ServicioRegistroRequestDto request) {
+    public ServicioResponseDto registrarServicio(
+            ServicioRegistroRequestDto request
+    ) {
         servicioRegistroValidator.validar(request);
 
         Servicio servicio = Servicio.registrar(
@@ -206,7 +213,14 @@ public class ServicioService implements IServicioService {
                 request.getCostoPersonaExtra()
         );
 
-        return mapToResponse(servicioRepository.save(servicio));
+        Servicio servicioGuardado = servicioRepository.save(servicio);
+
+        tarifaServicioService.registrarTarifas(
+                servicioGuardado,
+                request.getTarifas()
+        );
+
+        return mapToResponse(servicioGuardado);
     }
 
     private ReservaProximaResponseDto mapReservaProxima(Reserva reserva, Map<Long, String> nombres) {
@@ -230,6 +244,10 @@ public class ServicioService implements IServicioService {
         EstadoServicio estado = Boolean.TRUE.equals(servicio.getHabilitado())
                 ? EstadoServicio.HABILITADO
                 : EstadoServicio.DESHABILITADO;
+
+        List<TarifaServicioResponseDto> tarifas =
+                tarifaServicioService.obtenerTarifasPorServicio(servicio.getId());
+
         return new ServicioResponseDto(
                 servicio.getId(),
                 servicio.getNombre(),
@@ -241,6 +259,7 @@ public class ServicioService implements IServicioService {
                 servicio.getCostoPersonaExtra(),
                 estado,
                 servicio.getModalidadPrecio(),
+                tarifas,
                 servicio.getCreatedAt(),
                 servicio.getUpdatedAt(),
                 servicio.getCreatedBy(),
