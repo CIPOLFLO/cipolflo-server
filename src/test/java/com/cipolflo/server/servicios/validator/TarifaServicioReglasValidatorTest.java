@@ -1,19 +1,16 @@
 package com.cipolflo.server.servicios.validator;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
+import com.cipolflo.server.servicios.dto.TarifaServicioRequestDto;
+import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import com.cipolflo.server.shared.exception.ServicioCodigoError;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
-
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
-import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
-import com.cipolflo.server.servicios.dto.TarifaServicioRequestDto;
-import com.cipolflo.server.shared.exception.ServicioCodigoError;
-import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import static org.junit.jupiter.api.Assertions.*;
 
 class TarifaServicioReglasValidatorTest {
 
