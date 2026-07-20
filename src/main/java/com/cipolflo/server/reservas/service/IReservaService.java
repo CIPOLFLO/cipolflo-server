@@ -2,6 +2,7 @@ package com.cipolflo.server.reservas.service;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.dto.*;
+import com.cipolflo.server.reservas.events.MotivoCancelacionReserva;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -18,7 +19,7 @@ public interface IReservaService {
 
     List<Reserva> obtenerOcupacionPorServicioEnRango(Long servicioId, LocalDate desde, LocalDate hasta);
 
-    void cancelarTodas(List<Reserva> reservas);
+    void cancelarTodas(List<Reserva> reservas, MotivoCancelacionReserva motivo);
 
     void cancelarReservasFuturasPorCliente(Long clienteId);
 

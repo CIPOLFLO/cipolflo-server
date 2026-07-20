@@ -6,5 +6,6 @@ package com.cipolflo.server.shared.email;
  */
 public enum TipoEventoEmail {
     RESERVA_CREADA,
+    RESERVA_CANCELADA,
     REPORTE_SEMANAL_RESERVAS
 }

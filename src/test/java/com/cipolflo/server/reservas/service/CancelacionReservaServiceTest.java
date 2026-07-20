@@ -8,6 +8,7 @@ import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.PagoAsociadoReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaCancelacionCheckResponseDto;
 import com.cipolflo.server.reservas.dto.ReservaCancelacionRequestDto;
+import com.cipolflo.server.reservas.events.ReservaCanceladaEvent;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -22,6 +23,7 @@ import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -46,6 +48,9 @@ class CancelacionReservaServiceTest {
 
     @Mock
     private CancelacionReservaValidator cancelacionReservaValidator;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private CancelacionReservaService service;
@@ -122,6 +127,7 @@ class CancelacionReservaServiceTest {
         verify(reservaRepository).save(reserva);
         verify(reservaRepository, never()).delete(any(Reserva.class));
         verify(finanzaService, never()).registrarDevolucionPorCancelacionReserva(any(), any(), any(), any());
+        verify(eventPublisher).publishEvent(ReservaCanceladaEvent.manual(1L));
     }
 
     @Test
