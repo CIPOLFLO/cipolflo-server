@@ -19,6 +19,7 @@ import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
+import com.cipolflo.server.reservas.events.MotivoCancelacionReserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
@@ -299,7 +300,7 @@ class ServicioServiceTest {
 
         servicioService.cambiarHabilitacionServicio(servicioId, request);
 
-        verify(reservaService).cancelarTodas(List.of(reserva));
+        verify(reservaService).cancelarTodas(List.of(reserva), MotivoCancelacionReserva.INHABILITACION_SERVICIO);
         verify(servicioRepository).save(servicio);
     }
 
@@ -339,7 +340,7 @@ class ServicioServiceTest {
                 exception.getMessage()
         );
 
-        verify(reservaService, never()).cancelarTodas(anyList());
+        verify(reservaService, never()).cancelarTodas(anyList(), any());
     }
 
     @Test
@@ -371,7 +372,7 @@ class ServicioServiceTest {
 
         servicioService.cambiarHabilitacionServicio(servicioId, request);
 
-        verify(reservaService).cancelarTodas(List.of(reserva));
+        verify(reservaService).cancelarTodas(List.of(reserva), MotivoCancelacionReserva.INHABILITACION_SERVICIO);
     }
 
     @Test
@@ -657,7 +658,7 @@ class ServicioServiceTest {
                 () -> servicioService.cambiarHabilitacionServicio(servicioId, request)
         );
 
-        verify(reservaService, never()).cancelarTodas(anyList());
+        verify(reservaService, never()).cancelarTodas(anyList(), any());
     }
 
     @Test
