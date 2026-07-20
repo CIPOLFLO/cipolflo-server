@@ -45,7 +45,8 @@ class ReservaEmailListenerTest {
                 null, null,
                 null,
                 cliente, null,
-                null, null, null, null);
+                null, null, null, null
+        );
     }
 
     private ClienteDetalleReservaDto cliente(String nombre, String email) {
