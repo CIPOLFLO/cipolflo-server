@@ -6,12 +6,14 @@ import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.dto.PagoAsociadoReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaCancelacionCheckResponseDto;
 import com.cipolflo.server.reservas.dto.ReservaCancelacionRequestDto;
+import com.cipolflo.server.reservas.events.ReservaCanceladaEvent;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.validators.CancelacionReservaValidator;
 import com.cipolflo.server.reservas.validators.contexto.CancelacionReservaValidationContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +27,20 @@ public class CancelacionReservaService implements ICancelacionReservaService {
     private final IConsultaPagosAsociadosReserva consultaPagosAsociadosReserva;
     private final IFinanzaService finanzaService;
     private final CancelacionReservaValidator cancelacionReservaValidator;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CancelacionReservaService(
             ReservaRepository reservaRepository,
             IConsultaPagosAsociadosReserva consultaPagosAsociadosReserva,
             IFinanzaService finanzaService,
-            CancelacionReservaValidator cancelacionReservaValidator
+            CancelacionReservaValidator cancelacionReservaValidator,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.reservaRepository = reservaRepository;
         this.consultaPagosAsociadosReserva = consultaPagosAsociadosReserva;
         this.finanzaService = finanzaService;
         this.cancelacionReservaValidator = cancelacionReservaValidator;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -99,5 +104,7 @@ public class CancelacionReservaService implements ICancelacionReservaService {
 
         reserva.cancelar();
         reservaRepository.save(reserva);
+
+        eventPublisher.publishEvent(ReservaCanceladaEvent.manual(reservaId));
     }
 }
