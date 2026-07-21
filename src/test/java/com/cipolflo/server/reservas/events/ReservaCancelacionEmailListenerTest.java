@@ -52,7 +52,7 @@ class ReservaCancelacionEmailListenerTest {
                 null, null, null,
                 null, null, null,
                 null, null, null,
-                null,
+                null, null, null,
                 cliente, servicio,
                 null, null, null, updatedBy);
     }

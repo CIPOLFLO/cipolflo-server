@@ -156,4 +156,14 @@ public class ClienteController {
             clienteService.buscarPorRut(rut)
         );
     }
+    @PreAuthorize("isAuthenticated()")
+@GetMapping("/socios/{id}/comprobante")
+public ResponseEntity<byte[]> descargarComprobanteAltaSocio(
+        @PathVariable @Positive(message = "El id del socio debe ser un número positivo") Long id) {
+    ArchivoExportado archivo = clienteService.generarComprobanteAltaSocio(id);
+    return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(archivo.getContenido());
+}
 }
