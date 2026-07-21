@@ -10,12 +10,14 @@ import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
+import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -443,6 +445,58 @@ class ClienteControllerTest {
     @Test
     void deberiaRetornarUnauthorizedAlConsultarEstadoSinAutenticacion() throws Exception {
         mockMvc.perform(get("/api/v1/clientes/socios/1/estado"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // --- generarComprobanteAltaSocio ---
+
+    @Test
+    @WithMockUser
+    void deberiaDescargarComprobanteAltaSocioCuandoSocioExiste() throws Exception {
+        ArchivoExportado archivo = new ArchivoExportado("comprobante-alta-socio-1_2026-07-17_1200.pdf", "pdf".getBytes());
+        when(clienteService.generarComprobanteAltaSocio(1L)).thenReturn(archivo);
+
+        mockMvc.perform(get("/api/v1/clientes/socios/1/comprobante"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/pdf"))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"comprobante-alta-socio-1_2026-07-17_1200.pdf\""));
+
+        verify(clienteService).generarComprobanteAltaSocio(1L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoSocioNoExisteEnComprobanteAltaSocio() throws Exception {
+        when(clienteService.generarComprobanteAltaSocio(99L)).thenThrow(new SocioNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/clientes/socios/99/comprobante"))
+                .andExpect(status().isNotFound());
+
+        verify(clienteService).generarComprobanteAltaSocio(99L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoEsParticularEnComprobanteAltaSocio() throws Exception {
+        when(clienteService.generarComprobanteAltaSocio(2L)).thenThrow(new SocioNotFoundException(2L));
+
+        mockMvc.perform(get("/api/v1/clientes/socios/2/comprobante"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoIdNoEsPositivoEnComprobanteAltaSocio() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/socios/0/comprobante"))
+                .andExpect(status().isBadRequest());
+
+        verify(clienteService, never()).generarComprobanteAltaSocio(anyLong());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlDescargarComprobanteAltaSocioSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/socios/1/comprobante"))
                 .andExpect(status().isUnauthorized());
     }
 

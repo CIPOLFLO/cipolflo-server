@@ -8,12 +8,17 @@ import com.cipolflo.server.clientes.dto.PagoCuotaResponseDto;
 import com.cipolflo.server.clientes.dto.PeriodoCuotaDto;
 import com.cipolflo.server.clientes.dto.RegistroPagoCuotaRequestDto;
 import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
+import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
+import com.cipolflo.server.clientes.pdf.ComprobantePagoCuotaContenidoPdf;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.repository.PagoCuotaRepository;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
 import com.cipolflo.server.finanzas.service.IFinanzaService;
 import com.cipolflo.server.shared.enums.FormaPago;
+import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.shared.pdf.IPdfGeneratorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -41,6 +46,8 @@ class PagoCuotaServiceTest {
     private ClienteRepository clienteRepository;
     @Mock
     private IFinanzaService finanzaService;
+    @Mock
+    private IPdfGeneratorService pdfGeneratorService;
 
     @InjectMocks
     private PagoCuotaService pagoCuotaService;
@@ -296,5 +303,149 @@ class PagoCuotaServiceTest {
         verify(finanzaService).registrarPagoCuota(captor.capture());
 
         assertEquals(FormaPago.TRANSFERENCIA, captor.getValue().getFormaPago());
+    }
+
+    // --- generarComprobantePago ---
+
+    @Test
+    void deberiaGenerarComprobantePagoConUnMes() {
+        Socio socio = crearSocio();
+        PagoCuota pago = pago(2026, 6);
+        pago.setId(10L);
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L))).thenReturn(List.of(pago));
+        when(pdfGeneratorService.generar(any())).thenReturn("pdf".getBytes());
+
+        ArchivoExportado archivo = pagoCuotaService.generarComprobantePago(1L, List.of(10L));
+
+        assertNotNull(archivo);
+        assertTrue(archivo.getNombre().contains("comprobante-pago-cuota-1"));
+        assertArrayEquals("pdf".getBytes(), archivo.getContenido());
+        verify(pagoCuotaRepository).findBySocioIdAndIdIn(1L, List.of(10L));
+    }
+
+    @Test
+    void deberiaGenerarComprobantePagoCuandoIdsVieneConDuplicados() {
+        Socio socio = crearSocio();
+        PagoCuota pago = pago(2026, 6);
+        pago.setId(10L);
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L, 10L))).thenReturn(List.of(pago));
+        when(pdfGeneratorService.generar(any())).thenReturn("pdf".getBytes());
+
+        ArchivoExportado archivo = pagoCuotaService.generarComprobantePago(1L, List.of(10L, 10L));
+
+        assertNotNull(archivo);
+        verify(pdfGeneratorService).generar(any());
+    }
+
+    @Test
+    void deberiaGenerarComprobantePagoConVariosMesesYSumarElImporte() {
+        Socio socio = crearSocio();
+        PagoCuota pagoEnero = pago(2026, 1);
+        pagoEnero.setId(10L);
+        pagoEnero.setImporte(BigDecimal.valueOf(1000));
+        PagoCuota pagoFebrero = pago(2026, 2);
+        pagoFebrero.setId(11L);
+        pagoFebrero.setImporte(BigDecimal.valueOf(1000));
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L, 11L))).thenReturn(List.of(pagoEnero, pagoFebrero));
+
+        ArgumentCaptor<ComprobantePagoCuotaContenidoPdf> captor =
+                ArgumentCaptor.forClass(ComprobantePagoCuotaContenidoPdf.class);
+        when(pdfGeneratorService.generar(captor.capture())).thenReturn("pdf".getBytes());
+
+        pagoCuotaService.generarComprobantePago(1L, List.of(10L, 11L));
+
+        verify(pdfGeneratorService).generar(any());
+    }
+
+    @Test
+    void deberiaOrdenarPeriodosCronologicamenteAunqueVenganDesordenados() {
+        Socio socio = crearSocio();
+        PagoCuota pagoFebrero = pago(2026, 2);
+        pagoFebrero.setId(11L);
+        PagoCuota pagoEnero = pago(2026, 1);
+        pagoEnero.setId(10L);
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(11L, 10L))).thenReturn(List.of(pagoFebrero, pagoEnero));
+        when(pdfGeneratorService.generar(any())).thenReturn("pdf".getBytes());
+
+        ArchivoExportado archivo = pagoCuotaService.generarComprobantePago(1L, List.of(11L, 10L));
+
+        assertNotNull(archivo);
+        verify(pdfGeneratorService).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarPagoCuotaNotFoundExceptionCuandoUnIdNoExiste() {
+        Socio socio = crearSocio();
+        PagoCuota pago = pago(2026, 6);
+        pago.setId(10L);
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L, 99L))).thenReturn(List.of(pago));
+
+        assertThrows(PagoCuotaNotFoundException.class,
+                () -> pagoCuotaService.generarComprobantePago(1L, List.of(10L, 99L)));
+
+        verify(pdfGeneratorService, never()).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarPagoCuotaNotFoundExceptionCuandoUnPagoEsDeOtroSocio() {
+        Socio socio = crearSocio();
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L))).thenReturn(List.of());
+
+        assertThrows(PagoCuotaNotFoundException.class,
+                () -> pagoCuotaService.generarComprobantePago(1L, List.of(10L)));
+
+        verify(pdfGeneratorService, never()).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarSocioNotFoundExceptionCuandoSocioNoExisteEnComprobantePago() {
+        when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(SocioNotFoundException.class,
+                () -> pagoCuotaService.generarComprobantePago(99L, List.of(1L)));
+
+        verify(pagoCuotaRepository, never()).findBySocioIdAndIdIn(any(), any());
+        verify(pdfGeneratorService, never()).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarClienteValidacionExceptionCuandoIdsEsVacio() {
+        assertThrows(ClienteValidacionException.class,
+                () -> pagoCuotaService.generarComprobantePago(1L, List.of()));
+
+        verify(clienteRepository, never()).findById(any());
+        verify(pdfGeneratorService, never()).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarClienteValidacionExceptionCuandoLosPagosTienenMetodosDeCobroDistintos() {
+        Socio socio = crearSocio();
+        PagoCuota pagoEfectivo = pago(2026, 1);
+        pagoEfectivo.setId(10L);
+        PagoCuota pagoTransferencia = PagoCuota.crear(
+                1L, 2026, 2, Instant.parse("2026-06-15T03:00:00Z"),
+                BigDecimal.valueOf(5000), MetodoCobro.TRANSFERENCIA, null);
+        pagoTransferencia.setId(11L);
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L, 11L)))
+                .thenReturn(List.of(pagoEfectivo, pagoTransferencia));
+
+        assertThrows(ClienteValidacionException.class,
+                () -> pagoCuotaService.generarComprobantePago(1L, List.of(10L, 11L)));
+
+        verify(pdfGeneratorService, never()).generar(any());
     }
 }
