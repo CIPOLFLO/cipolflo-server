@@ -4,6 +4,7 @@ import com.cipolflo.server.integraciones.mensajeria.puerto.DestinatarioMensajeri
 import com.cipolflo.server.integraciones.mensajeria.puerto.RegistroDestinatarios;
 import com.cipolflo.server.integraciones.telegram.domain.TelegramChatAutorizado;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,7 +15,8 @@ import java.util.Optional;
  * al {@code destinatarioId} de tipo {@code String} que espera el núcleo.
  */
 public interface TelegramChatAutorizadoRepository
-        extends JpaRepository<TelegramChatAutorizado, Long>, RegistroDestinatarios {
+        extends JpaRepository<TelegramChatAutorizado, Long>, RegistroDestinatarios,
+        JpaSpecificationExecutor<TelegramChatAutorizado> {
 
     Optional<TelegramChatAutorizado> findByChatIdAndActivoTrue(Long chatId);
 
