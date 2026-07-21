@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  */
 public final class PeriodoCuotaFormatter {
 
-    private static final Locale LOCALE_ES = Locale.forLanguageTag("es");
+    private static final Locale LOCALE_ES = Locale.forLanguageTag("es-UY");
 
     private PeriodoCuotaFormatter() {
     }
@@ -69,7 +69,13 @@ public final class PeriodoCuotaFormatter {
         return inicio + " y " + ultimo;
     }
 
-    private static String nombreMes(YearMonth yearMonth) {
+    /**
+     * Nombre del mes en español, capitalizado (ej. {@code "Noviembre"}).
+     *
+     * <p>Único punto de formateo de nombres de mes de la aplicación: {@code PagoCuotaService}
+     * delega aquí en vez de duplicar la lógica de capitalización/locale.</p>
+     */
+    public static String nombreMes(YearMonth yearMonth) {
         String nombre = yearMonth.getMonth().getDisplayName(TextStyle.FULL, LOCALE_ES);
         return nombre.substring(0, 1).toUpperCase(LOCALE_ES) + nombre.substring(1);
     }

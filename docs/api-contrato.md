@@ -713,7 +713,7 @@ Descarga el comprobante en PDF de uno o varios pagos de cuota registrados en una
 | HTTP Status | Código                        | Cuándo ocurre                                                                                          |
 | ----------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | 400         | `ID_INVALIDO`                 | `id` (del socio) no es un entero positivo                                                                    |
-| 400         | `SOLICITUD_INVALIDA`          | `ids` viene vacío o ausente                                                                                   |
+| 400         | `SOLICITUD_INVALIDA`          | `ids` viene vacío o ausente, o los pagos seleccionados no comparten el mismo método de cobro                  |
 | 404         | `SOCIO_NO_ENCONTRADO`         | El `id` de la ruta no existe o no corresponde a un socio                                                     |
 | 404         | `PAGO_CUOTA_NO_ENCONTRADO`    | Algún `id` de `ids` no corresponde a un `PagoCuota` existente, o corresponde a un pago de otro socio (no se distingue entre ambos casos, para no filtrar información de otros socios) |
 | 401         | —                             | Token ausente, inválido o expirado                                                                             |

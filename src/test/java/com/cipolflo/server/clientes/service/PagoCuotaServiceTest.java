@@ -8,6 +8,7 @@ import com.cipolflo.server.clientes.dto.PagoCuotaResponseDto;
 import com.cipolflo.server.clientes.dto.PeriodoCuotaDto;
 import com.cipolflo.server.clientes.dto.RegistroPagoCuotaRequestDto;
 import com.cipolflo.server.clientes.dto.UltimaCuotaDto;
+import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.pdf.ComprobantePagoCuotaContenidoPdf;
@@ -313,7 +314,7 @@ class PagoCuotaServiceTest {
         pago.setId(10L);
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findAllById(List.of(10L))).thenReturn(List.of(pago));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L))).thenReturn(List.of(pago));
         when(pdfGeneratorService.generar(any())).thenReturn("pdf".getBytes());
 
         ArchivoExportado archivo = pagoCuotaService.generarComprobantePago(1L, List.of(10L));
@@ -321,7 +322,23 @@ class PagoCuotaServiceTest {
         assertNotNull(archivo);
         assertTrue(archivo.getNombre().contains("comprobante-pago-cuota-1"));
         assertArrayEquals("pdf".getBytes(), archivo.getContenido());
-        verify(pagoCuotaRepository).findAllById(List.of(10L));
+        verify(pagoCuotaRepository).findBySocioIdAndIdIn(1L, List.of(10L));
+    }
+
+    @Test
+    void deberiaGenerarComprobantePagoCuandoIdsVieneConDuplicados() {
+        Socio socio = crearSocio();
+        PagoCuota pago = pago(2026, 6);
+        pago.setId(10L);
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L, 10L))).thenReturn(List.of(pago));
+        when(pdfGeneratorService.generar(any())).thenReturn("pdf".getBytes());
+
+        ArchivoExportado archivo = pagoCuotaService.generarComprobantePago(1L, List.of(10L, 10L));
+
+        assertNotNull(archivo);
+        verify(pdfGeneratorService).generar(any());
     }
 
     @Test
@@ -335,7 +352,7 @@ class PagoCuotaServiceTest {
         pagoFebrero.setImporte(BigDecimal.valueOf(1000));
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findAllById(List.of(10L, 11L))).thenReturn(List.of(pagoEnero, pagoFebrero));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L, 11L))).thenReturn(List.of(pagoEnero, pagoFebrero));
 
         ArgumentCaptor<ComprobantePagoCuotaContenidoPdf> captor =
                 ArgumentCaptor.forClass(ComprobantePagoCuotaContenidoPdf.class);
@@ -355,7 +372,7 @@ class PagoCuotaServiceTest {
         pagoEnero.setId(10L);
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findAllById(List.of(11L, 10L))).thenReturn(List.of(pagoFebrero, pagoEnero));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(11L, 10L))).thenReturn(List.of(pagoFebrero, pagoEnero));
         when(pdfGeneratorService.generar(any())).thenReturn("pdf".getBytes());
 
         ArchivoExportado archivo = pagoCuotaService.generarComprobantePago(1L, List.of(11L, 10L));
@@ -371,7 +388,7 @@ class PagoCuotaServiceTest {
         pago.setId(10L);
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findAllById(List.of(10L, 99L))).thenReturn(List.of(pago));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L, 99L))).thenReturn(List.of(pago));
 
         assertThrows(PagoCuotaNotFoundException.class,
                 () -> pagoCuotaService.generarComprobantePago(1L, List.of(10L, 99L)));
@@ -382,13 +399,9 @@ class PagoCuotaServiceTest {
     @Test
     void deberiaLanzarPagoCuotaNotFoundExceptionCuandoUnPagoEsDeOtroSocio() {
         Socio socio = crearSocio();
-        PagoCuota pagoDeOtroSocio = PagoCuota.crear(
-                2L, 2026, 6, Instant.parse("2026-06-15T03:00:00Z"),
-                BigDecimal.valueOf(5000), MetodoCobro.EFECTIVO, null);
-        pagoDeOtroSocio.setId(10L);
 
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
-        when(pagoCuotaRepository.findAllById(List.of(10L))).thenReturn(List.of(pagoDeOtroSocio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L))).thenReturn(List.of());
 
         assertThrows(PagoCuotaNotFoundException.class,
                 () -> pagoCuotaService.generarComprobantePago(1L, List.of(10L)));
@@ -403,7 +416,36 @@ class PagoCuotaServiceTest {
         assertThrows(SocioNotFoundException.class,
                 () -> pagoCuotaService.generarComprobantePago(99L, List.of(1L)));
 
-        verify(pagoCuotaRepository, never()).findAllById(any());
+        verify(pagoCuotaRepository, never()).findBySocioIdAndIdIn(any(), any());
+        verify(pdfGeneratorService, never()).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarClienteValidacionExceptionCuandoIdsEsVacio() {
+        assertThrows(ClienteValidacionException.class,
+                () -> pagoCuotaService.generarComprobantePago(1L, List.of()));
+
+        verify(clienteRepository, never()).findById(any());
+        verify(pdfGeneratorService, never()).generar(any());
+    }
+
+    @Test
+    void deberiaLanzarClienteValidacionExceptionCuandoLosPagosTienenMetodosDeCobroDistintos() {
+        Socio socio = crearSocio();
+        PagoCuota pagoEfectivo = pago(2026, 1);
+        pagoEfectivo.setId(10L);
+        PagoCuota pagoTransferencia = PagoCuota.crear(
+                1L, 2026, 2, Instant.parse("2026-06-15T03:00:00Z"),
+                BigDecimal.valueOf(5000), MetodoCobro.TRANSFERENCIA, null);
+        pagoTransferencia.setId(11L);
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(socio));
+        when(pagoCuotaRepository.findBySocioIdAndIdIn(1L, List.of(10L, 11L)))
+                .thenReturn(List.of(pagoEfectivo, pagoTransferencia));
+
+        assertThrows(ClienteValidacionException.class,
+                () -> pagoCuotaService.generarComprobantePago(1L, List.of(10L, 11L)));
+
         verify(pdfGeneratorService, never()).generar(any());
     }
 }

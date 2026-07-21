@@ -15,6 +15,7 @@ import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.pdf.ComprobantePagoCuotaContenidoPdf;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.repository.PagoCuotaRepository;
+import com.cipolflo.server.clientes.utils.PeriodoCuotaFormatter;
 import com.cipolflo.server.finanzas.domain.enums.Concepto;
 import com.cipolflo.server.finanzas.domain.enums.TipoMovimiento;
 import com.cipolflo.server.finanzas.dto.FinanzaCrearRequestDto;
@@ -39,6 +40,7 @@ import java.util.Comparator;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 @Service
@@ -134,12 +136,17 @@ public class PagoCuotaService implements IPagoCuotaService {
 
     @Override
     public ArchivoExportado generarComprobantePago(Long socioId, List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.SOLICITUD_INVALIDA.name(),
+                    "Debe indicar al menos un id de pago de cuota"
+            );
+        }
+
         Socio socio = validarSocio(socioId);
 
-        List<PagoCuota> pagos = pagoCuotaRepository.findAllById(ids);
-        boolean algunoDeOtroSocio = pagos.stream()
-                .anyMatch(pago -> !pago.getSocioId().equals(socioId));
-        if (pagos.size() < ids.size() || algunoDeOtroSocio) {
+        List<PagoCuota> pagos = pagoCuotaRepository.findBySocioIdAndIdIn(socioId, ids);
+        if (pagos.size() < Set.copyOf(ids).size()) {
             throw new PagoCuotaNotFoundException(ids);
         }
 
@@ -155,13 +162,24 @@ public class PagoCuotaService implements IPagoCuotaService {
                 .map(PagoCuota::getImporte)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        long metodosDeCobroDistintos = ordenados.stream()
+                .map(PagoCuota::getMetodoCobro)
+                .distinct()
+                .count();
+        if (metodosDeCobroDistintos > 1) {
+            throw new ClienteValidacionException(
+                    ClienteCodigoError.SOLICITUD_INVALIDA.name(),
+                    "Los pagos seleccionados deben tener el mismo método de cobro"
+            );
+        }
         MetodoCobro metodoCobro = ordenados.get(0).getMetodoCobro();
 
         byte[] contenido = pdfGeneratorService.generar(new ComprobantePagoCuotaContenidoPdf(
                 socio.getNombreCompleto(), periodos, montoTotal, metodoCobro));
         String nombre = NombreArchivoPdf.generar("comprobante-pago-cuota-" + socioId);
         return new ArchivoExportado(nombre, contenido);
-        }
+    }
+
     @Override
     public int calcularMesesAdeudados(Socio socio) {
         YearMonth mesActual = YearMonth.now(ZonaHoraria.URUGUAY);
@@ -224,7 +242,6 @@ public class PagoCuotaService implements IPagoCuotaService {
     }
 
     private String descripcion(YearMonth periodo) {
-        String nombre = nombreMes(periodo);
-        return nombre.substring(0, 1).toUpperCase(LOCALE) + nombre.substring(1) + " " + periodo.getYear();
+        return PeriodoCuotaFormatter.nombreMes(periodo) + " " + periodo.getYear();
     }
 }
