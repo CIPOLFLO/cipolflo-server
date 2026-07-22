@@ -50,8 +50,6 @@ public class ReservaCreacionRequestDto {
 
     private Boolean crearCliente;
 
-    private TipoCliente tipoCliente;
-
     private String cedula;
 
     private String nombre;

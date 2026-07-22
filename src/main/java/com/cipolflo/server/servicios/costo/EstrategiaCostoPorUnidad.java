@@ -10,7 +10,7 @@ public class EstrategiaCostoPorUnidad implements EstrategiaCosto {
     @Override
     public BigDecimal calcular(CalculoCostoParams params) {
         int cantidad = params.cantidad() != null ? params.cantidad() : 1;
-        return params.servicio().precioBase(params.tipoCliente())
+        return params.tarifa().getPrecio()
                 .multiply(BigDecimal.valueOf(cantidad));
     }
 }

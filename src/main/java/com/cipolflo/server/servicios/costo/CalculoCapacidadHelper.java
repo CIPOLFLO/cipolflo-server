@@ -17,7 +17,7 @@ class CalculoCapacidadHelper {
         int adultosEquivalentes = cantidadTotal - menores;
         int excedente = Math.max(0, adultosEquivalentes - capacidad);
 
-        return params.servicio().precioBase(params.tipoCliente())
+        return params.tarifa().getPrecio()
                 .add(costoExtra.multiply(BigDecimal.valueOf(excedente)));
     }
 }

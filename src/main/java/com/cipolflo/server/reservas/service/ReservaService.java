@@ -312,7 +312,7 @@ public class ReservaService implements IReservaService {
         calculoCostoRequest.setCantidadTotal(dto.getCantidadTotal());
         calculoCostoRequest.setCantidad(dto.getCantidad());
         calculoCostoRequest.setCantidadMenores(dto.getCantidadMenores());
-        calculoCostoRequest.setTipoCliente(dto.getTipoCliente());
+        calculoCostoRequest.setClienteId(dto.getClienteId());
         return calculoCostoRequest;
     }
 

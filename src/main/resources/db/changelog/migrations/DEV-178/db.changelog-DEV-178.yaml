@@ -1,0 +1,3 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/migrations/DEV-178/backfill_tarifa_servicio_desde_servicio.sql
