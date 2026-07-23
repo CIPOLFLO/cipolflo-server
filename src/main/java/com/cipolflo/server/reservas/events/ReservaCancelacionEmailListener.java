@@ -89,6 +89,8 @@ public class ReservaCancelacionEmailListener {
         if (motivo == MotivoCancelacionReserva.INHABILITACION_SERVICIO) {
             cuerpo.append("El motivo de la cancelación es que el servicio ").append(nombreServicio)
                     .append(" ha sido deshabilitado temporalmente.\n\n");
+        } else if (motivo == MotivoCancelacionReserva.VENCIMIENTO_PLAZO_CONFIRMACION) {
+            cuerpo.append("El motivo de la cancelación es que la reserva no fue confirmada dentro del plazo establecido.\n\n");
         }
 
         cuerpo.append("Por cualquier consulta, comuníquese con administración.\n\n")
@@ -121,6 +123,7 @@ public class ReservaCancelacionEmailListener {
             case MANUAL -> "Reserva cancelada";
             case BAJA_SOCIO -> "Reservas canceladas por baja de socio";
             case INHABILITACION_SERVICIO -> "Reservas canceladas por deshabilitación de servicio";
+            case VENCIMIENTO_PLAZO_CONFIRMACION -> "Reservas canceladas por vencimiento de plazo de confirmación";
         };
 
         // El id de reserva no le sirve a administración: se identifica por cliente/servicio/fecha.
@@ -128,6 +131,7 @@ public class ReservaCancelacionEmailListener {
             case MANUAL -> cuerpoCancelacionManual(detalles.get(0));
             case BAJA_SOCIO -> cuerpoCancelacionPorBajaSocio(detalles);
             case INHABILITACION_SERVICIO -> cuerpoCancelacionPorInhabilitacionServicio(detalles);
+            case VENCIMIENTO_PLAZO_CONFIRMACION -> cuerpoCancelacionPorVencimientoPlazoConfirmacion(detalles);
         };
 
         SolicitudEmail solicitud = SolicitudEmail.texto(
@@ -173,6 +177,18 @@ public class ReservaCancelacionEmailListener {
         for (ReservaDetalleResponseDto detalle : detalles) {
             cuerpo.append("  • ").append(nombreCliente(detalle)).append(" - ")
                     .append(formatearPeriodo(detalle.getFechaEntrada(), detalle.getFechaSalida())).append("\n");
+        }
+        return cuerpo.toString();
+    }
+
+    // Lote heterogéneo (distinto cliente y servicio por reserva): cada línea identifica ambos.
+    private String cuerpoCancelacionPorVencimientoPlazoConfirmacion(List<ReservaDetalleResponseDto> detalles) {
+        StringBuilder cuerpo = new StringBuilder();
+        cuerpo.append("Se cancelaron automáticamente las siguientes reservas por no haber sido confirmadas ")
+                .append("dentro del plazo establecido:\n\n");
+        for (ReservaDetalleResponseDto detalle : detalles) {
+            cuerpo.append("  • ").append(nombreCliente(detalle)).append(" - ").append(nombreServicio(detalle))
+                    .append(" - ").append(formatearPeriodo(detalle.getFechaEntrada(), detalle.getFechaSalida())).append("\n");
         }
         return cuerpo.toString();
     }

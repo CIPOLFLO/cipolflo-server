@@ -4,11 +4,11 @@ import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
+import com.cipolflo.server.reservas.events.MotivoCancelacionReserva;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,6 +29,9 @@ class CancelacionAutomaticaReservasServiceTest {
 
     @Mock
     private ReservaRepository reservaRepository;
+
+    @Mock
+    private IReservaService reservaService;
 
     @InjectMocks
     private CancelacionAutomaticaReservasService service;
@@ -69,22 +72,17 @@ class CancelacionAutomaticaReservasServiceTest {
     }
 
     @Test
-    void cancelaTodasLasReservasVencidasEncontradas() {
+    void cancelaTodasLasReservasVencidasEncontradasConElMotivoDeVencimientoDePlazo() {
         Reserva vencida1 = crearReservaPendienteVencida();
         Reserva vencida2 = crearReservaPendienteVencida();
+        List<Reserva> vencidas = List.of(vencida1, vencida2);
         when(reservaRepository.findByEstadoAndFechaLimiteConfirmacionLessThanEqual(
                 any(), any()
-        )).thenReturn(List.of(vencida1, vencida2));
+        )).thenReturn(vencidas);
 
         service.cancelarReservasVencidas();
 
-        assertEquals(EstadoReserva.CANCELADA, vencida1.getEstado());
-        assertEquals(EstadoReserva.CANCELADA, vencida2.getEstado());
-
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<Reserva>> captor = ArgumentCaptor.forClass(List.class);
-        verify(reservaRepository).saveAll(captor.capture());
-        assertEquals(2, captor.getValue().size());
+        verify(reservaService).cancelarTodas(vencidas, MotivoCancelacionReserva.VENCIMIENTO_PLAZO_CONFIRMACION);
     }
 
     @Test
@@ -106,16 +104,16 @@ class CancelacionAutomaticaReservasServiceTest {
         String resumen = service.cancelarReservasVencidas();
 
         assertEquals("0 reservas canceladas automáticamente", resumen);
-        verify(reservaRepository, never()).saveAll(any());
+        verify(reservaService, never()).cancelarTodas(any(), any());
     }
 
     @Test
-    void noLlamaSaveAllCuandoLaListaEstaVacia() {
+    void noLlamaCancelarTodasCuandoLaListaEstaVacia() {
         when(reservaRepository.findByEstadoAndFechaLimiteConfirmacionLessThanEqual(any(), any()))
                 .thenReturn(List.of());
 
         service.cancelarReservasVencidas();
 
-        verify(reservaRepository, never()).saveAll(any());
+        verify(reservaService, never()).cancelarTodas(any(), any());
     }
 }
