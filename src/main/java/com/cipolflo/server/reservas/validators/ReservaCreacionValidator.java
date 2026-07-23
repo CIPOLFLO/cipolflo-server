@@ -1,7 +1,10 @@
 package com.cipolflo.server.reservas.validators;
 
+import com.cipolflo.server.clientes.domain.Cliente;
+import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
+import com.cipolflo.server.clientes.service.IConsultaClienteParaCosto;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
@@ -10,14 +13,20 @@ import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
+import com.cipolflo.server.servicios.costo.ResolutorTarifaServicio;
+import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
+import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
+import com.cipolflo.server.servicios.mapper.TipoClienteTarifaMapper;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
+import com.cipolflo.server.servicios.service.IConsultaServicioParaCosto;
 import com.cipolflo.server.shared.ZonaHoraria;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 public class ReservaCreacionValidator {
@@ -25,23 +34,32 @@ public class ReservaCreacionValidator {
     private final ReservaRepository reservaRepository;
     private final ServicioRepository servicioRepository;
     private final IConsultaClienteDetalle consultaClienteDetalle;
+    private final IConsultaClienteParaCosto consultaClienteParaCosto;
+    private final IConsultaServicioParaCosto consultaServicioParaCosto;
+    private final ResolutorTarifaServicio resolutorTarifaServicio;
 
     public ReservaCreacionValidator(
             ReservaRepository reservaRepository,
             ServicioRepository servicioRepository,
-            IConsultaClienteDetalle consultaClienteDetalle
+            IConsultaClienteDetalle consultaClienteDetalle,
+            IConsultaClienteParaCosto consultaClienteParaCosto,
+            IConsultaServicioParaCosto consultaServicioParaCosto,
+            ResolutorTarifaServicio resolutorTarifaServicio
     ) {
         this.reservaRepository = reservaRepository;
         this.servicioRepository = servicioRepository;
         this.consultaClienteDetalle = consultaClienteDetalle;
+        this.consultaClienteParaCosto = consultaClienteParaCosto;
+        this.consultaServicioParaCosto = consultaServicioParaCosto;
+        this.resolutorTarifaServicio = resolutorTarifaServicio;
     }
 
     public void validar(ReservaCreacionRequestDto dto) {
         validarFechas(dto);
         validarServicio(dto.getServicioId());
-        validarHoras(dto);
         validarSolapamiento(dto);
         validarCliente(dto);
+        validarHoras(dto);
         validarPlazoConfirmacion(dto);
     }
 
@@ -71,9 +89,7 @@ public class ReservaCreacionValidator {
     }
 
     private void validarHoras(ReservaCreacionRequestDto dto) {
-        ModalidadPrecio modalidad = servicioRepository.findById(dto.getServicioId())
-                .orElseThrow()
-                .getModalidadPrecio();
+        ModalidadPrecio modalidad = obtenerModalidadPrecio(dto);
 
         boolean esPorHora = ModalidadPrecio.POR_HORA.equals(modalidad);
 
@@ -84,7 +100,9 @@ public class ReservaCreacionValidator {
                         "El servicio requiere hora de inicio y hora de fin"
                 );
             }
+
             boolean mismoDia = dto.getFechaInicio().isEqual(dto.getFechaFin());
+
             if (mismoDia && !dto.getHoraFin().isAfter(dto.getHoraInicio())) {
                 throw new ReservaValidacionException(
                         ReservaCodigoError.HORA_FIN_ANTERIOR_O_IGUAL_A_INICIO,
@@ -99,6 +117,37 @@ public class ReservaCreacionValidator {
                 );
             }
         }
+    }
+
+
+    private ModalidadPrecio obtenerModalidadPrecio(ReservaCreacionRequestDto dto) {
+        TipoClienteTarifa tipoClienteTarifa;
+        Integer antiguedadEnAnios = null;
+
+        if (Boolean.TRUE.equals(dto.getCrearCliente())) {
+            tipoClienteTarifa = TipoClienteTarifa.PARTICULAR;
+        } else {
+            Cliente cliente = consultaClienteParaCosto.obtenerCliente(dto.getClienteId());
+
+            tipoClienteTarifa = TipoClienteTarifaMapper.desdeCliente(cliente);
+
+            if (cliente instanceof Socio socio) {
+                antiguedadEnAnios = socio.calcularAntiguedadEnAnios(
+                        LocalDate.now(ZonaHoraria.URUGUAY)
+                );
+            }
+        }
+
+        List<TarifaServicio> tarifas =
+                consultaServicioParaCosto.obtenerTarifas(dto.getServicioId());
+
+        TarifaServicio tarifa = resolutorTarifaServicio.resolver(
+                tarifas,
+                tipoClienteTarifa,
+                antiguedadEnAnios
+        );
+
+        return tarifa.getModalidadPrecio();
     }
 
     private void validarSolapamiento(ReservaCreacionRequestDto dto) {

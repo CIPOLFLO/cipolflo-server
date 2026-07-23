@@ -197,7 +197,7 @@ class ReservaServiceTest {
 
     @Test
     void deberiaCancelarReservaPagaSinModificarPago() {
-        Long clienteId = 1L;
+        Long clienteId = 20L;
         Reserva reservaPaga = crearReservaComun(clienteId, 10L);
 
         reservaPaga.registrarPago(BigDecimal.valueOf(1500), true);

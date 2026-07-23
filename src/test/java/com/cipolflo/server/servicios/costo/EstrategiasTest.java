@@ -43,7 +43,7 @@ class EstrategiasTest {
     ) {
         return new CalculoCostoParams(
                 servicio,
-                tarifa(precio),
+                precio,
                 cantidadTotal,
                 cantidad,
                 cantidadMenores,

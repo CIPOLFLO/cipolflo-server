@@ -46,5 +46,4 @@ WHERE NOT EXISTS (
     WHERE ts.servicio_id = s.id
 );
 
---rollback DELETE FROM tarifa_servicio
-WHERE tipo_cliente IN ('PARTICULAR','SOCIO_COMUN');
+--rollback DELETE FROM tarifa_servicio ts USING servicio s WHERE ts.servicio_id = s.id AND ts.antiguedad_minima IS NULL AND ts.antiguedad_maxima IS NULL AND ((ts.tipo_cliente = 'PARTICULAR' AND ts.precio = s.precio_particular AND ts.modalidad_precio = s.modalidad_precio) OR (ts.tipo_cliente = 'SOCIO_COMUN' AND ts.precio = s.precio_socio AND ts.modalidad_precio = s.modalidad_precio));

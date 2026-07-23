@@ -48,14 +48,22 @@ public class CalculoCostoService implements ICalculoCostoService {
     public CalculoCostoResponseDto calcularCosto(CalculoCostoRequestDto request) {
         Servicio servicio = consultaServicio.obtenerServicio(request.getServicioId());
 
-        Cliente cliente = consultaCliente.obtenerCliente(request.getClienteId());
+        TipoClienteTarifa tipoClienteTarifa;
+        Integer antiguedadEnAnios = null;
 
-        TipoClienteTarifa tipoClienteTarifa =
-                TipoClienteTarifaMapper.desdeCliente(cliente);
+        if (request.getClienteId() == null) {
+            tipoClienteTarifa = TipoClienteTarifa.PARTICULAR;
+        } else {
+            Cliente cliente = consultaCliente.obtenerCliente(request.getClienteId());
 
-        Integer antiguedadEnAnios = cliente instanceof Socio socio
-                ? socio.calcularAntiguedadEnAnios(LocalDate.now(ZonaHoraria.URUGUAY))
-                : null;
+            tipoClienteTarifa = TipoClienteTarifaMapper.desdeCliente(cliente);
+
+            if (cliente instanceof Socio socio) {
+                antiguedadEnAnios = socio.calcularAntiguedadEnAnios(
+                        LocalDate.now(ZonaHoraria.URUGUAY)
+                );
+            }
+        }
 
         List<TarifaServicio> tarifas =
                 consultaServicio.obtenerTarifas(servicio.getId());
@@ -71,20 +79,23 @@ public class CalculoCostoService implements ICalculoCostoService {
                 tarifa.getModalidadPrecio()
         );
 
-        long numeroDias = request.getFechaFin().toEpochDay()
-                - request.getFechaInicio().toEpochDay() + 1;
+        long numeroDias =
+                request.getFechaFin().toEpochDay()
+                        - request.getFechaInicio().toEpochDay()
+                        + 1;
 
-        long numeroHoras = request.getHoraInicio() != null
-                && request.getHoraFin() != null
-                ? request.getHoraInicio().until(
-                request.getHoraFin(),
-                ChronoUnit.HOURS
-        )
-                : 0;
+        long numeroHoras =
+                request.getHoraInicio() != null
+                        && request.getHoraFin() != null
+                        ? request.getHoraInicio().until(
+                        request.getHoraFin(),
+                        ChronoUnit.HOURS
+                )
+                        : 0;
 
         CalculoCostoParams params = new CalculoCostoParams(
                 servicio,
-                tarifa,
+                tarifa.getPrecio(),
                 request.getCantidadTotal(),
                 request.getCantidad(),
                 request.getCantidadMenores(),
@@ -99,5 +110,4 @@ public class CalculoCostoService implements ICalculoCostoService {
 
         return new CalculoCostoResponseDto(costoTotal);
     }
-
 }

@@ -9,7 +9,7 @@ public class EstrategiaCostoPorHora implements EstrategiaCosto {
 
     @Override
     public BigDecimal calcular(CalculoCostoParams params) {
-        return params.tarifa().getPrecio()
+        return params.precioUnitario()
                 .multiply(BigDecimal.valueOf(params.numeroHoras()));
     }
 }
