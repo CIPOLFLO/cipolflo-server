@@ -21,7 +21,9 @@
 9. [Finanzas — Endpoints](#finanzas--endpoints)
 10. [Finanzas — DTOs](#finanzas--dtos)
 11. [Integraciones — Endpoints](#integraciones--endpoints)
-12. [Manejo de errores](#manejo-de-errores)
+12. [Ajustes — Endpoints](#ajustes--endpoints)
+13. [Ajustes — DTOs](#ajustes--dtos)
+14. [Manejo de errores](#manejo-de-errores)
 
 ---
 
@@ -1913,6 +1915,381 @@ rompe el binding).
 
 Ver arquitectura completa en
 [`telegram-bot-arquitectura.md`](telegram-bot-arquitectura.md).
+
+---
+
+## Ajustes — Endpoints
+
+Panel de configuración operable por el propio administrador desde la pantalla de Ajustes,
+sin depender de despliegues de backend. Son **tres recursos independientes**, cada uno con
+su propia tabla y su propio endpoint — no hay un guardado global. Todos requieren
+autenticación (`@PreAuthorize("isAuthenticated()")`).
+
+### `GET /api/v1/ajustes/costo-cuota`
+
+Devuelve el monto vigente de referencia de la cuota social. Existe siempre: la fila se
+siembra por migración (`costo_cuota_socio`, id fijo). Es solo un valor de referencia para
+esta pantalla — no se usa como default ni validación en `POST /api/v1/pago_cuota` (el
+importe de cada pago sigue siendo libre).
+
+**Respuesta 200:**
+
+```json
+{
+  "monto": 200.00,
+  "updatedAt": "2026-01-10T09:00:00Z",
+  "updatedBy": "admin@cipolflo.com"
+}
+```
+
+---
+
+### `PUT /api/v1/ajustes/costo-cuota`
+
+Actualiza el monto de referencia de la cuota social.
+
+**Body** (`application/json`):
+
+```json
+{
+  "monto": 250.00
+}
+```
+
+| Campo   | Tipo             | Obligatorio | Validación |
+| ------- | ---------------- | ----------- | ---------- |
+| `monto` | number (decimal) | Sí          | > 0        |
+
+**Respuesta 200:** mismo body que `GET /api/v1/ajustes/costo-cuota`
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                          |
+| ----------- | --------------------- | ----------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA` | `monto` nulo, negativo o cero             |
+| 401         | —                    | Token ausente, inválido o expirado        |
+
+---
+
+### `GET /api/v1/ajustes/antiguedad-reservas`
+
+Devuelve la antigüedad configurada (en años) para la limpieza automática de reservas
+vencidas. Lee directamente la clave `LIMPIEZA_RESERVAS_RETENCION_ANIOS` de
+`configuracion_tarea` — la misma tabla y fila que consulta
+`LimpiezaReservasYFinanzasService` en cada corrida (ver
+[Tareas Programadas](tareas-programadas.md)). No expone ni modifica
+`LIMPIEZA_FINANZAS_SUELTAS_RETENCION_ANIOS`, que queda fuera del alcance de esta pantalla.
+
+**Respuesta 200:**
+
+```json
+{
+  "anios": 2,
+  "updatedAt": "2026-01-10T09:00:00Z",
+  "updatedBy": "admin@cipolflo.com"
+}
+```
+
+---
+
+### `PUT /api/v1/ajustes/antiguedad-reservas`
+
+Actualiza la antigüedad de retención. La siguiente corrida del scheduler de limpieza usa
+el nuevo valor sin necesidad de deploy.
+
+**Body** (`application/json`):
+
+```json
+{
+  "anios": 5
+}
+```
+
+| Campo   | Tipo    | Obligatorio | Validación   |
+| ------- | ------- | ----------- | ------------- |
+| `anios` | integer | Sí          | entero > 0    |
+
+**Respuesta 200:** mismo body que `GET /api/v1/ajustes/antiguedad-reservas`
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                          |
+| ----------- | --------------------- | ----------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA` | `anios` nulo, negativo o cero             |
+| 401         | —                    | Token ausente, inválido o expirado        |
+
+---
+
+### `GET /api/v1/ajustes/clientes-telegram`
+
+Retorna el listado paginado de clientes (chats) autorizados del bot de Telegram, con
+filtros opcionales.
+
+**Query params** (todos opcionales):
+
+| Param       | Tipo    | Validación                              |
+| ----------- | ------- | ------------------------------------------ |
+| `alias`     | string  | contiene, case-insensitive, máx 100 chars  |
+| `activo`    | boolean | —                                          |
+| `page`      | integer | >= 0, default 0                            |
+| `size`      | integer | 1–100, default 1                           |
+| `sortField` | string  | —                                          |
+| `sortOrder` | string  | `ASC` o `DESC`, default `ASC`              |
+
+**Respuesta 200:**
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "chatId": 123456789,
+      "alias": "Juan Pérez",
+      "activo": true,
+      "recibeNotificaciones": true,
+      "createdAt": "2026-01-10T09:00:00Z",
+      "updatedAt": "2026-01-10T09:00:00Z"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+---
+
+### `GET /api/v1/ajustes/clientes-telegram/{id}`
+
+Retorna el detalle de un cliente autorizado de Telegram.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:** mismo shape que un ítem del listado (ver arriba).
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                    |
+| ----------- | --------------------- | ------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA` | `id` no es un número positivo        |
+| 404         | `CHAT_NO_ENCONTRADO` | No existe un chat con ese `id`       |
+| 401         | —                    | Token ausente, inválido o expirado   |
+
+---
+
+### `POST /api/v1/ajustes/clientes-telegram`
+
+Da de alta un nuevo chat autorizado (reemplaza el alta manual "por script de datos").
+
+**Body** (`application/json`):
+
+```json
+{
+  "chatId": 123456789,
+  "alias": "Juan Pérez",
+  "recibeNotificaciones": true
+}
+```
+
+| Campo                   | Tipo    | Obligatorio | Validación                          |
+| ------------------------ | ------- | ----------- | ---------------------------------------- |
+| `chatId`                 | integer | Sí          | > 0, único                               |
+| `alias`                  | string  | Sí          | no vacío, máx 100 caracteres             |
+| `recibeNotificaciones`   | boolean | No          | default `true` si no se envía o es nulo  |
+
+> El cliente se crea con `activo: true`.
+
+**Respuesta 201:** mismo shape que `GET /api/v1/ajustes/clientes-telegram/{id}`
+
+**Errores:**
+
+| HTTP Status | Código                | Cuándo ocurre                          |
+| ----------- | ---------------------- | ------------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA`  | Campo obligatorio faltante o inválido      |
+| 400         | `CHAT_ID_DUPLICADO`   | Ya existe un cliente con ese `chatId`      |
+| 401         | —                     | Token ausente, inválido o expirado         |
+
+---
+
+### `PUT /api/v1/ajustes/clientes-telegram/{id}`
+
+Modifica `alias` y `recibeNotificaciones` de un cliente autorizado. El `chatId` **no es
+editable**: para cambiarlo hay que eliminar el cliente y crear uno nuevo.
+
+**Path param:** `id` — integer positivo
+
+**Body** (`application/json`):
+
+```json
+{
+  "alias": "Juan Pérez",
+  "recibeNotificaciones": false
+}
+```
+
+| Campo                   | Tipo    | Obligatorio | Validación                     |
+| ------------------------ | ------- | ----------- | ----------------------------------- |
+| `alias`                  | string  | Sí          | no vacío, máx 100 caracteres        |
+| `recibeNotificaciones`   | boolean | Sí          | —                                    |
+
+**Respuesta 200:** mismo shape que `GET /api/v1/ajustes/clientes-telegram/{id}`
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                    |
+| ----------- | --------------------- | ------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o inválido, o `id` no positivo |
+| 404         | `CHAT_NO_ENCONTRADO` | No existe un chat con ese `id`       |
+| 401         | —                    | Token ausente, inválido o expirado   |
+
+---
+
+### `PATCH /api/v1/ajustes/clientes-telegram/{id}/habilitacion`
+
+Activa o desactiva un cliente sin borrar el registro. Un chat desactivado deja de estar
+autorizado en la próxima consulta del bot (`ProcesadorMensajeTelegram` ya filtra por
+`activo`, no requiere cambios).
+
+**Path param:** `id` — integer positivo
+
+**Body** (`application/json`):
+
+```json
+{
+  "activo": false
+}
+```
+
+| Campo    | Tipo    | Obligatorio | Descripción                              |
+| -------- | ------- | ----------- | ---------------------------------------- |
+| `activo` | boolean | Sí          | `true` = habilitar, `false` = deshabilitar |
+
+**Respuesta 200:** mismo shape que `GET /api/v1/ajustes/clientes-telegram/{id}`
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                    |
+| ----------- | --------------------- | ------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA` | `activo` faltante, o `id` no positivo |
+| 404         | `CHAT_NO_ENCONTRADO` | No existe un chat con ese `id`       |
+| 401         | —                    | Token ausente, inválido o expirado   |
+
+---
+
+### `DELETE /api/v1/ajustes/clientes-telegram/{id}`
+
+Elimina definitivamente un cliente autorizado de Telegram.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                    |
+| ----------- | --------------------- | ------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA` | `id` no positivo                     |
+| 404         | `CHAT_NO_ENCONTRADO` | No existe un chat con ese `id`       |
+| 401         | —                    | Token ausente, inválido o expirado   |
+
+---
+
+## Ajustes — DTOs
+
+### Request DTOs
+
+#### `CostoCuotaRequestDto` — body en `PUT /api/v1/ajustes/costo-cuota`
+
+```typescript
+{
+  monto: number // obligatorio, > 0
+}
+```
+
+#### `AntiguedadReservasRequestDto` — body en `PUT /api/v1/ajustes/antiguedad-reservas`
+
+```typescript
+{
+  anios: number // obligatorio, entero > 0
+}
+```
+
+#### `RegistroClienteTelegramRequestDto` — body en `POST /api/v1/ajustes/clientes-telegram`
+
+```typescript
+{
+  chatId: number           // obligatorio, > 0, único
+  alias: string             // obligatorio, no vacío, máx 100 chars
+  recibeNotificaciones?: boolean // opcional, default true si se omite o es nulo
+}
+```
+
+#### `ModificacionClienteTelegramRequestDto` — body en `PUT /api/v1/ajustes/clientes-telegram/{id}`
+
+```typescript
+{
+  alias: string             // obligatorio, no vacío, máx 100 chars
+  recibeNotificaciones: boolean // obligatorio
+}
+```
+
+> `chatId` no forma parte de este DTO: no es modificable.
+
+#### `HabilitacionClienteTelegramRequestDto` — body en `PATCH /api/v1/ajustes/clientes-telegram/{id}/habilitacion`
+
+```typescript
+{
+  activo: boolean // obligatorio
+}
+```
+
+#### `ListadoClientesTelegramRequestDto` — query params en `GET /api/v1/ajustes/clientes-telegram`
+
+```typescript
+{
+  alias?: string  // opcional, máx 100 chars, contiene case-insensitive
+  activo?: boolean // opcional, null = todos
+}
+```
+
+### Response DTOs
+
+#### `CostoCuotaResponseDto`
+
+```typescript
+{
+  monto: number;
+  updatedAt: string; // Instant ISO-8601 UTC
+  updatedBy: string;
+}
+```
+
+#### `AntiguedadReservasResponseDto`
+
+```typescript
+{
+  anios: number;
+  updatedAt: string; // Instant ISO-8601 UTC
+  updatedBy: string;
+}
+```
+
+#### `ClienteTelegramResponseDto` / `ListadoClienteTelegramResponseDto`
+
+```typescript
+{
+  id: number;
+  chatId: number;
+  alias: string;
+  activo: boolean;
+  recibeNotificaciones: boolean;
+  createdAt: string; // Instant ISO-8601 UTC
+  updatedAt: string; // Instant ISO-8601 UTC
+}
+```
 
 ---
 

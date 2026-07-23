@@ -61,6 +61,7 @@ de tres líneas; el trazado en base queda gratis.
 | `reservas/scheduled/CancelacionAutomaticaReservasScheduler` | `CancelacionAutomaticaReservasService` | Cancela reservas `PENDIENTE` con plazo de confirmación vencido. |
 | `reservas/scheduled/TransicionEstadoReservasPorFechaScheduler` | `TransicionEstadoReservasPorFechaService` | Pasa reservas a EN_CURSO/FINALIZADA/VENCIDA_SIN_PAGO según la fecha. |
 | `clientes/scheduled/InactivacionSociosScheduler` | `InactivacionSociosService` | Inactivación automática de socios morosos. |
+| `shared/mantenimiento/LimpiezaReservasYFinanzasScheduler` | `LimpiezaReservasYFinanzasService` | Purga de reservas viejas (con sus finanzas) y finanzas sueltas vencidas. |
 
 ---
 
@@ -168,6 +169,10 @@ cipolflo.tareas.transicion-estado-reservas.zona=America/Montevideo
 # Inactivación automática de socios morosos: primer día de cada mes 03:00 (hora de Uruguay).
 cipolflo.tareas.inactivacion-socios.cron=0 0 3 1 * *
 cipolflo.tareas.inactivacion-socios.zona=America/Montevideo
+
+# Limpieza de reservas/finanzas: trimestral, 1° de enero/abril/julio/octubre 04:00 (hora de Uruguay).
+cipolflo.tareas.limpieza-reservas-finanzas.cron=0 0 4 1 1,4,7,10 *
+cipolflo.tareas.limpieza-reservas-finanzas.zona=America/Montevideo
 ```
 
 Cada tarea bindea sus properties con un record `@ConfigurationProperties` (patrón
@@ -259,6 +264,28 @@ socio que adeuda menos de 3 meses no se toca.
 > Al no depender de un contador persistido sino recalcular todo en cada corrida, es
 > idempotente: una corrida salteada no descuadra el resultado de la siguiente, y un socio que
 > se puso al día simplemente da 0 la próxima vez.
+
+### Limpieza de reservas y finanzas
+
+Corre **trimestralmente** (1° de enero/abril/julio/octubre a las 04:00, hora de Uruguay) y
+aplica dos reglas de retención independientes, ambas en la misma corrida:
+
+- **Reservas viejas**: reservas con `fechaSalida` de `LIMPIEZA_RESERVAS_RETENCION_ANIOS`
+  años o más se borran junto con todas sus finanzas asociadas.
+- **Finanzas sueltas**: finanzas sin reserva asociada (`reservaId` nulo) con `fecha` de
+  `LIMPIEZA_FINANZAS_SUELTAS_RETENCION_ANIOS` años o más se borran independientemente.
+
+Ambos años de retención se leen de `configuracion_tarea` (no de `application.properties`)
+para poder ajustarse sin un deploy. **`LIMPIEZA_RESERVAS_RETENCION_ANIOS` se edita desde la
+pantalla de Ajustes** (`GET`/`PUT /api/v1/ajustes/antiguedad-reservas`, ver
+[contrato de API](api-contrato.md#ajustes--endpoints)) — la próxima corrida del scheduler
+usa el valor nuevo automáticamente. `LIMPIEZA_FINANZAS_SUELTAS_RETENCION_ANIOS` queda fuera
+del alcance de esa pantalla y **sigue editándose solo por SQL** directo sobre
+`configuracion_tarea`.
+
+> Si a `configuracion_tarea` le falta alguna de las dos claves, o el valor configurado es
+> `<= 0`, la corrida aborta (no borra nada) y queda registrada como `FALLIDO` en
+> `log_tareas_programadas` — es una guarda defensiva para no purgar las tablas por un typo.
 
 ---
 

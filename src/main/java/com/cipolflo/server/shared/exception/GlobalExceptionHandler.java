@@ -16,8 +16,10 @@ import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaEx
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import com.cipolflo.server.integraciones.telegram.exception.TelegramChatNoEncontradoException;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramCodigoError;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramSecretInvalidoException;
+import com.cipolflo.server.integraciones.telegram.exception.TelegramValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -305,6 +307,22 @@ public ResponseEntity<ErrorResponse> handlePagoCuotaNotFoundException(PagoCuotaN
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(TelegramCodigoError.TELEGRAM_SECRET_INVALIDO.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(TelegramChatNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> handleTelegramChatNoEncontradoException(TelegramChatNoEncontradoException ex) {
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(TelegramCodigoError.CHAT_NO_ENCONTRADO.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(TelegramValidacionException.class)
+    public ResponseEntity<ErrorResponse> handleTelegramValidacionException(TelegramValidacionException ex) {
+        log.warn("Validación de negocio fallida [{}]: {}", ex.getCodigo(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
