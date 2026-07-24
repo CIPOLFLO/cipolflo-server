@@ -3,6 +3,7 @@ package com.cipolflo.server.servicios.dto;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -42,6 +43,6 @@ public class ModificacionServicioDto {
     private BigDecimal costoPersonaExtra;
 
     @Valid
-    @NotNull(message = "Las tarifas son requeridas")
+    @NotEmpty(message = "Debe indicar al menos una tarifa")
     private List<TarifaServicioRequestDto> tarifas;
 }

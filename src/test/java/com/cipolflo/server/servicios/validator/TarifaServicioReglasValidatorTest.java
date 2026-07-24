@@ -1,8 +1,8 @@
 package com.cipolflo.server.servicios.validator;
 
+import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
-import com.cipolflo.server.servicios.dto.TarifaServicioRequestDto;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
 import org.junit.jupiter.api.Test;
@@ -19,35 +19,12 @@ class TarifaServicioReglasValidatorTest {
 
     @Test
     void deberiaAceptarTarifasValidas() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        null
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        null,
-                        null
-                )
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, null, null)
         );
 
         assertDoesNotThrow(() -> validator.validar(tarifas));
-    }
-
-    @Test
-    void deberiaRechazarTarifasNulas() {
-        ServicioValidacionException exception = assertThrows(
-                ServicioValidacionException.class,
-                () -> validator.validar(null)
-        );
-
-        assertEquals(
-                ServicioCodigoError.TARIFAS_OBLIGATORIAS_FALTANTES.name(),
-                exception.getCodigo()
-        );
     }
 
     @Test
@@ -65,13 +42,8 @@ class TarifaServicioReglasValidatorTest {
 
     @Test
     void deberiaRechazarCuandoFaltaTarifaParticular() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        null,
-                        null
-                )
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, null, null)
         );
 
         ServicioValidacionException exception = assertThrows(
@@ -87,13 +59,8 @@ class TarifaServicioReglasValidatorTest {
 
     @Test
     void deberiaRechazarCuandoFaltaTarifaSocioComun() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        null
-                )
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null)
         );
 
         ServicioValidacionException exception = assertThrows(
@@ -108,166 +75,69 @@ class TarifaServicioReglasValidatorTest {
     }
 
     @Test
-    void deberiaRechazarTarifaParticularConAntiguedadMinima() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        1,
-                        null
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        null,
-                        null
-                )
-        );
-
-        ServicioValidacionException exception = assertThrows(
-                ServicioValidacionException.class,
-                () -> validator.validar(tarifas)
-        );
-
-        assertEquals(
-                ServicioCodigoError.ANTIGUEDAD_NO_APLICABLE_A_PARTICULAR.name(),
-                exception.getCodigo()
-        );
-    }
-
-    @Test
-    void deberiaRechazarTarifaParticularConAntiguedadMaxima() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        5
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        null,
-                        null
-                )
-        );
-
-        ServicioValidacionException exception = assertThrows(
-                ServicioValidacionException.class,
-                () -> validator.validar(tarifas)
-        );
-
-        assertEquals(
-                ServicioCodigoError.ANTIGUEDAD_NO_APLICABLE_A_PARTICULAR.name(),
-                exception.getCodigo()
-        );
-    }
-
-    @Test
-    void deberiaRechazarAntiguedadMinimaNegativa() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        null
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        -1,
-                        5
-                )
-        );
-
-        ServicioValidacionException exception = assertThrows(
-                ServicioValidacionException.class,
-                () -> validator.validar(tarifas)
-        );
-
-        assertEquals(
-                ServicioCodigoError.RANGO_ANTIGUEDAD_INVALIDO.name(),
-                exception.getCodigo()
-        );
-    }
-
-    @Test
-    void deberiaRechazarAntiguedadMaximaNegativa() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        null
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        null,
-                        -1
-                )
-        );
-
-        ServicioValidacionException exception = assertThrows(
-                ServicioValidacionException.class,
-                () -> validator.validar(tarifas)
-        );
-
-        assertEquals(
-                ServicioCodigoError.RANGO_ANTIGUEDAD_INVALIDO.name(),
-                exception.getCodigo()
-        );
-    }
-
-    @Test
-    void deberiaRechazarCuandoAntiguedadMinimaEsMayorQueMaxima() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        null
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        10,
-                        5
-                )
-        );
-
-        ServicioValidacionException exception = assertThrows(
-                ServicioValidacionException.class,
-                () -> validator.validar(tarifas)
-        );
-
-        assertEquals(
-                ServicioCodigoError.RANGO_ANTIGUEDAD_INVALIDO.name(),
-                exception.getCodigo()
-        );
-    }
-
-    @Test
     void deberiaRechazarRangosSuperpuestosDelMismoTipoCliente() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        null
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        0,
-                        5
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1200),
-                        5,
-                        10
-                )
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 0, 5),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 5, 10)
+        );
+
+        ServicioValidacionException exception = assertThrows(
+                ServicioValidacionException.class,
+                () -> validator.validar(tarifas)
+        );
+
+        assertEquals(
+                ServicioCodigoError.TARIFA_SUPERPUESTA.name(),
+                exception.getCodigo()
+        );
+    }
+
+    @Test
+    void deberiaRechazarRangosParcialmenteSuperpuestos() {
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 0, 10),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 8, 20)
+        );
+
+        ServicioValidacionException exception = assertThrows(
+                ServicioValidacionException.class,
+                () -> validator.validar(tarifas)
+        );
+
+        assertEquals(
+                ServicioCodigoError.TARIFA_SUPERPUESTA.name(),
+                exception.getCodigo()
+        );
+    }
+
+    @Test
+    void deberiaRechazarCuandoUnaDeLasDosCarecenDeLimiteYSeSuperponen() {
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 0, 5),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 3, null)
+        );
+
+        ServicioValidacionException exception = assertThrows(
+                ServicioValidacionException.class,
+                () -> validator.validar(tarifas)
+        );
+
+        assertEquals(
+                ServicioCodigoError.TARIFA_SUPERPUESTA.name(),
+                exception.getCodigo()
+        );
+    }
+
+    @Test
+    void deberiaRechazarDosTarifasDelMismoTipoSinNingunLimite() {
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_POLICIA, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_POLICIA, null, null)
         );
 
         ServicioValidacionException exception = assertThrows(
@@ -283,25 +153,10 @@ class TarifaServicioReglasValidatorTest {
 
     @Test
     void deberiaAceptarRangosConsecutivosSinSuperposicion() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        null
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        0,
-                        5
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1200),
-                        6,
-                        10
-                )
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 0, 5),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 6, 10)
         );
 
         assertDoesNotThrow(() -> validator.validar(tarifas));
@@ -309,44 +164,58 @@ class TarifaServicioReglasValidatorTest {
 
     @Test
     void deberiaAceptarRangosAbiertosSinSuperposicion() {
-        List<TarifaServicioRequestDto> tarifas = List.of(
-                crearTarifa(
-                        TipoClienteTarifa.PARTICULAR,
-                        BigDecimal.valueOf(2500),
-                        null,
-                        null
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1500),
-                        null,
-                        5
-                ),
-                crearTarifa(
-                        TipoClienteTarifa.SOCIO_COMUN,
-                        BigDecimal.valueOf(1200),
-                        6,
-                        null
-                )
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, null, 5),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, 6, null)
         );
 
         assertDoesNotThrow(() -> validator.validar(tarifas));
     }
 
-    private TarifaServicioRequestDto crearTarifa(
+    @Test
+    void deberiaAceptarRangosDeDistintoTipoClienteAunqueSeSuperpongan() {
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_POLICIA, 0, 10),
+                crearTarifa(TipoClienteTarifa.SOCIO_POLICIA_RETIRADO, 0, 10)
+        );
+
+        assertDoesNotThrow(() -> validator.validar(tarifas));
+    }
+
+    @Test
+    void cumpleTarifasObligatoriasDebeSerFalseCuandoFaltaParticular() {
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, null, null)
+        );
+
+        assertFalse(validator.cumpleTarifasObligatorias(tarifas));
+    }
+
+    @Test
+    void cumpleTarifasObligatoriasDebeSerTrueConAmbasObligatorias() {
+        List<TarifaServicio> tarifas = List.of(
+                crearTarifa(TipoClienteTarifa.PARTICULAR, null, null),
+                crearTarifa(TipoClienteTarifa.SOCIO_COMUN, null, null)
+        );
+
+        assertTrue(validator.cumpleTarifasObligatorias(tarifas));
+    }
+
+    private TarifaServicio crearTarifa(
             TipoClienteTarifa tipoCliente,
-            BigDecimal precio,
             Integer antiguedadMinima,
             Integer antiguedadMaxima
     ) {
-        TarifaServicioRequestDto tarifa = new TarifaServicioRequestDto();
-
-        tarifa.setTipoCliente(tipoCliente);
-        tarifa.setPrecio(precio);
-        tarifa.setModalidadPrecio(ModalidadPrecio.POR_DIA);
-        tarifa.setAntiguedadMinima(antiguedadMinima);
-        tarifa.setAntiguedadMaxima(antiguedadMaxima);
-
-        return tarifa;
+        return TarifaServicio.registrar(
+                null,
+                tipoCliente,
+                BigDecimal.valueOf(1000),
+                ModalidadPrecio.POR_DIA,
+                antiguedadMinima,
+                antiguedadMaxima
+        );
     }
 }

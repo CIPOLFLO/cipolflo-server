@@ -8,6 +8,7 @@ import com.cipolflo.server.shared.enums.Procedencia;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
@@ -46,6 +47,6 @@ public class ServicioRegistroRequestDto {
     private BigDecimal costoPersonaExtra;
 
     @Valid
-    @NotNull(message = "Las tarifas son requeridas")
+    @NotEmpty(message = "Debe indicar al menos una tarifa")
     private List<TarifaServicioRequestDto> tarifas;
 }

@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -118,5 +119,14 @@ public class ServicioController {
             @Valid @RequestBody ServicioRegistroRequestDto request) {
         ServicioResponseDto response = servicioService.registrarServicio(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/{servicioId}/tarifas/{tarifaId}")
+    public ResponseEntity<Void> eliminarTarifa(
+            @PathVariable @Positive(message = "El id del servicio debe ser un número positivo") Long servicioId,
+            @PathVariable @Positive(message = "El id de la tarifa debe ser un número positivo") Long tarifaId) {
+        servicioService.eliminarTarifaDeServicio(servicioId, tarifaId);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -11,6 +11,7 @@ import com.cipolflo.server.servicios.dto.ServicioResponseDto;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import com.cipolflo.server.servicios.exception.TarifaServicioNotFoundException;
 import com.cipolflo.server.servicios.service.IServicioService;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
@@ -33,10 +34,13 @@ import java.time.LocalDate;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -770,6 +774,73 @@ public class ServicioControllerTest {
         mockMvc.perform(get("/api/v1/servicios/1/fechas-ocupadas")
                         .param("desde", "2026-06-16")
                         .param("hasta", "2026-06-20"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNoContentCuandoEliminaTarifaExitosamente() throws Exception {
+        doNothing().when(servicioService).eliminarTarifaDeServicio(1L, 10L);
+
+        mockMvc.perform(delete("/api/v1/servicios/1/tarifas/10").with(csrf()))
+                .andExpect(status().isNoContent());
+
+        verify(servicioService).eliminarTarifaDeServicio(1L, 10L);
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoElServicioNoExisteAlEliminarTarifa() throws Exception {
+        doThrow(new ServicioNotFoundException(99L))
+                .when(servicioService).eliminarTarifaDeServicio(99L, 10L);
+
+        mockMvc.perform(delete("/api/v1/servicios/99/tarifas/10").with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundCuandoLaTarifaNoExisteOPerteneceAOtroServicio() throws Exception {
+        doThrow(new TarifaServicioNotFoundException(10L, 1L))
+                .when(servicioService).eliminarTarifaDeServicio(1L, 10L);
+
+        mockMvc.perform(delete("/api/v1/servicios/1/tarifas/10").with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoLaTarifaEsLaUltimaObligatoria() throws Exception {
+        doThrow(new ServicioValidacionException(
+                ServicioCodigoError.TARIFA_OBLIGATORIA_NO_ELIMINABLE.name(),
+                "No es posible eliminar la única tarifa de tipo PARTICULAR del servicio"
+        )).when(servicioService).eliminarTarifaDeServicio(1L, 10L);
+
+        mockMvc.perform(delete("/api/v1/servicios/1/tarifas/10").with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoElIdDelServicioEsInvalidoAlEliminarTarifa() throws Exception {
+        mockMvc.perform(delete("/api/v1/servicios/0/tarifas/10").with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(servicioService, never()).eliminarTarifaDeServicio(anyLong(), anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestCuandoElIdDeLaTarifaEsInvalidoAlEliminarTarifa() throws Exception {
+        mockMvc.perform(delete("/api/v1/servicios/1/tarifas/0").with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verify(servicioService, never()).eliminarTarifaDeServicio(anyLong(), anyLong());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedCuandoUsuarioNoEstaLogueadoAlEliminarTarifa() throws Exception {
+        mockMvc.perform(delete("/api/v1/servicios/1/tarifas/10").with(csrf()))
                 .andExpect(status().isUnauthorized());
     }
 }

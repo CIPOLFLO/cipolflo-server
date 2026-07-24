@@ -10,6 +10,10 @@ CREATE TABLE public.tarifa_servicio
     modalidad_precio    CHARACTER VARYING(50) NOT NULL,
     antiguedad_minima   INTEGER,
     antiguedad_maxima   INTEGER,
+    created_at          TIMESTAMP WITH TIME ZONE,
+    updated_at          TIMESTAMP WITH TIME ZONE,
+    created_by          CHARACTER VARYING(255),
+    updated_by          CHARACTER VARYING(255),
 
     CONSTRAINT fk_tarifa_servicio_servicio
         FOREIGN KEY (servicio_id)
@@ -36,4 +40,4 @@ CREATE TABLE public.tarifa_servicio
 CREATE INDEX idx_tarifa_servicio_servicio_id
     ON public.tarifa_servicio (servicio_id);
 
---rollback empty
+--rollback DROP TABLE IF EXISTS public.tarifa_servicio;

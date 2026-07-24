@@ -7,17 +7,12 @@ import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
 public class ServicioRegistroValidator {
 
     private final NombreUnicoValidator nombreUnicoValidator;
-    private final TarifaServicioReglasValidator tarifaServicioReglasValidator;
 
-
-    public ServicioRegistroValidator(NombreUnicoValidator nombreUnicoValidator, TarifaServicioReglasValidator tarifaServicioReglasValidator) {
+    public ServicioRegistroValidator(NombreUnicoValidator nombreUnicoValidator) {
         this.nombreUnicoValidator = nombreUnicoValidator;
-        this.tarifaServicioReglasValidator = tarifaServicioReglasValidator;
     }
 
     public void validar(ServicioRegistroRequestDto dto) {
-
         nombreUnicoValidator.validar(dto.getNombre(), null);
-        tarifaServicioReglasValidator.validar(dto.getTarifas());
     }
 }

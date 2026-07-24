@@ -1,7 +1,7 @@
 package com.cipolflo.server.servicios.validator;
 
+import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
-import com.cipolflo.server.servicios.dto.TarifaServicioRequestDto;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.exception.ServicioCodigoError;
 import org.springframework.stereotype.Component;
@@ -13,21 +13,21 @@ import java.util.stream.Collectors;
 @Component
 public class TarifaServicioReglasValidator {
 
-    public void validar(List<TarifaServicioRequestDto> tarifas) {
-        if (tarifas == null || tarifas.isEmpty()) {
-            throw new ServicioValidacionException(
-                    ServicioCodigoError.TARIFAS_OBLIGATORIAS_FALTANTES.name(),
-                    "Debe ingresar al menos una tarifa particular y una tarifa de socio común"
-            );
-        }
-
-        validarTarifasObligatorias(tarifas);
-        validarAntiguedadParticular(tarifas);
-        validarRangos(tarifas);
-        validarSuperposiciones(tarifas);
+    public void validar(List<TarifaServicio> tarifas) {
+        validarObligatorias(tarifas);
+        validarSinSuperposicion(tarifas);
     }
 
-    private void validarTarifasObligatorias(List<TarifaServicioRequestDto> tarifas) {
+    public void validarObligatorias(List<TarifaServicio> tarifas) {
+        if (!cumpleTarifasObligatorias(tarifas)) {
+            throw new ServicioValidacionException(
+                    ServicioCodigoError.TARIFAS_OBLIGATORIAS_FALTANTES.name(),
+                    "Debe existir al menos una tarifa particular y una tarifa de socio común"
+            );
+        }
+    }
+
+    public boolean cumpleTarifasObligatorias(List<TarifaServicio> tarifas) {
         boolean tieneParticular = tarifas.stream()
                 .anyMatch(tarifa ->
                         tarifa.getTipoCliente() == TipoClienteTarifa.PARTICULAR
@@ -38,75 +38,23 @@ public class TarifaServicioReglasValidator {
                         tarifa.getTipoCliente() == TipoClienteTarifa.SOCIO_COMUN
                 );
 
-        if (!tieneParticular || !tieneSocioComun) {
-            throw new ServicioValidacionException(
-                    ServicioCodigoError.TARIFAS_OBLIGATORIAS_FALTANTES.name(),
-                    "Debe existir al menos una tarifa particular y una tarifa de socio común"
-            );
-        }
+        return tieneParticular && tieneSocioComun;
     }
 
-    private void validarAntiguedadParticular(List<TarifaServicioRequestDto> tarifas) {
-        boolean particularConAntiguedad = tarifas.stream()
-                .filter(tarifa ->
-                        tarifa.getTipoCliente() == TipoClienteTarifa.PARTICULAR
-                )
-                .anyMatch(tarifa ->
-                        tarifa.getAntiguedadMinima() != null
-                                || tarifa.getAntiguedadMaxima() != null
-                );
-
-        if (particularConAntiguedad) {
-            throw new ServicioValidacionException(
-                    ServicioCodigoError.ANTIGUEDAD_NO_APLICABLE_A_PARTICULAR.name(),
-                    "Las tarifas particulares no pueden tener rangos de antigüedad"
-            );
-        }
-    }
-
-    private void validarRangos(List<TarifaServicioRequestDto> tarifas) {
-        boolean existeRangoInvalido = tarifas.stream()
-                .anyMatch(this::esRangoInvalido);
-
-        if (existeRangoInvalido) {
-            throw new ServicioValidacionException(
-                    ServicioCodigoError.RANGO_ANTIGUEDAD_INVALIDO.name(),
-                    "La antigüedad mínima no puede ser mayor que la antigüedad máxima"
-            );
-        }
-    }
-
-    private boolean esRangoInvalido(TarifaServicioRequestDto tarifa) {
-        Integer minima = tarifa.getAntiguedadMinima();
-        Integer maxima = tarifa.getAntiguedadMaxima();
-
-        if (minima != null && minima < 0) {
-            return true;
-        }
-
-        if (maxima != null && maxima < 0) {
-            return true;
-        }
-
-        return minima != null
-                && maxima != null
-                && minima > maxima;
-    }
-
-    private void validarSuperposiciones(List<TarifaServicioRequestDto> tarifas) {
-        Map<TipoClienteTarifa, List<TarifaServicioRequestDto>> tarifasPorTipo =
+    private void validarSinSuperposicion(List<TarifaServicio> tarifas) {
+        Map<TipoClienteTarifa, List<TarifaServicio>> tarifasPorTipo =
                 tarifas.stream()
                         .collect(Collectors.groupingBy(
-                                TarifaServicioRequestDto::getTipoCliente
+                                TarifaServicio::getTipoCliente
                         ));
 
-        for (List<TarifaServicioRequestDto> tarifasDelTipo : tarifasPorTipo.values()) {
+        for (List<TarifaServicio> tarifasDelTipo : tarifasPorTipo.values()) {
             validarSuperposicionesDelMismoTipo(tarifasDelTipo);
         }
     }
 
     private void validarSuperposicionesDelMismoTipo(
-            List<TarifaServicioRequestDto> tarifas
+            List<TarifaServicio> tarifas
     ) {
         for (int i = 0; i < tarifas.size(); i++) {
             for (int j = i + 1; j < tarifas.size(); j++) {
@@ -121,8 +69,8 @@ public class TarifaServicioReglasValidator {
     }
 
     private boolean rangosSeSuperponen(
-            TarifaServicioRequestDto primera,
-            TarifaServicioRequestDto segunda
+            TarifaServicio primera,
+            TarifaServicio segunda
     ) {
         int minimaPrimera = valorMinimo(primera.getAntiguedadMinima());
         int maximaPrimera = valorMaximo(primera.getAntiguedadMaxima());
