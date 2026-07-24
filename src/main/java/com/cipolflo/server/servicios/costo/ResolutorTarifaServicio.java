@@ -66,16 +66,8 @@ public class ResolutorTarifaServicio {
             return false;
         }
 
-        Integer minima = tarifa.getAntiguedadMinima();
-        Integer maxima = tarifa.getAntiguedadMaxima();
-
-        boolean cumpleMinima =
-                minima == null || antiguedad >= minima;
-
-        boolean cumpleMaxima =
-                maxima == null || antiguedad <= maxima;
-
-        return cumpleMinima && cumpleMaxima;
+        return antiguedad >= TarifaServicio.normalizarAntiguedadMinima(tarifa.getAntiguedadMinima())
+                && antiguedad <= TarifaServicio.normalizarAntiguedadMaxima(tarifa.getAntiguedadMaxima());
     }
 
     private ServicioValidacionException tarifaNoEncontrada() {

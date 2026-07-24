@@ -1,6 +1,5 @@
 package com.cipolflo.server.reservas.dto;
 
-import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

@@ -1,10 +1,8 @@
 package com.cipolflo.server.reservas.validators;
 
-import com.cipolflo.server.clientes.domain.Particular;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
-import com.cipolflo.server.clientes.service.IConsultaClienteParaCosto;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
@@ -13,12 +11,11 @@ import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
-import com.cipolflo.server.servicios.costo.ResolutorTarifaServicio;
+import com.cipolflo.server.servicios.costo.ResolutorTarifaAplicable;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
-import com.cipolflo.server.servicios.service.IConsultaServicioParaCosto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +26,7 @@ import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 
 import com.cipolflo.server.shared.ZonaHoraria;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -50,13 +48,7 @@ class ReservaCreacionValidatorTest {
     private IConsultaClienteDetalle consultaClienteDetalle;
 
     @Mock
-    private IConsultaClienteParaCosto consultaClienteParaCosto;
-
-    @Mock
-    private IConsultaServicioParaCosto consultaServicioParaCosto;
-
-    @Mock
-    private ResolutorTarifaServicio resolutorTarifaServicio;
+    private ResolutorTarifaAplicable resolutorTarifaAplicable;
 
     @InjectMocks
     private ReservaCreacionValidator validator;
@@ -190,22 +182,17 @@ class ReservaCreacionValidatorTest {
             Long clienteId,
             ModalidadPrecio modalidad
     ) {
-        TarifaServicio tarifa = new TarifaServicio();
-        tarifa.setModalidadPrecio(modalidad);
+        TarifaServicio tarifa = TarifaServicio.registrar(
+                servicioHabilitado(servicioId),
+                TipoClienteTarifa.PARTICULAR,
+                BigDecimal.TEN,
+                modalidad,
+                null,
+                null
+        );
 
-        Particular cliente = new Particular();
-
-        when(consultaClienteParaCosto.obtenerCliente(clienteId))
-                .thenReturn(cliente);
-
-        when(consultaServicioParaCosto.obtenerTarifas(servicioId))
-                .thenReturn(List.of(tarifa));
-
-        when(resolutorTarifaServicio.resolver(
-                anyList(),
-                any(TipoClienteTarifa.class),
-                isNull()
-        )).thenReturn(tarifa);
+        when(resolutorTarifaAplicable.resolver(servicioId, clienteId))
+                .thenReturn(tarifa);
     }
 
 
@@ -316,6 +303,45 @@ class ReservaCreacionValidatorTest {
     }
 
     // ── validarCliente con crearCliente=true ───────────────────────────────────
+
+    @Test
+    void deberiaLanzarExcepcionCuandoCrearClienteConClienteIdInformado() {
+        ReservaCreacionRequestDto dto = mockDto(
+                TipoReserva.COMUN,
+                1L,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
+                123L,
+                true,
+                "Juan Pérez",
+                "1.234.567-8",
+                "099111111"
+        );
+
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
+
+        when(reservaRepository
+                .existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                        any(),
+                        any(),
+                        any(),
+                        any()
+                ))
+                .thenReturn(false);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> validator.validar(dto)
+        );
+
+        assertEquals(
+                ReservaCodigoError.CLIENTE_ID_NO_PERMITIDO_CON_CREAR_CLIENTE.name(),
+                ex.getCodigo()
+        );
+
+        verifyNoInteractions(resolutorTarifaAplicable);
+    }
 
     @Test
     void deberiaLanzarExcepcionCuandoCrearClienteSinNombre() {

@@ -1,10 +1,5 @@
 package com.cipolflo.server.reservas.service;
 
-import com.cipolflo.server.clientes.domain.Particular;
-import com.cipolflo.server.clientes.domain.Socio;
-import com.cipolflo.server.clientes.domain.enums.CategoriaSocio;
-import com.cipolflo.server.clientes.domain.enums.TipoCliente;
-import com.cipolflo.server.clientes.service.IConsultaClienteParaCosto;
 import com.cipolflo.server.reservas.dto.CalculoCostoRequestDto;
 import com.cipolflo.server.reservas.dto.CalculoCostoResponseDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
@@ -14,7 +9,6 @@ import com.cipolflo.server.servicios.costo.*;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
-import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.service.IConsultaServicioParaCosto;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -28,10 +22,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,16 +36,7 @@ class CalculoCostoServiceTest {
     private IConsultaServicioParaCosto consultaServicio;
 
     @Mock
-    private IConsultaClienteParaCosto consultaCliente;
-
-    @Mock
-    private ResolutorTarifaServicio resolutorTarifaServicio;
-
-    @Mock
-    private Particular particular;
-
-    @Mock
-    private Socio socio;
+    private ResolutorTarifaAplicable resolutorTarifaAplicable;
 
     @Mock
     private TarifaServicio tarifa;
@@ -76,9 +59,8 @@ class CalculoCostoServiceTest {
 
         service = new CalculoCostoService(
                 consultaServicio,
-                consultaCliente,
+                resolutorTarifaAplicable,
                 fabricaEstrategia,
-                resolutorTarifaServicio,
                 validator
         );
     }
@@ -128,57 +110,15 @@ class CalculoCostoServiceTest {
         return dto;
     }
 
-    private void configurarParticular(
+    private void configurarTarifa(
             Servicio servicio,
             ModalidadPrecio modalidad
     ) {
         when(consultaServicio.obtenerServicio(SERVICIO_ID))
                 .thenReturn(servicio);
 
-        when(consultaCliente.obtenerCliente(CLIENTE_ID))
-                .thenReturn(particular);
-
-        when(consultaServicio.obtenerTarifas(SERVICIO_ID))
-                .thenReturn(List.of(tarifa));
-
-        when(resolutorTarifaServicio.resolver(
-                anyList(),
-                eq(TipoClienteTarifa.PARTICULAR),
-                isNull()
-        )).thenReturn(tarifa);
-
-        when(tarifa.getModalidadPrecio())
-                .thenReturn(modalidad);
-    }
-
-    private void configurarSocio(
-            Servicio servicio,
-            ModalidadPrecio modalidad
-    ) {
-        when(consultaServicio.obtenerServicio(SERVICIO_ID))
-                .thenReturn(servicio);
-
-        /*
-         * Se utiliza una categoría válida del enum porque el mapper necesita
-         * transformar CategoriaSocio en TipoClienteTarifa.
-         */
-        when(socio.getCategoriaSocio())
-                .thenReturn(CategoriaSocio.values()[0]);
-
-        when(socio.calcularAntiguedadEnAnios(any(LocalDate.class)))
-                .thenReturn(5);
-
-        when(consultaCliente.obtenerCliente(CLIENTE_ID))
-                .thenReturn(socio);
-
-        when(consultaServicio.obtenerTarifas(SERVICIO_ID))
-                .thenReturn(List.of(tarifa));
-
-        when(resolutorTarifaServicio.resolver(
-                anyList(),
-                any(TipoClienteTarifa.class),
-                eq(5)
-        )).thenReturn(tarifa);
+        when(resolutorTarifaAplicable.resolver(SERVICIO_ID, CLIENTE_ID))
+                .thenReturn(tarifa);
 
         when(tarifa.getModalidadPrecio())
                 .thenReturn(modalidad);
@@ -208,14 +148,14 @@ class CalculoCostoServiceTest {
     }
 
     @Test
-    void clienteParticular_usaTarifaParticular() {
+    void clienteParticular_delegaResolucionDeTarifaConClienteId() {
         Servicio servicio = servicio(
                 ModalidadPrecio.POR_DIA,
                 null,
                 null
         );
 
-        configurarParticular(servicio, ModalidadPrecio.POR_DIA);
+        configurarTarifa(servicio, ModalidadPrecio.POR_DIA);
 
         when(tarifa.getPrecio())
                 .thenReturn(new BigDecimal("1000"));
@@ -240,31 +180,31 @@ class CalculoCostoServiceTest {
                 resultado.costoTotal()
         );
 
-        verify(resolutorTarifaServicio).resolver(
-                anyList(),
-                eq(TipoClienteTarifa.PARTICULAR),
-                isNull()
-        );
+        verify(resolutorTarifaAplicable).resolver(SERVICIO_ID, CLIENTE_ID);
     }
 
     @Test
-    void clienteSocio_usaTarifaResueltaParaSocio() {
+    void clienteIdNulo_delegaResolucionDeTarifaConClienteIdNulo() {
         Servicio servicio = servicio(
                 ModalidadPrecio.POR_DIA,
                 null,
                 null
         );
 
-        configurarSocio(servicio, ModalidadPrecio.POR_DIA);
-
+        when(consultaServicio.obtenerServicio(SERVICIO_ID))
+                .thenReturn(servicio);
+        when(resolutorTarifaAplicable.resolver(SERVICIO_ID, null))
+                .thenReturn(tarifa);
+        when(tarifa.getModalidadPrecio())
+                .thenReturn(ModalidadPrecio.POR_DIA);
         when(tarifa.getPrecio())
-                .thenReturn(new BigDecimal("700"));
+                .thenReturn(new BigDecimal("1000"));
 
         CalculoCostoRequestDto dto = request(
                 SERVICIO_ID,
-                CLIENTE_ID,
+                null,
                 LocalDate.of(2026, 7, 1),
-                LocalDate.of(2026, 7, 3),
+                LocalDate.of(2026, 7, 1),
                 null,
                 null,
                 null,
@@ -276,15 +216,11 @@ class CalculoCostoServiceTest {
                 service.calcularCosto(dto);
 
         assertEquals(
-                new BigDecimal("2100"),
+                new BigDecimal("1000"),
                 resultado.costoTotal()
         );
 
-        verify(resolutorTarifaServicio).resolver(
-                anyList(),
-                any(TipoClienteTarifa.class),
-                eq(5)
-        );
+        verify(resolutorTarifaAplicable).resolver(SERVICIO_ID, null);
     }
 
     @Test
@@ -295,7 +231,7 @@ class CalculoCostoServiceTest {
                 null
         );
 
-        configurarParticular(servicio, ModalidadPrecio.POR_DIA);
+        configurarTarifa(servicio, ModalidadPrecio.POR_DIA);
 
         when(tarifa.getPrecio())
                 .thenReturn(new BigDecimal("1000"));
@@ -329,7 +265,7 @@ class CalculoCostoServiceTest {
                 null
         );
 
-        configurarParticular(servicio, ModalidadPrecio.POR_HORA);
+        configurarTarifa(servicio, ModalidadPrecio.POR_HORA);
 
         when(tarifa.getPrecio())
                 .thenReturn(new BigDecimal("200"));
@@ -363,7 +299,7 @@ class CalculoCostoServiceTest {
                 null
         );
 
-        configurarParticular(servicio, ModalidadPrecio.POR_UNIDAD);
+        configurarTarifa(servicio, ModalidadPrecio.POR_UNIDAD);
 
         when(tarifa.getPrecio())
                 .thenReturn(new BigDecimal("500"));
@@ -397,7 +333,7 @@ class CalculoCostoServiceTest {
                 new BigDecimal("300")
         );
 
-        configurarParticular(servicio, ModalidadPrecio.POR_PERSONA);
+        configurarTarifa(servicio, ModalidadPrecio.POR_PERSONA);
 
         when(tarifa.getPrecio())
                 .thenReturn(new BigDecimal("2000"));
@@ -437,7 +373,7 @@ class CalculoCostoServiceTest {
                 new BigDecimal("300")
         );
 
-        configurarParticular(
+        configurarTarifa(
                 servicio,
                 ModalidadPrecio.POR_DIA_POR_PERSONA
         );
@@ -478,7 +414,7 @@ class CalculoCostoServiceTest {
                 null
         );
 
-        configurarParticular(servicio, ModalidadPrecio.POR_DIA);
+        configurarTarifa(servicio, ModalidadPrecio.POR_DIA);
 
         CalculoCostoRequestDto dto = request(
                 SERVICIO_ID,
@@ -512,7 +448,7 @@ class CalculoCostoServiceTest {
                 null
         );
 
-        configurarParticular(servicio, ModalidadPrecio.POR_HORA);
+        configurarTarifa(servicio, ModalidadPrecio.POR_HORA);
 
         CalculoCostoRequestDto dto = request(
                 SERVICIO_ID,

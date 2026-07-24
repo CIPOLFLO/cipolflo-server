@@ -1,10 +1,7 @@
 package com.cipolflo.server.reservas.validators;
 
-import com.cipolflo.server.clientes.domain.Cliente;
-import com.cipolflo.server.clientes.domain.Socio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
-import com.cipolflo.server.clientes.service.IConsultaClienteParaCosto;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
@@ -13,20 +10,16 @@ import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
-import com.cipolflo.server.servicios.costo.ResolutorTarifaServicio;
+import com.cipolflo.server.servicios.costo.ResolutorTarifaAplicable;
 import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
-import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
-import com.cipolflo.server.servicios.mapper.TipoClienteTarifaMapper;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
-import com.cipolflo.server.servicios.service.IConsultaServicioParaCosto;
 import com.cipolflo.server.shared.ZonaHoraria;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 public class ReservaCreacionValidator {
@@ -34,33 +27,33 @@ public class ReservaCreacionValidator {
     private final ReservaRepository reservaRepository;
     private final ServicioRepository servicioRepository;
     private final IConsultaClienteDetalle consultaClienteDetalle;
-    private final IConsultaClienteParaCosto consultaClienteParaCosto;
-    private final IConsultaServicioParaCosto consultaServicioParaCosto;
-    private final ResolutorTarifaServicio resolutorTarifaServicio;
+    private final ResolutorTarifaAplicable resolutorTarifaAplicable;
 
     public ReservaCreacionValidator(
             ReservaRepository reservaRepository,
             ServicioRepository servicioRepository,
             IConsultaClienteDetalle consultaClienteDetalle,
-            IConsultaClienteParaCosto consultaClienteParaCosto,
-            IConsultaServicioParaCosto consultaServicioParaCosto,
-            ResolutorTarifaServicio resolutorTarifaServicio
+            ResolutorTarifaAplicable resolutorTarifaAplicable
     ) {
         this.reservaRepository = reservaRepository;
         this.servicioRepository = servicioRepository;
         this.consultaClienteDetalle = consultaClienteDetalle;
-        this.consultaClienteParaCosto = consultaClienteParaCosto;
-        this.consultaServicioParaCosto = consultaServicioParaCosto;
-        this.resolutorTarifaServicio = resolutorTarifaServicio;
+        this.resolutorTarifaAplicable = resolutorTarifaAplicable;
     }
 
-    public void validar(ReservaCreacionRequestDto dto) {
+    /**
+     * Devuelve la TarifaServicio resuelta para el cliente real de la reserva, ya validada
+     * contra las horas informadas, para que ReservaService no tenga que resolverla de nuevo
+     * al calcular el costo.
+     */
+    public TarifaServicio validar(ReservaCreacionRequestDto dto) {
         validarFechas(dto);
         validarServicio(dto.getServicioId());
         validarSolapamiento(dto);
         validarCliente(dto);
-        validarHoras(dto);
+        TarifaServicio tarifa = validarHoras(dto);
         validarPlazoConfirmacion(dto);
+        return tarifa;
     }
 
     private void validarFechas(ReservaCreacionRequestDto dto) {
@@ -88,8 +81,9 @@ public class ReservaCreacionValidator {
                 ));
     }
 
-    private void validarHoras(ReservaCreacionRequestDto dto) {
-        ModalidadPrecio modalidad = obtenerModalidadPrecio(dto);
+    private TarifaServicio validarHoras(ReservaCreacionRequestDto dto) {
+        TarifaServicio tarifa = resolutorTarifaAplicable.resolver(dto.getServicioId(), dto.getClienteId());
+        ModalidadPrecio modalidad = tarifa.getModalidadPrecio();
 
         boolean esPorHora = ModalidadPrecio.POR_HORA.equals(modalidad);
 
@@ -117,37 +111,8 @@ public class ReservaCreacionValidator {
                 );
             }
         }
-    }
 
-
-    private ModalidadPrecio obtenerModalidadPrecio(ReservaCreacionRequestDto dto) {
-        TipoClienteTarifa tipoClienteTarifa;
-        Integer antiguedadEnAnios = null;
-
-        if (Boolean.TRUE.equals(dto.getCrearCliente())) {
-            tipoClienteTarifa = TipoClienteTarifa.PARTICULAR;
-        } else {
-            Cliente cliente = consultaClienteParaCosto.obtenerCliente(dto.getClienteId());
-
-            tipoClienteTarifa = TipoClienteTarifaMapper.desdeCliente(cliente);
-
-            if (cliente instanceof Socio socio) {
-                antiguedadEnAnios = socio.calcularAntiguedadEnAnios(
-                        LocalDate.now(ZonaHoraria.URUGUAY)
-                );
-            }
-        }
-
-        List<TarifaServicio> tarifas =
-                consultaServicioParaCosto.obtenerTarifas(dto.getServicioId());
-
-        TarifaServicio tarifa = resolutorTarifaServicio.resolver(
-                tarifas,
-                tipoClienteTarifa,
-                antiguedadEnAnios
-        );
-
-        return tarifa.getModalidadPrecio();
+        return tarifa;
     }
 
     private void validarSolapamiento(ReservaCreacionRequestDto dto) {
@@ -168,6 +133,12 @@ public class ReservaCreacionValidator {
 
     private void validarCliente(ReservaCreacionRequestDto dto) {
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
+            if (dto.getClienteId() != null) {
+                throw new ReservaValidacionException(
+                        ReservaCodigoError.CLIENTE_ID_NO_PERMITIDO_CON_CREAR_CLIENTE,
+                        "No se debe informar clienteId cuando se crea un cliente nuevo"
+                );
+            }
             validarDatosNuevoCliente(dto);
             return;
         }

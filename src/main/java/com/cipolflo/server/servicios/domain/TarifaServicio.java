@@ -8,14 +8,12 @@ import com.cipolflo.server.shared.exception.ServicioCodigoError;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "tarifa_servicio")
 @Getter
-@Setter
 @NoArgsConstructor
 public class TarifaServicio extends AuditableEntity {
 
@@ -134,5 +132,18 @@ public class TarifaServicio extends AuditableEntity {
                     "La antigüedad no aplica a tarifas de tipo Particular"
             );
         }
+    }
+
+    /**
+     * Normaliza un límite de antigüedad nulo (sin restricción) a un valor comparable,
+     * para que la ausencia de mínima/máxima se pueda tratar de forma uniforme
+     * en comparaciones de rango.
+     */
+    public static int normalizarAntiguedadMinima(Integer antiguedadMinima) {
+        return antiguedadMinima == null ? Integer.MIN_VALUE : antiguedadMinima;
+    }
+
+    public static int normalizarAntiguedadMaxima(Integer antiguedadMaxima) {
+        return antiguedadMaxima == null ? Integer.MAX_VALUE : antiguedadMaxima;
     }
 }

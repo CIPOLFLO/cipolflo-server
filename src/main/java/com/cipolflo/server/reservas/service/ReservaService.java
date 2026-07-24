@@ -19,6 +19,7 @@ import com.cipolflo.server.reservas.events.ReservaCanceladaEvent;
 import com.cipolflo.server.reservas.events.ReservaCreadaEvent;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
+import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.shared.ZonaHoraria;
 import com.cipolflo.server.shared.export.ArchivoExportado;
@@ -139,7 +140,7 @@ public class ReservaService implements IReservaService {
     @Override
     @Transactional
     public ReservaCreacionResponseDto registrar(ReservaCreacionRequestDto dto) {
-        reservaCreacionValidator.validar(dto);
+        TarifaServicio tarifaResuelta = reservaCreacionValidator.validar(dto);
 
         Long clienteId;
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
@@ -156,7 +157,8 @@ public class ReservaService implements IReservaService {
         }
 
         CalculoCostoRequestDto calculoCostoRequest = getCalculoCostoRequestDto(dto);
-        CalculoCostoResponseDto calculoCosto = calculoCostoService.calcularCosto(calculoCostoRequest);
+        CalculoCostoResponseDto calculoCosto =
+                calculoCostoService.calcularCosto(calculoCostoRequest, tarifaResuelta);
 
         Reserva reserva = Reserva.crear(
                 dto.getTipoReserva(),
