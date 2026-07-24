@@ -113,8 +113,7 @@ public class ServicioService implements IServicioService {
 
     @Override
     @Transactional
-    public ServicioResponseDto modificarServicio( Long id, ModificacionServicioDto dto
-    ) {
+    public ServicioResponseDto modificarServicio(Long id, ModificacionServicioDto dto) {
         Servicio servicio = servicioRepository.findById(id)
                 .orElseThrow(() -> new ServicioNotFoundException(id));
 
@@ -134,11 +133,20 @@ public class ServicioService implements IServicioService {
 
         Servicio servicioGuardado = servicioRepository.save(servicio);
 
-        tarifaServicioService.modificarTarifas(
+        List<TarifaServicioResponseDto> tarifas = tarifaServicioService.modificarTarifas(
                 servicioGuardado,
                 dto.getTarifas()
         );
-        return mapToResponse(servicioGuardado);
+        return mapToResponse(servicioGuardado, tarifas);
+    }
+
+    @Override
+    @Transactional
+    public void eliminarTarifaDeServicio(Long servicioId, Long tarifaId) {
+        servicioRepository.findById(servicioId)
+                .orElseThrow(() -> new ServicioNotFoundException(servicioId));
+
+        tarifaServicioService.eliminarTarifa(servicioId, tarifaId);
     }
 
     @Override
@@ -216,12 +224,12 @@ public class ServicioService implements IServicioService {
 
         Servicio servicioGuardado = servicioRepository.save(servicio);
 
-        tarifaServicioService.registrarTarifas(
+        List<TarifaServicioResponseDto> tarifas = tarifaServicioService.registrarTarifas(
                 servicioGuardado,
                 request.getTarifas()
         );
 
-        return mapToResponse(servicioGuardado);
+        return mapToResponse(servicioGuardado, tarifas);
     }
 
     private ReservaProximaResponseDto mapReservaProxima(Reserva reserva, Map<Long, String> nombres) {
@@ -242,12 +250,19 @@ public class ServicioService implements IServicioService {
     }
 
     private ServicioResponseDto mapToResponse(Servicio servicio) {
+        return mapToResponse(
+                servicio,
+                tarifaServicioService.obtenerTarifasPorServicio(servicio.getId())
+        );
+    }
+
+    private ServicioResponseDto mapToResponse(
+            Servicio servicio,
+            List<TarifaServicioResponseDto> tarifas
+    ) {
         EstadoServicio estado = Boolean.TRUE.equals(servicio.getHabilitado())
                 ? EstadoServicio.HABILITADO
                 : EstadoServicio.DESHABILITADO;
-
-        List<TarifaServicioResponseDto> tarifas =
-                tarifaServicioService.obtenerTarifasPorServicio(servicio.getId());
 
         return new ServicioResponseDto(
                 servicio.getId(),

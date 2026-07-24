@@ -2,11 +2,9 @@ package com.cipolflo.server.servicios.validator;
 
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
-import com.cipolflo.server.servicios.dto.TarifaServicioRequestDto;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Getter
 public class ModificacionValidationContext {
@@ -19,8 +17,6 @@ public class ModificacionValidationContext {
     private final Integer capacidad;
     private final Integer cantidad;
 
-    private final List<TarifaServicioRequestDto> tarifas;
-
     private ModificacionValidationContext(Long id, ModificacionServicioDto dto) {
         this.id = id;
         this.nombre = dto.getNombre();
@@ -29,8 +25,6 @@ public class ModificacionValidationContext {
         this.modalidadPrecio = dto.getModalidadPrecio();
         this.capacidad = dto.getCapacidad();
         this.cantidad = dto.getCantidad();
-
-        this.tarifas = dto.getTarifas();
     }
 
     public static ModificacionValidationContext from(Long id, ModificacionServicioDto dto) {

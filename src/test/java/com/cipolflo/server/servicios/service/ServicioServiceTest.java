@@ -591,8 +591,6 @@ class ServicioServiceTest {
         when(servicioRepository.save(servicio)).thenReturn(servicio);
         when(tarifaServicioService.modificarTarifas(any(), any()))
                 .thenReturn(List.of());
-        when(tarifaServicioService.obtenerTarifasPorServicio(servicioId))
-                .thenReturn(List.of());
 
         ServicioResponseDto resultado = servicioService.modificarServicio(servicioId, dto);
 
@@ -716,9 +714,6 @@ class ServicioServiceTest {
 
         when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
         when(tarifaServicioService.registrarTarifas(any(), any()))
-                .thenReturn(List.of());
-
-        when(tarifaServicioService.obtenerTarifasPorServicio(1L))
                 .thenReturn(List.of());
 
         ServicioResponseDto resultado = servicioService.registrarServicio(dto);

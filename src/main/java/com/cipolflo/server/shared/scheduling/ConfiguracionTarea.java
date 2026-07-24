@@ -40,4 +40,11 @@ public class ConfiguracionTarea extends AuditableEntity {
     public int valorComoEntero() {
         return Integer.parseInt(valor);
     }
+
+    public void actualizarValorEntero(int valor) {
+        if (valor <= 0) {
+            throw new IllegalArgumentException(clave + " debe ser > 0 (recibido: " + valor + ")");
+        }
+        this.valor = String.valueOf(valor);
+    }
 }

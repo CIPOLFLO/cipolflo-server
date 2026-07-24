@@ -28,4 +28,6 @@ public interface IServicioService {
     ServicioResponseDto modificarServicio(Long id, ModificacionServicioDto request);
 
     ServicioResponseDto registrarServicio(ServicioRegistroRequestDto request);
+
+    void eliminarTarifaDeServicio(Long servicioId, Long tarifaId);
 }
