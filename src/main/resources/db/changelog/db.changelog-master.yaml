@@ -39,3 +39,5 @@ databaseChangeLog:
       file: db/changelog/migrations/DEV-176/db.changelog-DEV-176.yaml
   - include:
       file: db/changelog/migrations/DEV-166/db.changelog-DEV-166.yaml
+  - include:
+      file: db/changelog/migrations/DEV-177/db.changelog-DEV-177.yaml

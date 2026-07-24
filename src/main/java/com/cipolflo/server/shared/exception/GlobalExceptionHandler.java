@@ -3,7 +3,6 @@ import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
-import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.finanzas.exception.ConfirmacionEliminacionReservaRequeridaException;
 import com.cipolflo.server.finanzas.exception.EliminacionEgresoReservaNoPermitidaException;
 import com.cipolflo.server.finanzas.exception.EliminacionPagoCuotaNoPermitidaException;
@@ -17,6 +16,7 @@ import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramChatNoEncontradoException;
+import com.cipolflo.server.servicios.exception.*;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramCodigoError;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramSecretInvalidoException;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramValidacionException;
@@ -81,6 +81,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(TarifaServicioNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTarifaServicioNotFoundException(
+            TarifaServicioNotFoundException ex) {
+
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        ServicioCodigoError.TARIFA_NO_ENCONTRADA.name(),
+                        ex.getMessage()
+                ));
     }
 
     @ExceptionHandler(ConfirmacionDevolucionRequeridaException.class)

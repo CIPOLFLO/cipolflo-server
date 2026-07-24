@@ -43,18 +43,31 @@ class ReservaCancelacionEmailListenerTest {
         return new ReservaCancelacionEmailListener(reservaService, emailService, props);
     }
 
-    private ReservaDetalleResponseDto detalle(Long id, ClienteDetalleReservaDto cliente, String nombreServicio,
-                                              LocalDate fechaEntrada, LocalDate fechaSalida, String updatedBy) {
-        ServicioDetalleReservaDto servicio = new ServicioDetalleReservaDto(1L, nombreServicio, Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
+    private ReservaDetalleResponseDto detalle(
+            Long id,
+            ClienteDetalleReservaDto cliente,
+            String nombreServicio,
+            LocalDate fechaEntrada,
+            LocalDate fechaSalida,
+            String updatedBy
+    ) {
+        ServicioDetalleReservaDto servicio = new ServicioDetalleReservaDto(
+                1L,
+                nombreServicio,
+                Procedencia.CAMPING,
+                ModalidadPrecio.POR_DIA
+        );
+
         return new ReservaDetalleResponseDto(
                 id, null, null, null,
                 fechaEntrada, fechaSalida, null, null,
                 null, null, null,
                 null, null, null,
                 null, null, null,
-                null, null, null,
-                cliente, servicio,
-                null, null, null, updatedBy);
+                null,null,  null,
+                cliente, servicio, null, null,
+                null, updatedBy
+        );
     }
 
     private ClienteDetalleReservaDto cliente(String nombre, String email) {

@@ -8,10 +8,7 @@ import com.cipolflo.server.finanzas.exception.FinanzaCodigoError;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramCodigoError;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramSecretInvalidoException;
-import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
-import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
-import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
-import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import com.cipolflo.server.servicios.exception.*;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -40,8 +37,7 @@ import org.springframework.validation.method.ParameterValidationResult;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -248,65 +244,87 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-void handleMissingServletRequestParameterException_deberiaRetornar400() {
-    MissingServletRequestParameterException ex = new MissingServletRequestParameterException("hasta", "LocalDate");
+    void handleMissingServletRequestParameterException_deberiaRetornar400() {
+        MissingServletRequestParameterException ex = new MissingServletRequestParameterException("hasta", "LocalDate");
 
-    ResponseEntity<ErrorResponse> response = handler.handleMissingServletRequestParameterException(ex);
+        ResponseEntity<ErrorResponse> response = handler.handleMissingServletRequestParameterException(ex);
 
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    assertEquals(ServicioCodigoError.SOLICITUD_INVALIDA.name(), response.getBody().codigo());
-    assertEquals("El parámetro 'hasta' es requerido", response.getBody().descripcion());
-}
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ServicioCodigoError.SOLICITUD_INVALIDA.name(), response.getBody().codigo());
+        assertEquals("El parámetro 'hasta' es requerido", response.getBody().descripcion());
+    }
 
-@Test
-void handleExportacionException_deberiaRetornar400() {
-    ExportacionException ex = new ExportacionException("Se superó el límite de registros exportables");
+    @Test
+    void handleExportacionException_deberiaRetornar400() {
+        ExportacionException ex = new ExportacionException("Se superó el límite de registros exportables");
 
-    ResponseEntity<ErrorResponse> response = handler.handleExportacionException(ex);
+        ResponseEntity<ErrorResponse> response = handler.handleExportacionException(ex);
 
-    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-    assertEquals("LIMITE_TAMANIO_EXCEDIDO", response.getBody().codigo());
-    assertEquals("Se superó el límite de registros exportables", response.getBody().descripcion());
-}
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("LIMITE_TAMANIO_EXCEDIDO", response.getBody().codigo());
+        assertEquals("Se superó el límite de registros exportables", response.getBody().descripcion());
+    }
 
-@Test
-void handleException_deberiaRetornar500() {
-    Exception ex = new RuntimeException("Error inesperado");
+    @Test
+    void handleException_deberiaRetornar500() {
+        Exception ex = new RuntimeException("Error inesperado");
 
-    ResponseEntity<ErrorResponse> response = handler.handleException(ex);
+        ResponseEntity<ErrorResponse> response = handler.handleException(ex);
 
-    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-    assertEquals("ERROR_INTERNO", response.getBody().codigo());
-}
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals("ERROR_INTERNO", response.getBody().codigo());
+    }
 
-@Test
-void handleSocioNotFoundException_deberiaRetornar404() {
-    SocioNotFoundException ex = new SocioNotFoundException(1L);
+    @Test
+    void handleSocioNotFoundException_deberiaRetornar404() {
+        SocioNotFoundException ex = new SocioNotFoundException(1L);
 
-    ResponseEntity<ErrorResponse> response = handler.handleSocioNotFoundException(ex);
+        ResponseEntity<ErrorResponse> response = handler.handleSocioNotFoundException(ex);
 
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-    assertEquals(ClienteCodigoError.SOCIO_NO_ENCONTRADO.name(), response.getBody().codigo());
-}
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals(ClienteCodigoError.SOCIO_NO_ENCONTRADO.name(), response.getBody().codigo());
+    }
 
-@Test
-void handleFinanzaNotFoundException_deberiaRetornar404() {
-    FinanzaNotFoundException ex = new FinanzaNotFoundException(1L);
+    @Test
+    void handleFinanzaNotFoundException_deberiaRetornar404() {
+        FinanzaNotFoundException ex = new FinanzaNotFoundException(1L);
 
-    ResponseEntity<ErrorResponse> response = handler.handleFinanzaNotFoundException(ex);
+        ResponseEntity<ErrorResponse> response = handler.handleFinanzaNotFoundException(ex);
 
-    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-    assertEquals(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), response.getBody().codigo());
-}
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals(FinanzaCodigoError.FINANZA_NO_ENCONTRADA.name(), response.getBody().codigo());
+    }
 
-@Test
-void handleTelegramSecretInvalidoException_deberiaRetornar401() {
-    TelegramSecretInvalidoException ex = new TelegramSecretInvalidoException("Secret inválido");
+    @Test
+    void handleTelegramSecretInvalidoException_deberiaRetornar401() {
+        TelegramSecretInvalidoException ex = new TelegramSecretInvalidoException("Secret inválido");
 
-    ResponseEntity<ErrorResponse> response = handler.handleTelegramSecretInvalidoException(ex);
+        ResponseEntity<ErrorResponse> response = handler.handleTelegramSecretInvalidoException(ex);
 
-    assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
-    assertEquals(TelegramCodigoError.TELEGRAM_SECRET_INVALIDO.name(), response.getBody().codigo());
-    assertEquals("Secret inválido", response.getBody().descripcion());
-}
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertEquals(TelegramCodigoError.TELEGRAM_SECRET_INVALIDO.name(), response.getBody().codigo());
+        assertEquals("Secret inválido", response.getBody().descripcion());
+    }
+
+    @Test
+    void deberiaRetornarNotFoundCuandoTarifaServicioNoExiste() {
+        TarifaServicioNotFoundException exception =
+                new TarifaServicioNotFoundException(1L, 99L);
+
+        ResponseEntity<ErrorResponse> response =
+                handler.handleTarifaServicioNotFoundException(exception);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+
+        assertEquals(
+                ServicioCodigoError.TARIFA_NO_ENCONTRADA.name(),
+                response.getBody().codigo()
+        );
+
+        assertEquals(
+                exception.getMessage(),
+                response.getBody().descripcion()
+        );
+    }
 }

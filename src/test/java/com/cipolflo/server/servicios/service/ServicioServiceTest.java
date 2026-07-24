@@ -4,10 +4,8 @@ import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
-import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
-import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
-import com.cipolflo.server.servicios.dto.ServicioRequestDto;
-import com.cipolflo.server.servicios.dto.ServicioResponseDto;
+import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
+import com.cipolflo.server.servicios.dto.*;
 import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
 import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
 import com.cipolflo.server.servicios.exception.ServicioValidacionException;
@@ -37,16 +35,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
-import com.cipolflo.server.servicios.dto.ListadoServiciosRequestDto;
-import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import com.cipolflo.server.servicios.dto.ReservaProximaResponseDto;
-import com.cipolflo.server.servicios.dto.ServicioReservaOcupacionDto;
+
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
@@ -67,9 +62,12 @@ class ServicioServiceTest {
     private ModificacionServicioValidator modificacionServicioValidator;
     @Mock
     private ServicioRegistroValidator servicioRegistroValidator;
+    @Mock
+    private TarifaServicioService tarifaServicioService;
 
     @InjectMocks
     private ServicioService servicioService;
+
 
     private Servicio crearServicio(Long id, boolean habilitado) {
         Servicio servicio = new Servicio();
@@ -139,6 +137,18 @@ class ServicioServiceTest {
         );
     }
 
+    private TarifaServicioRequestDto crearTarifaDto(
+            TipoClienteTarifa tipoCliente,
+            BigDecimal precio
+    ) {
+        TarifaServicioRequestDto dto = new TarifaServicioRequestDto();
+        dto.setTipoCliente(tipoCliente);
+        dto.setPrecio(precio);
+        dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
+        return dto;
+    }
+
+
     private PageRequestDto pageRequest() {
         return new PageRequestDto(0, 10, null, null);
     }
@@ -151,6 +161,16 @@ class ServicioServiceTest {
         dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
         dto.setCapacidad(4);
         dto.setCantidad(2);
+        dto.setTarifas(List.of(
+                crearTarifaDto(
+                        TipoClienteTarifa.PARTICULAR,
+                        precioParticular
+                ),
+                crearTarifaDto(
+                        TipoClienteTarifa.SOCIO_COMUN,
+                        precioSocio
+                )
+        ));
         return dto;
     }
 
@@ -169,6 +189,16 @@ class ServicioServiceTest {
         dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
         dto.setCapacidad(capacidad);
         dto.setCantidad(cantidad);
+        dto.setTarifas(List.of(
+                crearTarifaDto(
+                        TipoClienteTarifa.PARTICULAR,
+                        precioParticular
+                ),
+                crearTarifaDto(
+                        TipoClienteTarifa.SOCIO_COMUN,
+                        precioSocio
+                )
+        ));
         return dto;
     }
 
@@ -179,6 +209,9 @@ class ServicioServiceTest {
 
         when(servicioRepository.findById(servicioId))
                 .thenReturn(Optional.of(servicio));
+
+        when(tarifaServicioService.obtenerTarifasPorServicio(servicioId))
+                .thenReturn(List.of());
 
         ServicioResponseDto resultado = servicioService.getDetalleServicio(servicioId);
 
@@ -556,6 +589,8 @@ class ServicioServiceTest {
 
         when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
         when(servicioRepository.save(servicio)).thenReturn(servicio);
+        when(tarifaServicioService.modificarTarifas(any(), any()))
+                .thenReturn(List.of());
 
         ServicioResponseDto resultado = servicioService.modificarServicio(servicioId, dto);
 
@@ -678,6 +713,8 @@ class ServicioServiceTest {
         servicioGuardado.setHabilitado(true);
 
         when(servicioRepository.save(any(Servicio.class))).thenReturn(servicioGuardado);
+        when(tarifaServicioService.registrarTarifas(any(), any()))
+                .thenReturn(List.of());
 
         ServicioResponseDto resultado = servicioService.registrarServicio(dto);
 

@@ -9,6 +9,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 public class ServicioResponseDto extends AuditInfoDto implements ResponseDto {
@@ -23,6 +24,7 @@ public class ServicioResponseDto extends AuditInfoDto implements ResponseDto {
         private final BigDecimal costoPersonaExtra;
         private final EstadoServicio estado;
         private final ModalidadPrecio modalidadPrecio;
+        private final List<TarifaServicioResponseDto> tarifas;
 
         public ServicioResponseDto(
                 Long id,
@@ -35,6 +37,7 @@ public class ServicioResponseDto extends AuditInfoDto implements ResponseDto {
                 BigDecimal costoPersonaExtra,
                 EstadoServicio estado,
                 ModalidadPrecio modalidadPrecio,
+                List<TarifaServicioResponseDto> tarifas,
                 Instant createdAt,
                 Instant updatedAt,
                 String createdBy,
@@ -51,5 +54,6 @@ public class ServicioResponseDto extends AuditInfoDto implements ResponseDto {
                 this.costoPersonaExtra = costoPersonaExtra;
                 this.estado = estado;
                 this.modalidadPrecio = modalidadPrecio;
+                this.tarifas = tarifas;
         }
 }

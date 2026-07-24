@@ -45,7 +45,8 @@ class ReservaEmailListenerTest {
                 null, null,
                 null,
                 cliente, null,
-                null, null, null, null);
+                null, null, null, null
+        );
     }
 
     private ClienteDetalleReservaDto cliente(String nombre, String email) {
@@ -107,7 +108,6 @@ class ReservaEmailListenerTest {
         when(reservaService.getDetalle(10L)).thenReturn(detalleCon(cliente("   ", "juan@mail.com")));
 
         listener.onReservaCreada(new ReservaCreadaEvent(10L));
-
         verify(emailService).enviar(any(SolicitudEmail.class));
     }
 
