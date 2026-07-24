@@ -3,7 +3,6 @@ import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteCodigoError;
 import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
-import com.cipolflo.server.clientes.exception.PagoCuotaNotFoundException;
 import com.cipolflo.server.finanzas.exception.ConfirmacionEliminacionReservaRequeridaException;
 import com.cipolflo.server.finanzas.exception.EliminacionEgresoReservaNoPermitidaException;
 import com.cipolflo.server.finanzas.exception.EliminacionPagoCuotaNoPermitidaException;
@@ -12,9 +11,15 @@ import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
+import com.cipolflo.server.servicios.exception.ConfirmacionDevolucionRequeridaException;
+import com.cipolflo.server.servicios.exception.ReservaNoCancelableException;
+import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
+import com.cipolflo.server.servicios.exception.ServicioValidacionException;
+import com.cipolflo.server.integraciones.telegram.exception.TelegramChatNoEncontradoException;
 import com.cipolflo.server.servicios.exception.*;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramCodigoError;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramSecretInvalidoException;
+import com.cipolflo.server.integraciones.telegram.exception.TelegramValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -316,6 +321,22 @@ public ResponseEntity<ErrorResponse> handlePagoCuotaNotFoundException(PagoCuotaN
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse(TelegramCodigoError.TELEGRAM_SECRET_INVALIDO.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(TelegramChatNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> handleTelegramChatNoEncontradoException(TelegramChatNoEncontradoException ex) {
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(TelegramCodigoError.CHAT_NO_ENCONTRADO.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(TelegramValidacionException.class)
+    public ResponseEntity<ErrorResponse> handleTelegramValidacionException(TelegramValidacionException ex) {
+        log.warn("Validación de negocio fallida [{}]: {}", ex.getCodigo(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
