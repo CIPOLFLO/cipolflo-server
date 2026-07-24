@@ -1,6 +1,5 @@
 package com.cipolflo.server.reservas.dto;
 
-import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.reservas.domain.enums.PlazoConfirmacion;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -49,8 +48,6 @@ public class ReservaCreacionRequestDto {
     private Long clienteId;
 
     private Boolean crearCliente;
-
-    private TipoCliente tipoCliente;
 
     private String cedula;
 

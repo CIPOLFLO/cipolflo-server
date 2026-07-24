@@ -10,6 +10,8 @@ import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
+import com.cipolflo.server.servicios.costo.ResolutorTarifaAplicable;
+import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import com.cipolflo.server.shared.ZonaHoraria;
@@ -25,24 +27,33 @@ public class ReservaCreacionValidator {
     private final ReservaRepository reservaRepository;
     private final ServicioRepository servicioRepository;
     private final IConsultaClienteDetalle consultaClienteDetalle;
+    private final ResolutorTarifaAplicable resolutorTarifaAplicable;
 
     public ReservaCreacionValidator(
             ReservaRepository reservaRepository,
             ServicioRepository servicioRepository,
-            IConsultaClienteDetalle consultaClienteDetalle
+            IConsultaClienteDetalle consultaClienteDetalle,
+            ResolutorTarifaAplicable resolutorTarifaAplicable
     ) {
         this.reservaRepository = reservaRepository;
         this.servicioRepository = servicioRepository;
         this.consultaClienteDetalle = consultaClienteDetalle;
+        this.resolutorTarifaAplicable = resolutorTarifaAplicable;
     }
 
-    public void validar(ReservaCreacionRequestDto dto) {
+    /**
+     * Devuelve la TarifaServicio resuelta para el cliente real de la reserva, ya validada
+     * contra las horas informadas, para que ReservaService no tenga que resolverla de nuevo
+     * al calcular el costo.
+     */
+    public TarifaServicio validar(ReservaCreacionRequestDto dto) {
         validarFechas(dto);
         validarServicio(dto.getServicioId());
-        validarHoras(dto);
         validarSolapamiento(dto);
         validarCliente(dto);
+        TarifaServicio tarifa = validarHoras(dto);
         validarPlazoConfirmacion(dto);
+        return tarifa;
     }
 
     private void validarFechas(ReservaCreacionRequestDto dto) {
@@ -70,10 +81,9 @@ public class ReservaCreacionValidator {
                 ));
     }
 
-    private void validarHoras(ReservaCreacionRequestDto dto) {
-        ModalidadPrecio modalidad = servicioRepository.findById(dto.getServicioId())
-                .orElseThrow()
-                .getModalidadPrecio();
+    private TarifaServicio validarHoras(ReservaCreacionRequestDto dto) {
+        TarifaServicio tarifa = resolutorTarifaAplicable.resolver(dto.getServicioId(), dto.getClienteId());
+        ModalidadPrecio modalidad = tarifa.getModalidadPrecio();
 
         boolean esPorHora = ModalidadPrecio.POR_HORA.equals(modalidad);
 
@@ -84,7 +94,9 @@ public class ReservaCreacionValidator {
                         "El servicio requiere hora de inicio y hora de fin"
                 );
             }
+
             boolean mismoDia = dto.getFechaInicio().isEqual(dto.getFechaFin());
+
             if (mismoDia && !dto.getHoraFin().isAfter(dto.getHoraInicio())) {
                 throw new ReservaValidacionException(
                         ReservaCodigoError.HORA_FIN_ANTERIOR_O_IGUAL_A_INICIO,
@@ -99,6 +111,8 @@ public class ReservaCreacionValidator {
                 );
             }
         }
+
+        return tarifa;
     }
 
     private void validarSolapamiento(ReservaCreacionRequestDto dto) {
@@ -119,6 +133,12 @@ public class ReservaCreacionValidator {
 
     private void validarCliente(ReservaCreacionRequestDto dto) {
         if (Boolean.TRUE.equals(dto.getCrearCliente())) {
+            if (dto.getClienteId() != null) {
+                throw new ReservaValidacionException(
+                        ReservaCodigoError.CLIENTE_ID_NO_PERMITIDO_CON_CREAR_CLIENTE,
+                        "No se debe informar clienteId cuando se crea un cliente nuevo"
+                );
+            }
             validarDatosNuevoCliente(dto);
             return;
         }

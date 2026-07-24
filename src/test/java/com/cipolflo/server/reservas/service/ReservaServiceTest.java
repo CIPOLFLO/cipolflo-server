@@ -24,6 +24,7 @@ import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
+import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -158,7 +159,9 @@ class ReservaServiceTest {
     }
 
     private void mockCalculoCosto() {
-        when(calculoCostoService.calcularCosto(any(CalculoCostoRequestDto.class)))
+        when(reservaCreacionValidator.validar(any(ReservaCreacionRequestDto.class)))
+                .thenReturn(mock(TarifaServicio.class));
+        when(calculoCostoService.calcularCosto(any(CalculoCostoRequestDto.class), any(TarifaServicio.class)))
                 .thenReturn(new CalculoCostoResponseDto(BigDecimal.valueOf(1500)));
     }
 
@@ -197,7 +200,7 @@ class ReservaServiceTest {
 
     @Test
     void deberiaCancelarReservaPagaSinModificarPago() {
-        Long clienteId = 1L;
+        Long clienteId = 20L;
         Reserva reservaPaga = crearReservaComun(clienteId, 10L);
 
         reservaPaga.registrarPago(BigDecimal.valueOf(1500), true);

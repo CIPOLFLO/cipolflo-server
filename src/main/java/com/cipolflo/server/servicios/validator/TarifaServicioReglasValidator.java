@@ -72,25 +72,13 @@ public class TarifaServicioReglasValidator {
             TarifaServicio primera,
             TarifaServicio segunda
     ) {
-        int minimaPrimera = valorMinimo(primera.getAntiguedadMinima());
-        int maximaPrimera = valorMaximo(primera.getAntiguedadMaxima());
+        int minimaPrimera = TarifaServicio.normalizarAntiguedadMinima(primera.getAntiguedadMinima());
+        int maximaPrimera = TarifaServicio.normalizarAntiguedadMaxima(primera.getAntiguedadMaxima());
 
-        int minimaSegunda = valorMinimo(segunda.getAntiguedadMinima());
-        int maximaSegunda = valorMaximo(segunda.getAntiguedadMaxima());
+        int minimaSegunda = TarifaServicio.normalizarAntiguedadMinima(segunda.getAntiguedadMinima());
+        int maximaSegunda = TarifaServicio.normalizarAntiguedadMaxima(segunda.getAntiguedadMaxima());
 
         return minimaPrimera <= maximaSegunda
                 && minimaSegunda <= maximaPrimera;
-    }
-
-    private int valorMinimo(Integer antiguedadMinima) {
-        return antiguedadMinima == null
-                ? Integer.MIN_VALUE
-                : antiguedadMinima;
-    }
-
-    private int valorMaximo(Integer antiguedadMaxima) {
-        return antiguedadMaxima == null
-                ? Integer.MAX_VALUE
-                : antiguedadMaxima;
     }
 }

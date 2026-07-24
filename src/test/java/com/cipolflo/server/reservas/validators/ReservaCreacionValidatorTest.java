@@ -11,7 +11,10 @@ import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
+import com.cipolflo.server.servicios.costo.ResolutorTarifaAplicable;
 import com.cipolflo.server.servicios.domain.Servicio;
+import com.cipolflo.server.servicios.domain.TarifaServicio;
+import com.cipolflo.server.servicios.domain.enums.TipoClienteTarifa;
 import com.cipolflo.server.servicios.repository.ServicioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +26,7 @@ import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 
 import com.cipolflo.server.shared.ZonaHoraria;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -31,7 +35,6 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 class ReservaCreacionValidatorTest {
 
@@ -44,12 +47,21 @@ class ReservaCreacionValidatorTest {
     @Mock
     private IConsultaClienteDetalle consultaClienteDetalle;
 
+    @Mock
+    private ResolutorTarifaAplicable resolutorTarifaAplicable;
+
     @InjectMocks
     private ReservaCreacionValidator validator;
 
     private ClienteDetalleReservaDto clienteDe(TipoCliente tipoCliente) {
         return new ClienteDetalleReservaDto(
-                42L, "Cliente de prueba", null, null, "099111111", "cliente@test.com", tipoCliente
+                42L,
+                "Cliente de prueba",
+                null,
+                null,
+                "099111111",
+                "cliente@test.com",
+                tipoCliente
         );
     }
 
@@ -65,6 +77,7 @@ class ReservaCreacionValidatorTest {
             String celular
     ) {
         ReservaCreacionRequestDto dto = mock(ReservaCreacionRequestDto.class);
+
         lenient().when(dto.getTipoReserva()).thenReturn(tipoReserva);
         lenient().when(dto.getServicioId()).thenReturn(servicioId);
         lenient().when(dto.getFechaInicio()).thenReturn(fechaInicio);
@@ -74,6 +87,7 @@ class ReservaCreacionValidatorTest {
         lenient().when(dto.getNombre()).thenReturn(nombre);
         lenient().when(dto.getCedula()).thenReturn(cedula);
         lenient().when(dto.getCelular()).thenReturn(celular);
+
         return dto;
     }
 
@@ -84,24 +98,29 @@ class ReservaCreacionValidatorTest {
         return s;
     }
 
-    private Servicio servicioHabilitado(Long id, ModalidadPrecio modalidadPrecio) {
-        Servicio s = servicioHabilitado(id);
-        s.setModalidadPrecio(modalidadPrecio);
-        return s;
-    }
-
     private ReservaCreacionRequestDto mockDtoConHoras(
-            LocalDate fechaInicio, LocalDate fechaFin,
-            LocalTime horaInicio, LocalTime horaFin,
-            Long servicioId, Long clienteId
+            LocalDate fechaInicio,
+            LocalDate fechaFin,
+            LocalTime horaInicio,
+            LocalTime horaFin,
+            Long servicioId,
+            Long clienteId
     ) {
         ReservaCreacionRequestDto dto = mockDto(
-                TipoReserva.COMUN, servicioId,
-                fechaInicio, fechaFin,
-                clienteId, false, null, null, null
+                TipoReserva.COMUN,
+                servicioId,
+                fechaInicio,
+                fechaFin,
+                clienteId,
+                false,
+                null,
+                null,
+                null
         );
+
         lenient().when(dto.getHoraInicio()).thenReturn(horaInicio);
         lenient().when(dto.getHoraFin()).thenReturn(horaFin);
+
         return dto;
     }
 
@@ -111,28 +130,71 @@ class ReservaCreacionValidatorTest {
      * base, sin tocar el helper genérico existente.
      */
     private ReservaCreacionRequestDto mockDtoConPlazo(
-            LocalDate fechaInicio, LocalDate fechaFin,
-            boolean requiereSena, boolean requiereDocumentacion,
+            LocalDate fechaInicio,
+            LocalDate fechaFin,
+            boolean requiereSena,
+            boolean requiereDocumentacion,
             PlazoConfirmacion plazoConfirmacion,
-            Long servicioId, Long clienteId
+            Long servicioId,
+            Long clienteId
     ) {
         ReservaCreacionRequestDto dto = mockDto(
-                TipoReserva.COMUN, servicioId,
-                fechaInicio, fechaFin,
-                clienteId, false, null, null, null
+                TipoReserva.COMUN,
+                servicioId,
+                fechaInicio,
+                fechaFin,
+                clienteId,
+                false,
+                null,
+                null,
+                null
         );
+
         lenient().when(dto.getRequiereSena()).thenReturn(requiereSena);
         lenient().when(dto.getRequiereDocumentacion()).thenReturn(requiereDocumentacion);
         lenient().when(dto.getPlazoConfirmacion()).thenReturn(plazoConfirmacion);
+
         return dto;
     }
 
-    private void mockearServicioYSinSolapamiento(Long servicioId) {
-        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicioHabilitado(servicioId)));
-        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
-                any(), any(), any(), any()
-        )).thenReturn(false);
+    private void mockearServicioYSinSolapamiento(
+            Long servicioId,
+            Long clienteId,
+            ModalidadPrecio modalidad
+    ) {
+        mockearTarifa(servicioId, clienteId, modalidad);
+
+        when(servicioRepository.findById(servicioId))
+                .thenReturn(Optional.of(servicioHabilitado(servicioId)));
+
+        when(reservaRepository
+                .existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                        any(),
+                        any(),
+                        any(),
+                        any()
+                ))
+                .thenReturn(false);
     }
+
+    private void mockearTarifa(
+            Long servicioId,
+            Long clienteId,
+            ModalidadPrecio modalidad
+    ) {
+        TarifaServicio tarifa = TarifaServicio.registrar(
+                servicioHabilitado(servicioId),
+                TipoClienteTarifa.PARTICULAR,
+                BigDecimal.TEN,
+                modalidad,
+                null,
+                null
+        );
+
+        when(resolutorTarifaAplicable.resolver(servicioId, clienteId))
+                .thenReturn(tarifa);
+    }
+
 
     // ── validarFechas ──────────────────────────────────────────────────────────
 
@@ -195,7 +257,6 @@ class ReservaCreacionValidatorTest {
                 1L, false, null, null, null
         );
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(deshabilitado));
-
         ReservaValidacionException ex = assertThrows(
                 ReservaValidacionException.class,
                 () -> validator.validar(dto)
@@ -209,82 +270,190 @@ class ReservaCreacionValidatorTest {
     void deberiaLanzarExcepcionCuandoExisteSolapamiento() {
         ReservaCreacionRequestDto dto = mockDto(
                 TipoReserva.COMUN, 1L,
-                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(5),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(5),
                 1L, false, null, null, null
         );
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
-        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
-                eq(1L),
-                eq(List.of(EstadoReserva.PENDIENTE, EstadoReserva.CONFIRMADA, EstadoReserva.EN_CURSO)),
-                eq(LocalDate.now(ZonaHoraria.URUGUAY).plusDays(5)),
-                eq(LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1))
-        )).thenReturn(true);
+
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
+
+        when(reservaRepository
+                .existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                        eq(1L),
+                        eq(List.of(
+                                EstadoReserva.PENDIENTE,
+                                EstadoReserva.CONFIRMADA,
+                                EstadoReserva.EN_CURSO
+                        )),
+                        eq(LocalDate.now(ZonaHoraria.URUGUAY).plusDays(5)),
+                        eq(LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1))
+                ))
+                .thenReturn(true);
 
         ReservaValidacionException ex = assertThrows(
                 ReservaValidacionException.class,
                 () -> validator.validar(dto)
         );
-        assertEquals(ReservaCodigoError.FECHAS_SOLAPADAS.name(), ex.getCodigo());
+
+        assertEquals(
+                ReservaCodigoError.FECHAS_SOLAPADAS.name(),
+                ex.getCodigo()
+        );
     }
 
     // ── validarCliente con crearCliente=true ───────────────────────────────────
 
     @Test
-    void deberiaLanzarExcepcionCuandoCrearClienteSinNombre() {
+    void deberiaLanzarExcepcionCuandoCrearClienteConClienteIdInformado() {
         ReservaCreacionRequestDto dto = mockDto(
-                TipoReserva.COMUN, 1L,
-                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
-                null, true, "", "1.234.567-8", "099111111"
+                TipoReserva.COMUN,
+                1L,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
+                123L,
+                true,
+                "Juan Pérez",
+                "1.234.567-8",
+                "099111111"
         );
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
-        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
-                any(), any(), any(), any()
-        )).thenReturn(false);
+
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
+
+        when(reservaRepository
+                .existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                        any(),
+                        any(),
+                        any(),
+                        any()
+                ))
+                .thenReturn(false);
 
         ReservaValidacionException ex = assertThrows(
                 ReservaValidacionException.class,
                 () -> validator.validar(dto)
         );
-        assertEquals(ReservaCodigoError.NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE.name(), ex.getCodigo());
+
+        assertEquals(
+                ReservaCodigoError.CLIENTE_ID_NO_PERMITIDO_CON_CREAR_CLIENTE.name(),
+                ex.getCodigo()
+        );
+
+        verifyNoInteractions(resolutorTarifaAplicable);
+    }
+
+    @Test
+    void deberiaLanzarExcepcionCuandoCrearClienteSinNombre() {
+        ReservaCreacionRequestDto dto = mockDto(
+                TipoReserva.COMUN,
+                1L,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
+                null,
+                true,
+                "",
+                "1.234.567-8",
+                "099111111"
+        );
+
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
+
+        when(reservaRepository
+                .existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                        any(),
+                        any(),
+                        any(),
+                        any()
+                ))
+                .thenReturn(false);
+
+        ReservaValidacionException ex = assertThrows(
+                ReservaValidacionException.class,
+                () -> validator.validar(dto)
+        );
+
+        assertEquals(
+                ReservaCodigoError.NOMBRE_REQUERIDO_PARA_CREAR_CLIENTE.name(),
+                ex.getCodigo()
+        );
     }
 
     @Test
     void deberiaLanzarExcepcionCuandoCrearClienteSinCedula() {
         ReservaCreacionRequestDto dto = mockDto(
-                TipoReserva.COMUN, 1L,
-                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
-                null, true, "Juan Pérez", "", "099111111"
+                TipoReserva.COMUN,
+                1L,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
+                null,
+                true,
+                "Juan Pérez",
+                "",
+                "099111111"
         );
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
-        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
-                any(), any(), any(), any()
-        )).thenReturn(false);
+
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
+
+        when(reservaRepository
+                .existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                        any(),
+                        any(),
+                        any(),
+                        any()
+                ))
+                .thenReturn(false);
 
         ReservaValidacionException ex = assertThrows(
                 ReservaValidacionException.class,
                 () -> validator.validar(dto)
         );
-        assertEquals(ReservaCodigoError.CEDULA_REQUERIDA_PARA_CREAR_CLIENTE.name(), ex.getCodigo());
+
+        assertEquals(
+                ReservaCodigoError.CEDULA_REQUERIDA_PARA_CREAR_CLIENTE.name(),
+                ex.getCodigo()
+        );
     }
 
     @Test
     void deberiaLanzarExcepcionCuandoCrearClienteSinCelular() {
         ReservaCreacionRequestDto dto = mockDto(
-                TipoReserva.COMUN, 1L,
-                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
-                null, true, "Juan Pérez", "1.234.567-8", ""
+                TipoReserva.COMUN,
+                1L,
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1),
+                LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
+                null,
+                true,
+                "Juan Pérez",
+                "1.234.567-8",
+                ""
         );
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
-        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
-                any(), any(), any(), any()
-        )).thenReturn(false);
+
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
+
+        when(reservaRepository
+                .existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+                        any(),
+                        any(),
+                        any(),
+                        any()
+                ))
+                .thenReturn(false);
 
         ReservaValidacionException ex = assertThrows(
                 ReservaValidacionException.class,
                 () -> validator.validar(dto)
         );
-        assertEquals(ReservaCodigoError.CELULAR_REQUERIDO_PARA_CREAR_CLIENTE.name(), ex.getCodigo());
+
+        assertEquals(
+                ReservaCodigoError.CELULAR_REQUERIDO_PARA_CREAR_CLIENTE.name(),
+                ex.getCodigo()
+        );
     }
+
 
     // ── validarCliente sin clienteId ───────────────────────────────────────────
 
@@ -333,6 +502,7 @@ class ReservaCreacionValidatorTest {
                 LocalDate.now().plusDays(1), LocalDate.now().plusDays(3),
                 20L, false, null, null, null
         );
+        mockearTarifa(1L, 20L, ModalidadPrecio.POR_DIA);
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                 any(), any(), any(), any()
@@ -386,6 +556,7 @@ class ReservaCreacionValidatorTest {
                 LocalDate.now(ZonaHoraria.URUGUAY).plusDays(1), LocalDate.now(ZonaHoraria.URUGUAY).plusDays(3),
                 42L, false, null, null, null
         );
+        mockearTarifa(1L, 42L, ModalidadPrecio.POR_DIA);
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L)));
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                 any(), any(), any(), any()
@@ -401,8 +572,10 @@ class ReservaCreacionValidatorTest {
     void deberiaLanzarExcepcionCuandoServicioPorHoraSinHoraInicio() {
         LocalDate fecha = LocalDate.now().plusDays(1);
         ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, null, LocalTime.of(12, 0), 1L, 42L);
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+        mockearTarifa(1L, 42L, ModalidadPrecio.POR_HORA);
 
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA.name(), ex.getCodigo());
     }
@@ -411,8 +584,10 @@ class ReservaCreacionValidatorTest {
     void deberiaLanzarExcepcionCuandoServicioPorHoraSinHoraFin() {
         LocalDate fecha = LocalDate.now().plusDays(1);
         ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(10, 0), null, 1L, 42L);
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+        mockearTarifa(1L, 42L, ModalidadPrecio.POR_HORA);
 
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA.name(), ex.getCodigo());
     }
@@ -421,8 +596,10 @@ class ReservaCreacionValidatorTest {
     void deberiaLanzarExcepcionCuandoHoraFinIgualAHoraInicioEnMismoDia() {
         LocalDate fecha = LocalDate.now().plusDays(1);
         ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(10, 0), LocalTime.of(10, 0), 1L, 42L);
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+        mockearTarifa(1L, 42L, ModalidadPrecio.POR_HORA);
 
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.HORA_FIN_ANTERIOR_O_IGUAL_A_INICIO.name(), ex.getCodigo());
     }
@@ -431,8 +608,10 @@ class ReservaCreacionValidatorTest {
     void deberiaLanzarExcepcionCuandoHoraFinAnteriorAHoraInicioEnMismoDia() {
         LocalDate fecha = LocalDate.now().plusDays(1);
         ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(14, 0), LocalTime.of(10, 0), 1L, 42L);
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+        mockearTarifa(1L, 42L, ModalidadPrecio.POR_HORA);
 
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.HORA_FIN_ANTERIOR_O_IGUAL_A_INICIO.name(), ex.getCodigo());
     }
@@ -441,8 +620,9 @@ class ReservaCreacionValidatorTest {
     void deberiaLanzarExcepcionCuandoServicioNoPorHoraTieneHoras() {
         LocalDate fecha = LocalDate.now().plusDays(1);
         ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(10, 0), LocalTime.of(12, 0), 1L, 42L);
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_DIA)));
-
+        mockearTarifa(1L, 42L, ModalidadPrecio.POR_DIA);
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.HORA_NO_PERMITIDA_PARA_MODALIDAD.name(), ex.getCodigo());
     }
@@ -451,8 +631,10 @@ class ReservaCreacionValidatorTest {
     void deberiaPasarValidacionHorasConMismoDiaYHoraFinPosterior() {
         LocalDate fecha = LocalDate.now().plusDays(1);
         ReservaCreacionRequestDto dto = mockDtoConHoras(fecha, fecha, LocalTime.of(10, 0), LocalTime.of(12, 0), 1L, 42L);
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
-        when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
+        mockearTarifa(1L, 42L, ModalidadPrecio.POR_HORA);
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
+       when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                 any(), any(), any(), any()
         )).thenReturn(false);
 
@@ -464,7 +646,10 @@ class ReservaCreacionValidatorTest {
         LocalDate inicio = LocalDate.now().plusDays(1);
         LocalDate fin = LocalDate.now().plusDays(3);
         ReservaCreacionRequestDto dto = mockDtoConHoras(inicio, fin, LocalTime.of(14, 0), LocalTime.of(10, 0), 1L, 42L);
-        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicioHabilitado(1L, ModalidadPrecio.POR_HORA)));
+        mockearTarifa(1L, 42L, ModalidadPrecio.POR_HORA);
+
+        when(servicioRepository.findById(1L))
+                .thenReturn(Optional.of(servicioHabilitado(1L)));
         when(reservaRepository.existsByServicioIdAndEstadoInAndFechaEntradaLessThanEqualAndFechaSalidaGreaterThanEqual(
                 any(), any(), any(), any()
         )).thenReturn(false);
@@ -482,8 +667,11 @@ class ReservaCreacionValidatorTest {
                 true, false, null,
                 1L, 42L
         );
-        mockearServicioYSinSolapamiento(1L);
-
+        mockearServicioYSinSolapamiento(
+                1L,
+                42L,
+                ModalidadPrecio.POR_DIA
+        );
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_REQUERIDO.name(), ex.getCodigo());
     }
@@ -496,8 +684,11 @@ class ReservaCreacionValidatorTest {
                 false, true, null,
                 1L, 42L
         );
-        mockearServicioYSinSolapamiento(1L);
-
+        mockearServicioYSinSolapamiento(
+                1L,
+                42L,
+                ModalidadPrecio.POR_DIA
+        );
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_REQUERIDO.name(), ex.getCodigo());
     }
@@ -510,8 +701,7 @@ class ReservaCreacionValidatorTest {
                 false, false, PlazoConfirmacion.TRES_MESES,
                 1L, 42L
         );
-        mockearServicioYSinSolapamiento(1L);
-
+        mockearServicioYSinSolapamiento(1L,42L,ModalidadPrecio.POR_DIA);
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_NO_APLICA.name(), ex.getCodigo());
     }
@@ -525,8 +715,11 @@ class ReservaCreacionValidatorTest {
                 true, false, PlazoConfirmacion.TRES_MESES,
                 1L, 42L
         );
-        mockearServicioYSinSolapamiento(1L);
-
+        mockearServicioYSinSolapamiento(
+                1L,
+                42L,
+                ModalidadPrecio.POR_DIA
+        );
         ReservaValidacionException ex = assertThrows(ReservaValidacionException.class, () -> validator.validar(dto));
         assertEquals(ReservaCodigoError.PLAZO_CONFIRMACION_VENCIDO.name(), ex.getCodigo());
     }
@@ -539,8 +732,11 @@ class ReservaCreacionValidatorTest {
                 true, false, PlazoConfirmacion.VEINTICUATRO_HORAS,
                 1L, 42L
         );
-        mockearServicioYSinSolapamiento(1L);
-
+        mockearServicioYSinSolapamiento(
+                1L,
+                42L,
+                ModalidadPrecio.POR_DIA
+        );
         assertDoesNotThrow(() -> validator.validar(dto));
     }
 
@@ -552,8 +748,11 @@ class ReservaCreacionValidatorTest {
                 false, false, null,
                 1L, 42L
         );
-        mockearServicioYSinSolapamiento(1L);
-
+        mockearServicioYSinSolapamiento(
+                1L,
+                42L,
+                ModalidadPrecio.POR_DIA
+        );
         assertDoesNotThrow(() -> validator.validar(dto));
     }
 }

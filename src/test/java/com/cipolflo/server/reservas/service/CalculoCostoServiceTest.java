@@ -1,6 +1,5 @@
 package com.cipolflo.server.reservas.service;
 
-import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.reservas.dto.CalculoCostoRequestDto;
 import com.cipolflo.server.reservas.dto.CalculoCostoResponseDto;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
@@ -8,6 +7,7 @@ import com.cipolflo.server.reservas.exception.ReservaValidacionException;
 import com.cipolflo.server.reservas.validators.CalculoCostoValidator;
 import com.cipolflo.server.servicios.costo.*;
 import com.cipolflo.server.servicios.domain.Servicio;
+import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.exception.ServicioNotFoundException;
 import com.cipolflo.server.servicios.service.IConsultaServicioParaCosto;
@@ -24,14 +24,22 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CalculoCostoServiceTest {
 
+    private static final Long SERVICIO_ID = 1L;
+    private static final Long CLIENTE_ID = 10L;
+
     @Mock
     private IConsultaServicioParaCosto consultaServicio;
+
+    @Mock
+    private ResolutorTarifaAplicable resolutorTarifaAplicable;
+
+    @Mock
+    private TarifaServicio tarifa;
 
     private FabricaEstrategia fabricaEstrategia;
     private CalculoCostoValidator validator;
@@ -46,31 +54,51 @@ class CalculoCostoServiceTest {
                 new EstrategiaCostoPorPersona(),
                 new EstrategiaCostoPorDiaPorPersona()
         );
+
         validator = new CalculoCostoValidator();
-        service = new CalculoCostoService(consultaServicio, fabricaEstrategia, validator);
+
+        service = new CalculoCostoService(
+                consultaServicio,
+                resolutorTarifaAplicable,
+                fabricaEstrategia,
+                validator
+        );
     }
 
-    private Servicio servicio(ModalidadPrecio modalidad, BigDecimal precioParticular,
-                               BigDecimal precioSocio, Integer capacidad, BigDecimal costoExtra) {
-        Servicio s = new Servicio();
-        ReflectionTestUtils.setField(s, "id", 1L);
-        s.setNombre("test");
-        s.setProcedencia(Procedencia.CAMPING);
-        s.setModalidadPrecio(modalidad);
-        s.setPrecioParticular(precioParticular);
-        s.setPrecioSocio(precioSocio);
-        s.setCapacidad(capacidad);
-        s.setCostoPersonaExtra(costoExtra);
-        s.setHabilitado(true);
-        return s;
+    private Servicio servicio(
+            ModalidadPrecio modalidad,
+            Integer capacidad,
+            BigDecimal costoExtra
+    ) {
+        Servicio servicio = new Servicio();
+
+        ReflectionTestUtils.setField(servicio, "id", SERVICIO_ID);
+
+        servicio.setNombre("test");
+        servicio.setProcedencia(Procedencia.CAMPING);
+        servicio.setModalidadPrecio(modalidad);
+        servicio.setCapacidad(capacidad);
+        servicio.setCostoPersonaExtra(costoExtra);
+        servicio.setHabilitado(true);
+
+        return servicio;
     }
 
-    private CalculoCostoRequestDto request(Long servicioId, LocalDate inicio, LocalDate fin,
-                                            LocalTime horaInicio, LocalTime horaFin,
-                                            Integer cantidadTotal, Integer cantidad,
-                                            Integer cantidadMenores, TipoCliente tipoCliente) {
+    private CalculoCostoRequestDto request(
+            Long servicioId,
+            Long clienteId,
+            LocalDate inicio,
+            LocalDate fin,
+            LocalTime horaInicio,
+            LocalTime horaFin,
+            Integer cantidadTotal,
+            Integer cantidad,
+            Integer cantidadMenores
+    ) {
         CalculoCostoRequestDto dto = new CalculoCostoRequestDto();
+
         ReflectionTestUtils.setField(dto, "servicioId", servicioId);
+        ReflectionTestUtils.setField(dto, "clienteId", clienteId);
         ReflectionTestUtils.setField(dto, "fechaInicio", inicio);
         ReflectionTestUtils.setField(dto, "fechaFin", fin);
         ReflectionTestUtils.setField(dto, "horaInicio", horaInicio);
@@ -78,140 +106,371 @@ class CalculoCostoServiceTest {
         ReflectionTestUtils.setField(dto, "cantidadTotal", cantidadTotal);
         ReflectionTestUtils.setField(dto, "cantidad", cantidad);
         ReflectionTestUtils.setField(dto, "cantidadMenores", cantidadMenores);
-        ReflectionTestUtils.setField(dto, "tipoCliente", tipoCliente);
+
         return dto;
+    }
+
+    private void configurarTarifa(
+            Servicio servicio,
+            ModalidadPrecio modalidad
+    ) {
+        when(consultaServicio.obtenerServicio(SERVICIO_ID))
+                .thenReturn(servicio);
+
+        when(resolutorTarifaAplicable.resolver(SERVICIO_ID, CLIENTE_ID))
+                .thenReturn(tarifa);
+
+        when(tarifa.getModalidadPrecio())
+                .thenReturn(modalidad);
     }
 
     @Test
     void servicioNoEncontrado_lanzaServicioNotFoundException() {
-        when(consultaServicio.obtenerServicio(99L)).thenThrow(new ServicioNotFoundException(99L));
+        when(consultaServicio.obtenerServicio(99L))
+                .thenThrow(new ServicioNotFoundException(99L));
 
-        CalculoCostoRequestDto dto = request(99L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 3),
-                null, null, null, null, null, null);
+        CalculoCostoRequestDto dto = request(
+                99L,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 3),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
 
-        assertThrows(ServicioNotFoundException.class, () -> service.calcularCosto(dto));
+        assertThrows(
+                ServicioNotFoundException.class,
+                () -> service.calcularCosto(dto)
+        );
     }
 
     @Test
-    void tipoClienteNull_usaParticular() {
-        Servicio s = servicio(ModalidadPrecio.POR_DIA, new BigDecimal("1000"), new BigDecimal("700"), null, null);
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+    void clienteParticular_delegaResolucionDeTarifaConClienteId() {
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_DIA,
+                null,
+                null
+        );
 
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1),
-                null, null, null, null, null, null);
+        configurarTarifa(servicio, ModalidadPrecio.POR_DIA);
 
-        CalculoCostoResponseDto resultado = service.calcularCosto(dto);
-        assertEquals(new BigDecimal("1000"), resultado.costoTotal());
+        when(tarifa.getPrecio())
+                .thenReturn(new BigDecimal("1000"));
+
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 1),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        CalculoCostoResponseDto resultado =
+                service.calcularCosto(dto);
+
+        assertEquals(
+                new BigDecimal("1000"),
+                resultado.costoTotal()
+        );
+
+        verify(resolutorTarifaAplicable).resolver(SERVICIO_ID, CLIENTE_ID);
     }
 
     @Test
-    void tipoClienteSocio_usaPrecioSocio() {
-        Servicio s = servicio(ModalidadPrecio.POR_DIA, new BigDecimal("1000"), new BigDecimal("700"), null, null);
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+    void clienteIdNulo_delegaResolucionDeTarifaConClienteIdNulo() {
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_DIA,
+                null,
+                null
+        );
 
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 3),
-                null, null, null, null, null, TipoCliente.SOCIO);
+        when(consultaServicio.obtenerServicio(SERVICIO_ID))
+                .thenReturn(servicio);
+        when(resolutorTarifaAplicable.resolver(SERVICIO_ID, null))
+                .thenReturn(tarifa);
+        when(tarifa.getModalidadPrecio())
+                .thenReturn(ModalidadPrecio.POR_DIA);
+        when(tarifa.getPrecio())
+                .thenReturn(new BigDecimal("1000"));
 
-        CalculoCostoResponseDto resultado = service.calcularCosto(dto);
-        assertEquals(new BigDecimal("2100"), resultado.costoTotal());
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                null,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 1),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        CalculoCostoResponseDto resultado =
+                service.calcularCosto(dto);
+
+        assertEquals(
+                new BigDecimal("1000"),
+                resultado.costoTotal()
+        );
+
+        verify(resolutorTarifaAplicable).resolver(SERVICIO_ID, null);
     }
 
     @Test
     void modalidadPorDia_calculaTresDias() {
-        Servicio s = servicio(ModalidadPrecio.POR_DIA, new BigDecimal("1000"), new BigDecimal("700"), null, null);
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_DIA,
+                null,
+                null
+        );
 
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 3),
-                null, null, null, null, null, TipoCliente.PARTICULAR);
+        configurarTarifa(servicio, ModalidadPrecio.POR_DIA);
 
-        CalculoCostoResponseDto resultado = service.calcularCosto(dto);
-        assertEquals(new BigDecimal("3000"), resultado.costoTotal());
+        when(tarifa.getPrecio())
+                .thenReturn(new BigDecimal("1000"));
+
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 3),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        CalculoCostoResponseDto resultado =
+                service.calcularCosto(dto);
+
+        assertEquals(
+                new BigDecimal("3000"),
+                resultado.costoTotal()
+        );
     }
 
     @Test
     void modalidadPorHora_calculaHoras() {
-        Servicio s = servicio(ModalidadPrecio.POR_HORA, new BigDecimal("200"), new BigDecimal("150"), null, null);
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_HORA,
+                null,
+                null
+        );
 
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1),
-                LocalTime.of(9, 0), LocalTime.of(13, 0),
-                null, null, null, TipoCliente.PARTICULAR);
+        configurarTarifa(servicio, ModalidadPrecio.POR_HORA);
 
-        CalculoCostoResponseDto resultado = service.calcularCosto(dto);
-        assertEquals(new BigDecimal("800"), resultado.costoTotal());
+        when(tarifa.getPrecio())
+                .thenReturn(new BigDecimal("200"));
+
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 1),
+                LocalTime.of(9, 0),
+                LocalTime.of(13, 0),
+                null,
+                null,
+                null
+        );
+
+        CalculoCostoResponseDto resultado =
+                service.calcularCosto(dto);
+
+        assertEquals(
+                new BigDecimal("800"),
+                resultado.costoTotal()
+        );
     }
 
     @Test
     void modalidadPorUnidad_calculaCantidad() {
-        Servicio s = servicio(ModalidadPrecio.POR_UNIDAD, new BigDecimal("500"), new BigDecimal("350"), null, null);
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_UNIDAD,
+                null,
+                null
+        );
 
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1),
-                null, null, null, 5, null, TipoCliente.PARTICULAR);
+        configurarTarifa(servicio, ModalidadPrecio.POR_UNIDAD);
 
-        CalculoCostoResponseDto resultado = service.calcularCosto(dto);
-        assertEquals(new BigDecimal("2500"), resultado.costoTotal());
+        when(tarifa.getPrecio())
+                .thenReturn(new BigDecimal("500"));
+
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 1),
+                null,
+                null,
+                null,
+                5,
+                null
+        );
+
+        CalculoCostoResponseDto resultado =
+                service.calcularCosto(dto);
+
+        assertEquals(
+                new BigDecimal("2500"),
+                resultado.costoTotal()
+        );
     }
 
     @Test
     void modalidadPorPersona_conExcedente() {
-        Servicio s = servicio(ModalidadPrecio.POR_PERSONA, new BigDecimal("2000"), new BigDecimal("1400"), 4, new BigDecimal("300"));
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_PERSONA,
+                4,
+                new BigDecimal("300")
+        );
 
-        // 7 total, 1 menor → 6 adultos equivalentes, excedente=2 → 2000 + 600 = 2600
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1),
-                null, null, 7, null, 1, TipoCliente.PARTICULAR);
+        configurarTarifa(servicio, ModalidadPrecio.POR_PERSONA);
 
-        CalculoCostoResponseDto resultado = service.calcularCosto(dto);
-        assertEquals(new BigDecimal("2600"), resultado.costoTotal());
+        when(tarifa.getPrecio())
+                .thenReturn(new BigDecimal("2000"));
+
+        /*
+         * 7 personas, 1 menor:
+         * adultos equivalentes = 6
+         * excedente = 2
+         * 2000 + (2 × 300) = 2600
+         */
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 1),
+                null,
+                null,
+                7,
+                null,
+                1
+        );
+
+        CalculoCostoResponseDto resultado =
+                service.calcularCosto(dto);
+
+        assertEquals(
+                new BigDecimal("2600"),
+                resultado.costoTotal()
+        );
     }
 
     @Test
     void modalidadPorDiaPorPersona_multiplicaPorDias() {
-        Servicio s = servicio(ModalidadPrecio.POR_DIA_POR_PERSONA, new BigDecimal("2000"), new BigDecimal("1400"), 4, new BigDecimal("300"));
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_DIA_POR_PERSONA,
+                4,
+                new BigDecimal("300")
+        );
 
-        // 3 personas, 0 menores, excedente=0 → 2000 × 2 días = 4000
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 2),
-                null, null, 3, null, 0, TipoCliente.PARTICULAR);
+        configurarTarifa(
+                servicio,
+                ModalidadPrecio.POR_DIA_POR_PERSONA
+        );
 
-        CalculoCostoResponseDto resultado = service.calcularCosto(dto);
-        assertEquals(new BigDecimal("4000"), resultado.costoTotal());
+        when(tarifa.getPrecio())
+                .thenReturn(new BigDecimal("2000"));
+
+        /*
+         * 3 personas, sin excedente:
+         * 2000 × 2 días = 4000
+         */
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 2),
+                null,
+                null,
+                3,
+                null,
+                0
+        );
+
+        CalculoCostoResponseDto resultado =
+                service.calcularCosto(dto);
+
+        assertEquals(
+                new BigDecimal("4000"),
+                resultado.costoTotal()
+        );
     }
 
     @Test
     void fechaFinAnteriorAInicio_lanzaValidacionException() {
-        Servicio s = servicio(ModalidadPrecio.POR_DIA, new BigDecimal("1000"), new BigDecimal("700"), null, null);
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_DIA,
+                null,
+                null
+        );
 
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 5), LocalDate.of(2026, 7, 1),
-                null, null, null, null, null, null);
+        configurarTarifa(servicio, ModalidadPrecio.POR_DIA);
 
-        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class,
-                () -> service.calcularCosto(dto));
-        assertEquals(ReservaCodigoError.FECHA_FIN_ANTERIOR_A_INICIO.name(), ex.getCodigo());
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 5),
+                LocalDate.of(2026, 7, 1),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        ReservaValidacionException excepcion =
+                assertThrows(
+                        ReservaValidacionException.class,
+                        () -> service.calcularCosto(dto)
+                );
+
+        assertEquals(
+                ReservaCodigoError.FECHA_FIN_ANTERIOR_A_INICIO.name(),
+                excepcion.getCodigo()
+        );
     }
 
     @Test
     void porHora_sinHoras_lanzaValidacionException() {
-        Servicio s = servicio(ModalidadPrecio.POR_HORA, new BigDecimal("200"), new BigDecimal("150"), null, null);
-        when(consultaServicio.obtenerServicio(1L)).thenReturn(s);
+        Servicio servicio = servicio(
+                ModalidadPrecio.POR_HORA,
+                null,
+                null
+        );
 
-        CalculoCostoRequestDto dto = request(1L,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1),
-                null, null, null, null, null, TipoCliente.PARTICULAR);
+        configurarTarifa(servicio, ModalidadPrecio.POR_HORA);
 
-        ReservaValidacionException ex = assertThrows(ReservaValidacionException.class,
-                () -> service.calcularCosto(dto));
-        assertEquals(ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA.name(), ex.getCodigo());
+        CalculoCostoRequestDto dto = request(
+                SERVICIO_ID,
+                CLIENTE_ID,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 1),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        ReservaValidacionException excepcion =
+                assertThrows(
+                        ReservaValidacionException.class,
+                        () -> service.calcularCosto(dto)
+                );
+
+        assertEquals(
+                ReservaCodigoError.HORA_REQUERIDA_PARA_SERVICIO_POR_HORA.name(),
+                excepcion.getCodigo()
+        );
     }
 }

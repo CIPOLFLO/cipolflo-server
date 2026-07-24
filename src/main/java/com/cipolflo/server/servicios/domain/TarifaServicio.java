@@ -133,4 +133,17 @@ public class TarifaServicio extends AuditableEntity {
             );
         }
     }
+
+    /**
+     * Normaliza un límite de antigüedad nulo (sin restricción) a un valor comparable,
+     * para que la ausencia de mínima/máxima se pueda tratar de forma uniforme
+     * en comparaciones de rango.
+     */
+    public static int normalizarAntiguedadMinima(Integer antiguedadMinima) {
+        return antiguedadMinima == null ? Integer.MIN_VALUE : antiguedadMinima;
+    }
+
+    public static int normalizarAntiguedadMaxima(Integer antiguedadMaxima) {
+        return antiguedadMaxima == null ? Integer.MAX_VALUE : antiguedadMaxima;
+    }
 }

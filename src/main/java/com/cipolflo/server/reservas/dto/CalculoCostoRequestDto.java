@@ -1,6 +1,5 @@
 package com.cipolflo.server.reservas.dto;
 
-import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -39,5 +38,6 @@ public class CalculoCostoRequestDto {
     @Min(value = 0, message = "La cantidad de menores no puede ser negativa")
     private Integer cantidadMenores;
 
-    private TipoCliente tipoCliente;
+    @Positive(message = "El id del cliente debe ser un número positivo")
+    private Long clienteId;
 }
