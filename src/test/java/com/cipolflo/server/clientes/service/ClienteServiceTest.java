@@ -109,6 +109,7 @@ private RutFormatoValidator rutFormatoValidator;
         socio.setMail("socio@mail.com");
         socio.setNumeroSocio(nroSocio);
         socio.setEstado(estado);
+        socio.setCategoriaSocio(CategoriaSocio.SOCIO_COMUN);
         socio.setFechaNacimiento(LocalDate.of(1990, Month.JANUARY, 1));
         socio.setPais("Uruguay");
         socio.setDepartamento("Montevideo");
@@ -958,7 +959,7 @@ void deberiaExportarFilasConLabelsLegiblesDeEstadoYMetodoCobro() {
 
     List<String> fila = filasCaptor.getValue().get(0);
     assertEquals("Activo",   fila.get(5));   // estado usa label, no "ACTIVO"
-    assertEquals("Efectivo", fila.get(8));   // metodoCobro usa label, no "EFECTIVO"
+    assertEquals("Efectivo", fila.get(9));   // metodoCobro usa label, no "EFECTIVO"
 }
 
 @Test

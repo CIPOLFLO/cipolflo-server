@@ -1,5 +1,6 @@
 package com.cipolflo.server.clientes.mapper;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.cipolflo.server.clientes.domain.Cliente;
@@ -39,7 +40,7 @@ public class ClienteMapper {
         return cliente instanceof ClienteConUbicacion u ? u.getDireccion() : null;
     }
 
-    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto) {
+    public static ClienteResponseDto toDetalleResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto, LocalDate fechaReferencia) {
         Socio socio = cliente instanceof Socio s ? s : null;
         return new ClienteResponseDto(
                 cliente.getId(),
@@ -59,8 +60,11 @@ public class ClienteMapper {
                 socio != null ? socio.getEstado() : null,
                 socio != null ? socio.getCategoriaSocio() : null,
                 socio != null ? socio.getFechaIngreso() : null,
-                cliente.getNotas(),
+                socio != null
+                        ? socio.calcularAntiguedadEnAnios(fechaReferencia)
+                        : null,
                 ultimaCuotaDto,
+                cliente.getNotas(),
                 cliente.getCreatedAt(),
                 cliente.getUpdatedAt(),
                 cliente.getCreatedBy(),
@@ -68,7 +72,7 @@ public class ClienteMapper {
         );
     }
 
-    public static ListadoClientesResponseDto toListadoResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto) {
+    public static ListadoClientesResponseDto toListadoResponseDto(Cliente cliente, UltimaCuotaDto ultimaCuotaDto, LocalDate fechaReferencia) {
         Socio socio = cliente instanceof Socio s ? s : null;
         return new ListadoClientesResponseDto(
                 cliente.getId(),
@@ -79,6 +83,10 @@ public class ClienteMapper {
                 tipoDeCliente(cliente),
                 socio != null ? socio.getNumeroSocio() : null,
                 socio != null ? socio.getEstado() : null,
+                socio != null ? socio.getCategoriaSocio() : null,
+                socio != null
+                        ? socio.calcularAntiguedadEnAnios(fechaReferencia)
+                        : null,
                 socio != null ? ultimaCuotaDto : null
         );
     }
@@ -115,7 +123,7 @@ public class ClienteMapper {
         );
     }
 
-    public static List<String> toExportFila(Cliente cliente){
+    public static List<String> toExportFila(Cliente cliente, LocalDate fechaReferencia){
         Socio socio = cliente instanceof Socio s ? s : null;
         return List.of(
                 orEmpty(cliente.getNombreCompleto()),
@@ -124,6 +132,7 @@ public class ClienteMapper {
                 orEmpty(cliente instanceof Empresa e ? e.getRut() : null),
                 orEmpty(cliente.getMail()),
                 orNA(socio != null ? socio.getEstado().toString() : null),
+                orNA(socio != null ? socio.getCategoriaSocio().toString() : null),
                 orEmpty(cliente.getTelefono()),
                 orEmpty(cliente.getNotas()),
                 orNA(socio != null ? socio.getMetodoCobro().toString() : null),
@@ -131,6 +140,7 @@ public class ClienteMapper {
                 orEmpty(departamento(cliente)),
                 orEmpty(direccion(cliente)),
                 orEmpty(socio != null ? socio.getFechaIngreso() : null),
+                orNA( socio != null ? socio.calcularAntiguedadEnAnios(fechaReferencia) : null),
                 orEmpty(socio != null ? socio.getFechaUltimoPago() : null)
         );
     }

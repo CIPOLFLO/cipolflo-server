@@ -68,7 +68,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTodosLosCamposDeUnSocio() {
-        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearSocio(), null);
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearSocio(), null,LocalDate.of(2026, 1, 1));
 
         assertEquals(1L, dto.getId());
         assertEquals("Juan Pérez", dto.getNombreCompleto());
@@ -81,14 +81,14 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTipoComoSocio() {
-        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearSocio(), null);
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearSocio(), null, LocalDate.of(2026, 1, 1));
 
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
     }
 
     @Test
     void deberiaMapearParticularConNumeroSocioYEstadoNulos() {
-        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearParticular(), null);
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearParticular(), null,LocalDate.of(2026, 1, 1));
 
         assertNull(dto.getNumeroSocio());
         assertNull(dto.getEstado());
@@ -96,7 +96,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTipoComoParticular() {
-        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearParticular(), null);
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearParticular(), null,LocalDate.of(2026, 1, 1));
 
         assertEquals(TipoCliente.PARTICULAR, dto.getTipoCliente());
     }
@@ -106,7 +106,7 @@ class ClienteMapperTest {
         Socio socio = crearSocio();
         socio.setMail(null);
 
-        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(socio, null);
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(socio, null,LocalDate.of(2026, 1, 1));
 
         assertNull(dto.getEmail());
     }
@@ -116,7 +116,7 @@ class ClienteMapperTest {
         Socio socio = crearSocio();
         socio.setNumeroSocio(null);
 
-        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(socio, null);
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(socio, null,LocalDate.of(2026, 1, 1));
 
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
         assertNull(dto.getNumeroSocio());
@@ -125,7 +125,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearCamposBaseDeParticular() {
-        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearParticular(),null);
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearParticular(),null,LocalDate.of(2026, 1, 1));
 
         assertEquals(2L, dto.getId());
         assertEquals("Laura Fernández", dto.getNombreCompleto());
@@ -135,7 +135,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTodosLosCamposDeUnSocioEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null, LocalDate.of(2026, 1, 1));
 
         assertEquals(1L, dto.getId());
         assertEquals("Juan Pérez", dto.getNombre());
@@ -157,8 +157,8 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearCategoriaSocioNulaParaParticularYEmpresaEnDetalle() {
-        assertNull(ClienteMapper.toDetalleResponseDto(crearParticular(), null).getCategoriaSocio());
-        assertNull(ClienteMapper.toDetalleResponseDto(crearEmpresa(), null).getCategoriaSocio());
+        assertNull(ClienteMapper.toDetalleResponseDto(crearParticular(), null, LocalDate.of(2026, 1, 1)).getCategoriaSocio());
+        assertNull(ClienteMapper.toDetalleResponseDto(crearEmpresa(), null, LocalDate.of(2026, 1, 1)).getCategoriaSocio());
     }
 
     @Test
@@ -168,7 +168,7 @@ class ClienteMapperTest {
         ReflectionTestUtils.setField(socio, "createdAt", ahora);
         ReflectionTestUtils.setField(socio, "createdBy", "admin@test.com");
 
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio, null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(socio, null, LocalDate.of(2026, 1, 1));
 
         assertEquals(ahora, dto.getCreatedAt());
         assertEquals("admin@test.com", dto.getCreatedBy());
@@ -176,14 +176,14 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearTipoComoSocioEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearSocio(), null, LocalDate.of(2026, 1, 1));
 
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
     }
 
     @Test
     void deberiaMapearParticularConCamposSocioNulosEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null, LocalDate.of(2026, 1, 1));
 
         assertNull(dto.getFechaNacimiento());
         assertNull(dto.getMetodoCobro());
@@ -199,7 +199,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearCamposBaseDeParticularEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearParticular(), null, LocalDate.of(2026, 1, 1));
 
         assertEquals(2L, dto.getId());
         assertEquals("Laura Fernández", dto.getNombre());
@@ -231,7 +231,7 @@ class ClienteMapperTest {
         );
 
         ListadoClientesResponseDto dto =
-                ClienteMapper.toListadoResponseDto(crearSocio(), ultimaCuota);
+                ClienteMapper.toListadoResponseDto(crearSocio(), ultimaCuota, LocalDate.of(2026, 1, 1));
 
         assertNotNull(dto.getUltimaCuotaDto());
         assertEquals(2026, dto.getUltimaCuotaDto().anio());
@@ -250,7 +250,7 @@ class ClienteMapperTest {
         );
 
         ListadoClientesResponseDto dto =
-                ClienteMapper.toListadoResponseDto(crearParticular(), ultimaCuota);
+                ClienteMapper.toListadoResponseDto(crearParticular(), ultimaCuota, LocalDate.of(2026, 1, 1));
 
         assertNull(dto.getUltimaCuotaDto());
     }
@@ -317,23 +317,25 @@ class ClienteMapperTest {
         Socio socio = crearSocio();
         socio.setFechaUltimoPago(LocalDate.of(2026, 5, 10));
 
-        List<String> fila = ClienteMapper.toExportFila(socio);
+        List<String> fila = ClienteMapper.toExportFila(socio, LocalDate.of(2026, 1, 1));
 
-        assertEquals(14, fila.size());
+        assertEquals(16, fila.size());
         assertEquals("Juan Pérez",           fila.get(0));
         assertEquals("5",                    fila.get(1));
         assertEquals("12345678",             fila.get(2));
         assertEquals("",                     fila.get(3));   // rut null (socio) → ""
         assertEquals("juan@mail.com",        fila.get(4));
         assertEquals("Activo",               fila.get(5));
-        assertEquals("099111111",            fila.get(6));
-        assertEquals("",                     fila.get(7));   // notas null → ""
-        assertEquals("Efectivo",             fila.get(8));
-        assertEquals("Uruguay",              fila.get(9));
-        assertEquals("Montevideo",           fila.get(10));
-        assertEquals("Av. 18 de Julio 100", fila.get(11));
-        assertEquals("2022-01-01",           fila.get(12));
-        assertEquals("2026-05-10",           fila.get(13));
+        assertEquals("Socio común", fila.get(6));      // o el label que devuelva toString()
+        assertEquals("099111111", fila.get(7));
+        assertEquals("", fila.get(8));
+        assertEquals("Efectivo", fila.get(9));
+        assertEquals("Uruguay", fila.get(10));
+        assertEquals("Montevideo", fila.get(11));
+        assertEquals("Av. 18 de Julio 100", fila.get(12));
+        assertEquals("2022-01-01", fila.get(13));
+        assertEquals("4", fila.get(14));               // antigüedad (2022 → 2026-01-01)
+        assertEquals("2026-05-10", fila.get(15));
     }
 
     @Test
@@ -341,7 +343,7 @@ class ClienteMapperTest {
         Socio socio = crearSocio();
         socio.setEstado(EstadoSocio.DE_BAJA);
 
-        List<String> fila = ClienteMapper.toExportFila(socio);
+        List<String> fila = ClienteMapper.toExportFila(socio, LocalDate.of(2026, 1, 1));
 
         assertEquals("De baja", fila.get(5));
     }
@@ -351,7 +353,7 @@ class ClienteMapperTest {
         Socio socio = crearSocio();
         socio.setEstado(EstadoSocio.INACTIVO);
 
-        List<String> fila = ClienteMapper.toExportFila(socio);
+        List<String> fila = ClienteMapper.toExportFila(socio, LocalDate.of(2026, 1, 1));
 
         assertEquals("Inactivo", fila.get(5));
     }
@@ -364,19 +366,19 @@ class ClienteMapperTest {
         socio.setDepartamento(null);
         socio.setDireccion(null);
 
-        List<String> fila = ClienteMapper.toExportFila(socio);
+        List<String> fila = ClienteMapper.toExportFila(socio, LocalDate.of(2026, 1, 1));
 
         assertEquals("", fila.get(4));   // mail
-        assertEquals("", fila.get(9));   // pais
-        assertEquals("", fila.get(10));  // departamento
-        assertEquals("", fila.get(11));  // direccion
+        assertEquals("", fila.get(10));   // pais
+        assertEquals("", fila.get(11));  // departamento
+        assertEquals("", fila.get(12));  // direccion
     }
 
     @Test
     void toExportFila_socioConFechaUltimoPagoNula_devuelveVacio() {
-        List<String> fila = ClienteMapper.toExportFila(crearSocio());
+        List<String> fila = ClienteMapper.toExportFila(crearSocio(), LocalDate.of(2026, 1, 1));
 
-        assertEquals("", fila.get(13));
+        assertEquals("", fila.get(15));
     }
 
     @Test
@@ -384,26 +386,28 @@ class ClienteMapperTest {
         Socio socio = crearSocio();
         socio.setNumeroSocio(null);
 
-        List<String> fila = ClienteMapper.toExportFila(socio);
+        List<String> fila = ClienteMapper.toExportFila(socio, LocalDate.of(2026, 1, 1));
 
         assertEquals("N/A", fila.get(1));
     }
 
     @Test
     void toExportFila_particular_devuelveNAParaCamposExclusivoDeSocio() {
-        List<String> fila = ClienteMapper.toExportFila(crearParticular());
+        List<String> fila = ClienteMapper.toExportFila(crearParticular(), LocalDate.of(2026, 1, 1));
 
         assertEquals("Laura Fernández", fila.get(0));
         assertEquals("N/A", fila.get(1));    // numeroSocio
         assertEquals("67890123",  fila.get(2));
         assertEquals("", fila.get(3));       // rut (particular) → ""
         assertEquals("N/A", fila.get(5));    // estado
-        assertEquals("N/A", fila.get(8));    // metodoCobro
-        assertEquals("", fila.get(9));       // pais
-        assertEquals("", fila.get(10));      // departamento
-        assertEquals("", fila.get(11));      // direccion
-        assertEquals("", fila.get(12));      // fechaIngreso
-        assertEquals("", fila.get(13));      // fechaUltimoPago
+        assertEquals("N/A", fila.get(6));   // categoría
+        assertEquals("N/A", fila.get(9));    // metodoCobro
+        assertEquals("", fila.get(10));       // pais
+        assertEquals("", fila.get(11));      // departamento
+        assertEquals("", fila.get(12));      // direccion
+        assertEquals("", fila.get(13));      // fechaIngreso
+        assertEquals("", fila.get(15));      // fechaUltimoPago
+        assertEquals("N/A", fila.get(14));  // antigüedad
     }
 
     @Test
@@ -431,15 +435,15 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearRutNuloParaSocioYParticular() {
-        assertNull(ClienteMapper.toDetalleResponseDto(crearSocio(), null).getRut());
-        assertNull(ClienteMapper.toListadoResponseDto(crearSocio(), null).getRut());
-        assertNull(ClienteMapper.toDetalleResponseDto(crearParticular(), null).getRut());
-        assertNull(ClienteMapper.toListadoResponseDto(crearParticular(), null).getRut());
+        assertNull(ClienteMapper.toDetalleResponseDto(crearSocio(), null,LocalDate.of(2026, 1, 1)).getRut());
+        assertNull(ClienteMapper.toListadoResponseDto(crearSocio(), null,LocalDate.of(2026, 1, 1)).getRut());
+        assertNull(ClienteMapper.toDetalleResponseDto(crearParticular(), null,LocalDate.of(2026, 1, 1)).getRut());
+        assertNull(ClienteMapper.toListadoResponseDto(crearParticular(), null,LocalDate.of(2026, 1, 1)).getRut());
     }
 
     @Test
     void deberiaMapearEmpresaEnDetalleConTipoYRut() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearEmpresa(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearEmpresa(), null, LocalDate.of(2026, 1, 1));
 
         assertEquals("Cipolatti S.A.", dto.getNombre());
         assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
@@ -451,7 +455,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearUbicacionDeEmpresaEnDetalle() {
-        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearEmpresa(), null);
+        ClienteResponseDto dto = ClienteMapper.toDetalleResponseDto(crearEmpresa(), null, LocalDate.of(2026, 1, 1));
 
         assertEquals("Uruguay", dto.getPais());
         assertEquals("Montevideo", dto.getDepartamento());
@@ -461,7 +465,7 @@ class ClienteMapperTest {
 
     @Test
     void deberiaMapearEmpresaEnListadoConTipoYRut() {
-        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearEmpresa(), null);
+        ListadoClientesResponseDto dto = ClienteMapper.toListadoResponseDto(crearEmpresa(), null,LocalDate.of(2026, 1, 1));
 
         assertEquals("Cipolatti S.A.", dto.getNombreCompleto());
         assertEquals(TipoCliente.EMPRESA, dto.getTipoCliente());
@@ -488,14 +492,16 @@ class ClienteMapperTest {
 
     @Test
     void toExportFila_empresa_incluyeRutYNAParaCamposDeSocio() {
-        List<String> fila = ClienteMapper.toExportFila(crearEmpresa());
+        List<String> fila = ClienteMapper.toExportFila(crearEmpresa(), LocalDate.of(2026, 1, 1));
 
-        assertEquals(14, fila.size());
+        assertEquals(16, fila.size());
         assertEquals("Cipolatti S.A.", fila.get(0));
         assertEquals("N/A", fila.get(1));         // numeroSocio
         assertEquals("", fila.get(2));            // cedula (empresa) → ""
         assertEquals("210001230018", fila.get(3)); // rut
         assertEquals("N/A", fila.get(5));         // estado
-        assertEquals("N/A", fila.get(8));         // metodoCobro
+        assertEquals("N/A", fila.get(9));         // metodoCobro
+        assertEquals("N/A", fila.get(6));
+        assertEquals("N/A", fila.get(14));
     }
 }

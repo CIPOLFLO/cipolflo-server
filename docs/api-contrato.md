@@ -518,7 +518,9 @@ Retorna el listado paginado de clientes con filtros opcionales.
       "email": "juan@mail.com",
       "tipoCliente": "SOCIO",
       "numeroSocio": 5,
-      "estado": "ACTIVO"
+      "estado": "ACTIVO",
+      "categoriaSocio": "SOCIO_COMUN",
+      "antiguedad": 5
     },
     {
       "id": 2,
@@ -528,7 +530,8 @@ Retorna el listado paginado de clientes con filtros opcionales.
       "email": null,
       "tipoCliente": "PARTICULAR",
       "numeroSocio": null,
-      "estado": null
+      "estado": null, "categoriaSocio": null, 
+       "antiguedad": null
     },
     {
       "id": 3,
@@ -538,7 +541,9 @@ Retorna el listado paginado de clientes con filtros opcionales.
       "email": "empresa@mail.com",
       "tipoCliente": "EMPRESA",
       "numeroSocio": null,
-      "estado": null
+      "estado": null,
+       "categoriaSocio": null,
+       "antiguedad": null
     }
   ],
   "page": 0,
@@ -577,6 +582,9 @@ Retorna el detalle completo de un cliente.
   "numeroSocio": 5,
   "tipoCliente": "SOCIO",
   "estado": "ACTIVO",
+   "categoriaSocio": "SOCIO_COMUN",
+   "fechaIngreso": "2020-01-01",
+   "antiguedad": 5,
   "observaciones": null,
   "createdAt": "2024-03-01T10:00:00Z",
   "updatedAt": "2024-03-15T14:00:00Z",
@@ -585,7 +593,7 @@ Retorna el detalle completo de un cliente.
 }
 ```
 
-> Los campos `fechaNacimiento`, `metodoPago`, `pais`, `departamento`, `ciudad`, `direccion`, `numeroSocio` y `estado` son `null` para clientes de tipo `PARTICULAR`.
+> Los campos `fechaNacimiento`, `metodoPago`, `pais`, `departamento`, `ciudad`, `direccion`, `numeroSocio`, `estado`, `categoriaSocio`,`fechaIngreso` y `antiguedad` son `null` para clientes de tipo `PARTICULAR`.
 >
 > El campo `rut` es `null` para clientes de tipo `SOCIO` y `PARTICULAR`, y contiene el RUT para clientes de tipo `EMPRESA`. Inversamente, `cedula` es `null` para clientes de tipo `EMPRESA` (que no tienen cédula).
 
@@ -1057,6 +1065,7 @@ Registra un nuevo cliente de tipo empresa.
   estado: EstadoSocio | null; // null para Particulares
   categoriaSocio: CategoriaSocio | null; // null para Particulares y Empresas
   fechaIngreso: string | null; // LocalDate yyyy-MM-dd; null para Particulares y Empresas
+  antiguedad: number | null;  // años completos; null para Particulares y Empresas
   observaciones: string | null;
   createdAt: string; // Instant ISO-8601 UTC
   updatedAt: string; // Instant ISO-8601 UTC
@@ -1077,6 +1086,8 @@ Registra un nuevo cliente de tipo empresa.
   tipoCliente: TipoCliente;
   numeroSocio: number | null; // null para Particulares
   estado: EstadoSocio | null; // null para Particulares
+  categoriaSocio: CategoriaSocio | null; // null para Particulares y Empresas
+  antiguedad: number | null;  // años completos; null para Particulares y Empresas
 }
 ```
 
