@@ -20,9 +20,6 @@ public class ServicioMapper {
                 servicio.getId(),
                 servicio.getNombre(),
                 servicio.getProcedencia(),
-                servicio.getPrecioParticular(),
-                servicio.getPrecioSocio(),
-                servicio.getModalidadPrecio(),
                 estado,
                 servicio.getCapacidad(),
                 servicio.getCantidad()
@@ -33,8 +30,7 @@ public class ServicioMapper {
         return new ServicioDetalleReservaDto(
                 servicio.getId(),
                 servicio.getNombre(),
-                servicio.getProcedencia(),
-                servicio.getModalidadPrecio()
+                servicio.getProcedencia()
         );
     }
 }

@@ -9,9 +9,12 @@ import com.cipolflo.server.clientes.mapper.ClienteMapper;
 import com.cipolflo.server.clientes.repository.ClienteRepository;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.validator.RegistroParticularValidator;
+import com.cipolflo.server.shared.ZonaHoraria;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 
 @Service
 public class RegistroParticularService implements IRegistroParticularService {
@@ -46,7 +49,7 @@ public class RegistroParticularService implements IRegistroParticularService {
         );
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null);
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null,  LocalDate.now(ZonaHoraria.URUGUAY));
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),

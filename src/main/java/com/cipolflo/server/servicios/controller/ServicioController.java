@@ -41,7 +41,7 @@ import java.util.Set;
 public class ServicioController {
 
     private static final Set<String> CAMPOS_ORDEN_PERMITIDOS = Set.of(
-            "nombre", "precioParticular", "precioSocio"
+            "nombre"
     );
 
     private final IServicioService servicioService;

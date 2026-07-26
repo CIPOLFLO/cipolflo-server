@@ -3,7 +3,6 @@ package com.cipolflo.server.servicios.dto;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.enums.Procedencia;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
@@ -25,17 +24,6 @@ public class ServicioRegistroRequestDto {
 
     @NotNull(message = "La procedencia es obligatoria")
     private Procedencia procedencia;
-
-    @NotNull(message = "El precio socio es obligatorio")
-    @DecimalMin(value = "0.0", inclusive = false, message = "El precio socio debe ser mayor que cero")
-    private BigDecimal precioSocio;
-
-    @NotNull(message = "El precio particular es obligatorio")
-    @DecimalMin(value = "0.0", inclusive = false, message = "El precio particular debe ser mayor que cero")
-    private BigDecimal precioParticular;
-
-    @NotNull(message = "La modalidad de precio es obligatoria")
-    private ModalidadPrecio modalidadPrecio;
 
     @Positive(message = "La capacidad debe ser un número positivo")
     private Integer capacidad;

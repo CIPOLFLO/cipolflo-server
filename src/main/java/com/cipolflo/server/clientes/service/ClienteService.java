@@ -15,6 +15,7 @@ import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.utils.CedulaNormalizador;
 import com.cipolflo.server.clientes.utils.RutNormalizador;
 import com.cipolflo.server.clientes.validator.*;
+import com.cipolflo.server.shared.ZonaHoraria;
 import com.cipolflo.server.shared.export.*;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -90,13 +91,14 @@ public class ClienteService implements IClienteService {
                 .and(ClienteSpecification.conNombre(filtros.nombre()))
                 .and(ClienteSpecification.conTipoCliente(filtros.tipoCliente()))
                 .and(ClienteSpecification.conIdentificador(filtros.identificador()));
+        LocalDate fechaReferencia = LocalDate.now(ZonaHoraria.URUGUAY);
         Page<ListadoClientesResponseDto> page = clienteRepository
                 .findAll(spec, pageRequest.toPageable())
                 .map(cliente -> {
                     UltimaCuotaDto ultimaCuotaPaga = cliente instanceof Socio
                             ? pagoCuotaService.calcularUltimaCuotaPaga(cliente.getId())
                             : null;
-                    return ClienteMapper.toListadoResponseDto(cliente, ultimaCuotaPaga);
+                    return ClienteMapper.toListadoResponseDto(cliente, ultimaCuotaPaga, fechaReferencia);
                 });
         return PaginationMapper.toPageResponse(page);
     }
@@ -108,7 +110,8 @@ public class ClienteService implements IClienteService {
         UltimaCuotaDto ultimaCuotaPagaDto = cliente instanceof Socio
                 ? pagoCuotaService.calcularUltimaCuotaPaga(cliente.getId())
                 : null;
-        return ClienteMapper.toDetalleResponseDto(cliente, ultimaCuotaPagaDto);
+        LocalDate fechaReferencia = LocalDate.now(ZonaHoraria.URUGUAY);
+        return ClienteMapper.toDetalleResponseDto(cliente, ultimaCuotaPagaDto, fechaReferencia);
     }
 
     @Override
@@ -150,7 +153,7 @@ public class ClienteService implements IClienteService {
         particular.modificar(cedulaNormalizada, dto.getNombreCompleto(), dto.getTelefono(), mailNormalizado, dto.getNotas());
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null);
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(particular), null, LocalDate.now(ZonaHoraria.URUGUAY));
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -190,7 +193,7 @@ public class ClienteService implements IClienteService {
         );
 
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null);
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null, LocalDate.now(ZonaHoraria.URUGUAY));
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -224,7 +227,7 @@ public class ClienteService implements IClienteService {
         socio.setCategoriaSocio(dto.getCategoriaSocio());
         socio.setFechaIngreso(dto.getFechaIngreso());
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null);
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null, LocalDate.now(ZonaHoraria.URUGUAY));
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.CEDULA_DUPLICADA.name(),
@@ -251,7 +254,7 @@ public class ClienteService implements IClienteService {
                 dto.getObservaciones()
         );
         try {
-            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(empresa), null);
+            return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(empresa), null, LocalDate.now(ZonaHoraria.URUGUAY));
         } catch (DataIntegrityViolationException e) {
             throw new ClienteValidacionException(
                     ClienteCodigoError.RUT_DUPLICADO.name(),
@@ -329,6 +332,7 @@ public class ClienteService implements IClienteService {
                 "RUT",
                 "Email",
                 "Estado",
+                "Categoría",
                 "Telefono",
                 "Notas",
                 "Método de cobro",
@@ -336,13 +340,15 @@ public class ClienteService implements IClienteService {
                 "Departamento",
                 "Dirección",
                 "Fecha ingreso",
+                "Antigüedad",
                 "Fecha último pago");
 
+        LocalDate fechaReferencia = LocalDate.now(ZonaHoraria.URUGUAY);
         List<List<String>> filas = clientes.stream()
-            .map(ClienteMapper::toExportFila)
+                .map(cliente -> ClienteMapper.toExportFila(cliente, fechaReferencia))
             .toList();
 
-        int[] anchos = {8000,5000,5000,5000,10000,5000,5000,5000,5000,5000,5000,5000,5000,5000};
+        int[] anchos = {8000,5000,5000,5000,10000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000};
         byte[] contenido = exportService.generarExcel(
                 "Clientes",
                 encabezados,
@@ -356,15 +362,15 @@ public class ClienteService implements IClienteService {
     }
 
     @Override
-public ArchivoExportado generarComprobanteAltaSocio(Long id) {
-    Cliente cliente = clienteRepository.findById(id)
+    public ArchivoExportado generarComprobanteAltaSocio(Long id) {
+         Cliente cliente = clienteRepository.findById(id)
             .orElseThrow(() -> new SocioNotFoundException(id));
-    if (!(cliente instanceof Socio socio)) {
-        throw new SocioNotFoundException(id);
+         if (!(cliente instanceof Socio socio)) {
+             throw new SocioNotFoundException(id);
+         }
+        byte[] contenido = pdfGeneratorService.generar(new ComprobanteAltaSocioContenidoPdf(socio));
+        String nombre = NombreArchivoPdf.generar("comprobante-alta-socio-" + id);
+        return new ArchivoExportado(nombre, contenido);
     }
-    byte[] contenido = pdfGeneratorService.generar(new ComprobanteAltaSocioContenidoPdf(socio));
-    String nombre = NombreArchivoPdf.generar("comprobante-alta-socio-" + id);
-    return new ArchivoExportado(nombre, contenido);
-}
 
 }

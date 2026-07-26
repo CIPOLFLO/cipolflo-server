@@ -65,7 +65,7 @@ class ClienteControllerTest {
                 "099111111", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. 18 de Julio 100",
                 5, TipoCliente.SOCIO, EstadoSocio.ACTIVO, null,
-                null, null, null, null, null,null,null
+                LocalDate.of(2020, 1, 1),null, null, null, null, null,null,null
         );
     }
 
@@ -79,7 +79,7 @@ class ClienteControllerTest {
                 TipoCliente.SOCIO,
                 1,
                 EstadoSocio.ACTIVO,
-                null
+                null,null,null
         );
         return new PageResponse<>(List.of(dto), 0, 10, 1, 1, true, true);
     }
@@ -839,8 +839,8 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 "099123456", "juan@mail.com", MetodoCobro.EFECTIVO,
                 "Uruguay", "Montevideo", "Montevideo", "Av. Italia 1234",
                 7, TipoCliente.SOCIO, EstadoSocio.ACTIVO, CategoriaSocio.SOCIO_COMUN,
-                LocalDate.of(2020, 1, 1),"Sin observaciones",
-                null, null, null, null, null
+                LocalDate.of(2020, 1, 1),6,null, "Sin observaciones",
+                null, null, null, null
         );
 
         when(clienteService.registrarSocio(any(RegistroSocioRequestDto.class)))
@@ -1080,7 +1080,7 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 TipoCliente.PARTICULAR,
                 null,
                 null,null,
-                null,
+                6,null,
                 null,
                 null,
                 null,
@@ -1288,8 +1288,8 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
                 null,
                 "099123456", "empresa@mail.com", null,
                 "Uruguay", "Montevideo", "Montevideo", "Guatemala 1075",
-                null, TipoCliente.EMPRESA, null, null,null,"Sin observaciones",
-                null, null, null, null, null
+                null, TipoCliente.EMPRESA, null, null,null,6,null,"Sin observaciones",
+                null, null, null, null
         );
 
         when(clienteService.registrarEmpresa(any(RegistroEmpresaRequestDto.class)))

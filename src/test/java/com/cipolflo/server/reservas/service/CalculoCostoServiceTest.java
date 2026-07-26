@@ -66,7 +66,6 @@ class CalculoCostoServiceTest {
     }
 
     private Servicio servicio(
-            ModalidadPrecio modalidad,
             Integer capacidad,
             BigDecimal costoExtra
     ) {
@@ -76,7 +75,6 @@ class CalculoCostoServiceTest {
 
         servicio.setNombre("test");
         servicio.setProcedencia(Procedencia.CAMPING);
-        servicio.setModalidadPrecio(modalidad);
         servicio.setCapacidad(capacidad);
         servicio.setCostoPersonaExtra(costoExtra);
         servicio.setHabilitado(true);
@@ -150,7 +148,6 @@ class CalculoCostoServiceTest {
     @Test
     void clienteParticular_delegaResolucionDeTarifaConClienteId() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_DIA,
                 null,
                 null
         );
@@ -186,7 +183,6 @@ class CalculoCostoServiceTest {
     @Test
     void clienteIdNulo_delegaResolucionDeTarifaConClienteIdNulo() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_DIA,
                 null,
                 null
         );
@@ -226,7 +222,6 @@ class CalculoCostoServiceTest {
     @Test
     void modalidadPorDia_calculaTresDias() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_DIA,
                 null,
                 null
         );
@@ -260,7 +255,6 @@ class CalculoCostoServiceTest {
     @Test
     void modalidadPorHora_calculaHoras() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_HORA,
                 null,
                 null
         );
@@ -294,7 +288,6 @@ class CalculoCostoServiceTest {
     @Test
     void modalidadPorUnidad_calculaCantidad() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_UNIDAD,
                 null,
                 null
         );
@@ -328,7 +321,6 @@ class CalculoCostoServiceTest {
     @Test
     void modalidadPorPersona_conExcedente() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_PERSONA,
                 4,
                 new BigDecimal("300")
         );
@@ -368,7 +360,6 @@ class CalculoCostoServiceTest {
     @Test
     void modalidadPorDiaPorPersona_multiplicaPorDias() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_DIA_POR_PERSONA,
                 4,
                 new BigDecimal("300")
         );
@@ -409,7 +400,6 @@ class CalculoCostoServiceTest {
     @Test
     void fechaFinAnteriorAInicio_lanzaValidacionException() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_DIA,
                 null,
                 null
         );
@@ -443,7 +433,6 @@ class CalculoCostoServiceTest {
     @Test
     void porHora_sinHoras_lanzaValidacionException() {
         Servicio servicio = servicio(
-                ModalidadPrecio.POR_HORA,
                 null,
                 null
         );

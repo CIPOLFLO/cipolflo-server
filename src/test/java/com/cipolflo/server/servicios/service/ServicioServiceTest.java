@@ -76,10 +76,7 @@ class ServicioServiceTest {
         servicio.setProcedencia(Procedencia.CAMPING);
         servicio.setCapacidad(4);
         servicio.setCantidad(2);
-        servicio.setPrecioSocio(BigDecimal.valueOf(1500));
-        servicio.setPrecioParticular(BigDecimal.valueOf(2500));
         servicio.setHabilitado(habilitado);
-        servicio.setModalidadPrecio(ModalidadPrecio.POR_DIA);
         return servicio;
     }
 
@@ -89,9 +86,6 @@ class ServicioServiceTest {
         s.setNombre(nombre);
         s.setProcedencia(procedencia);
         s.setHabilitado(habilitado);
-        s.setPrecioParticular(BigDecimal.valueOf(2500));
-        s.setPrecioSocio(BigDecimal.valueOf(1500));
-        s.setModalidadPrecio(ModalidadPrecio.POR_DIA);
         return s;
     }
 
@@ -156,9 +150,6 @@ class ServicioServiceTest {
     private ModificacionServicioDto crearDto(String nombre, BigDecimal precioParticular, BigDecimal precioSocio) {
         ModificacionServicioDto dto = new ModificacionServicioDto();
         dto.setNombre(nombre);
-        dto.setPrecioParticular(precioParticular);
-        dto.setPrecioSocio(precioSocio);
-        dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
         dto.setCapacidad(4);
         dto.setCantidad(2);
         dto.setTarifas(List.of(
@@ -184,9 +175,6 @@ class ServicioServiceTest {
         ServicioRegistroRequestDto dto = new ServicioRegistroRequestDto();
         dto.setNombre(nombre);
         dto.setProcedencia(Procedencia.CAMPING);
-        dto.setPrecioParticular(precioParticular);
-        dto.setPrecioSocio(precioSocio);
-        dto.setModalidadPrecio(ModalidadPrecio.POR_DIA);
         dto.setCapacidad(capacidad);
         dto.setCantidad(cantidad);
         dto.setTarifas(List.of(
@@ -221,10 +209,7 @@ class ServicioServiceTest {
         assertEquals(Procedencia.CAMPING, resultado.getProcedencia());
         assertEquals(4, resultado.getCapacidad());
         assertEquals(2, resultado.getCantidad());
-        assertEquals(BigDecimal.valueOf(1500), resultado.getPrecioSocio());
-        assertEquals(BigDecimal.valueOf(2500), resultado.getPrecioParticular());
         assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
-        assertEquals(ModalidadPrecio.POR_DIA, resultado.getModalidadPrecio());
 
         verify(servicioRepository).findById(servicioId);
     }
@@ -596,8 +581,6 @@ class ServicioServiceTest {
 
         assertNotNull(resultado);
         assertEquals("Cabaña Premium", resultado.getNombre());
-        assertEquals(BigDecimal.valueOf(3000), resultado.getPrecioParticular());
-        assertEquals(BigDecimal.valueOf(2000), resultado.getPrecioSocio());
 
         verify(modificacionServicioValidator).validar(any(ModificacionValidationContext.class));
         verify(servicioRepository).save(servicio);
@@ -646,26 +629,6 @@ class ServicioServiceTest {
     }
 
     @Test
-    void deberiaLanzarErrorCuandoPrecioSocioEsMayorOIgualAlParticular() {
-        Long servicioId = 1L;
-        Servicio servicio = crearServicio(servicioId, true);
-        ModificacionServicioDto dto =
-                crearDto("Cabaña", BigDecimal.valueOf(2000), BigDecimal.valueOf(2000));
-
-        when(servicioRepository.findById(servicioId)).thenReturn(Optional.of(servicio));
-
-        ServicioValidacionException exception =
-                assertThrows(
-                        ServicioValidacionException.class,
-                        () -> servicioService.modificarServicio(servicioId, dto)
-                );
-
-        assertEquals(ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(), exception.getCodigo());
-
-        verify(servicioRepository, never()).save(any());
-    }
-
-    @Test
     void deberiaLanzarErrorCuandoLasReservasNoSonProximas() {
         Long servicioId = 1L;
 
@@ -705,9 +668,6 @@ class ServicioServiceTest {
         servicioGuardado.setId(1L);
         servicioGuardado.setNombre("Cabaña Nueva");
         servicioGuardado.setProcedencia(Procedencia.CAMPING);
-        servicioGuardado.setPrecioParticular(BigDecimal.valueOf(2500));
-        servicioGuardado.setPrecioSocio(BigDecimal.valueOf(1500));
-        servicioGuardado.setModalidadPrecio(ModalidadPrecio.POR_DIA);
         servicioGuardado.setCapacidad(4);
         servicioGuardado.setCantidad(2);
         servicioGuardado.setHabilitado(true);
@@ -722,8 +682,6 @@ class ServicioServiceTest {
         assertEquals(1L, resultado.getId());
         assertEquals("Cabaña Nueva", resultado.getNombre());
         assertEquals(Procedencia.CAMPING, resultado.getProcedencia());
-        assertEquals(BigDecimal.valueOf(2500), resultado.getPrecioParticular());
-        assertEquals(BigDecimal.valueOf(1500), resultado.getPrecioSocio());
         assertEquals(EstadoServicio.HABILITADO, resultado.getEstado());
 
         verify(servicioRegistroValidator).validar(dto);
@@ -771,22 +729,6 @@ class ServicioServiceTest {
     }
 
     @Test
-    void deberiaLanzarErrorCuandoPrecioParticularMenorQuePrecioSocioAlRegistrar() {
-        ServicioRegistroRequestDto dto =
-                crearDtoRegistro("Cabaña", BigDecimal.valueOf(1000), BigDecimal.valueOf(2000), null, null);
-
-        ServicioValidacionException exception =
-                assertThrows(
-                        ServicioValidacionException.class,
-                        () -> servicioService.registrarServicio(dto)
-                );
-
-        assertEquals(ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(), exception.getCodigo());
-
-        verify(servicioRepository, never()).save(any());
-    }
-
-    @Test
     void deberiaGuardarTodosLosCamposCorrectamenteAlRegistrar() {
         ServicioRegistroRequestDto dto =
                 crearDtoRegistro("Cabaña Premium", BigDecimal.valueOf(3500), BigDecimal.valueOf(2000), null, null);
@@ -804,9 +746,6 @@ class ServicioServiceTest {
         verify(servicioRepository).save(argThat(servicio ->
                 servicio.getNombre().equals("Cabaña Premium") &&
                         servicio.getProcedencia().equals(Procedencia.CAMPING) &&
-                        servicio.getPrecioParticular().equals(BigDecimal.valueOf(3500)) &&
-                        servicio.getPrecioSocio().equals(BigDecimal.valueOf(2000)) &&
-                        servicio.getModalidadPrecio().equals(ModalidadPrecio.POR_DIA) &&
                         servicio.getCapacidad().equals(6) &&
                         servicio.getCantidad().equals(3) &&
                         Boolean.TRUE.equals(servicio.getHabilitado())

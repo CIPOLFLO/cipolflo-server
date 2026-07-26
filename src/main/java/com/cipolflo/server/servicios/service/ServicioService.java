@@ -123,9 +123,6 @@ public class ServicioService implements IServicioService {
 
         servicio.modificar(
                 dto.getNombre(),
-                dto.getPrecioParticular(),
-                dto.getPrecioSocio(),
-                dto.getModalidadPrecio(),
                 dto.getCapacidad(),
                 dto.getCantidad(),
                 dto.getCostoPersonaExtra()
@@ -214,9 +211,6 @@ public class ServicioService implements IServicioService {
         Servicio servicio = Servicio.registrar(
                 request.getNombre(),
                 request.getProcedencia(),
-                request.getPrecioParticular(),
-                request.getPrecioSocio(),
-                request.getModalidadPrecio(),
                 request.getCapacidad(),
                 request.getCantidad(),
                 request.getCostoPersonaExtra()
@@ -269,12 +263,9 @@ public class ServicioService implements IServicioService {
                 servicio.getNombre(),
                 servicio.getProcedencia(),
                 servicio.getCantidad(),
-                servicio.getPrecioSocio(),
-                servicio.getPrecioParticular(),
                 servicio.getCapacidad(),
                 servicio.getCostoPersonaExtra(),
                 estado,
-                servicio.getModalidadPrecio(),
                 tarifas,
                 servicio.getCreatedAt(),
                 servicio.getUpdatedAt(),

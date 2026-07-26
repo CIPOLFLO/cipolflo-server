@@ -1,7 +1,6 @@
 package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
 import com.cipolflo.server.servicios.dto.ModificacionServicioDto;
 import com.cipolflo.server.servicios.dto.ServicioRegistroRequestDto;
@@ -28,7 +27,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -95,12 +93,9 @@ public class ServicioControllerTest {
                 "Cabaña",
                 Procedencia.CAMPING,
                 2,
-                BigDecimal.valueOf(1500),
-                BigDecimal.valueOf(2500),
                 4,
                 null,
                 EstadoServicio.HABILITADO,
-                ModalidadPrecio.POR_DIA,
                 List.of(),
                 null, null, null, null
         );
@@ -138,12 +133,9 @@ public class ServicioControllerTest {
                 "Cabaña",
                 Procedencia.CAMPING,
                 2,
-                BigDecimal.valueOf(1500),
-                BigDecimal.valueOf(2500),
                 4,
                 null,
                 EstadoServicio.DESHABILITADO,
-                ModalidadPrecio.POR_DIA,
                 List.of(),
                 null, null, null, null
         );
@@ -226,9 +218,6 @@ public class ServicioControllerTest {
                 .content("""
                         {
                             "nombre": "Cabaña",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA",
                             "capacidad": 4,
                             "cantidad": 2
                         }
@@ -262,12 +251,9 @@ public class ServicioControllerTest {
                 "Cabaña Premium",
                 Procedencia.CAMPING,
                 2,
-                BigDecimal.valueOf(2000),
-                BigDecimal.valueOf(3000),
                 4,
                 null,
                 EstadoServicio.HABILITADO,
-                ModalidadPrecio.POR_DIA,
                 List.of(),
                 null, null, null, null
         );
@@ -281,9 +267,6 @@ public class ServicioControllerTest {
                 .content("""
                         {
                             "nombre": "Cabaña Premium",
-                            "precioParticular": 3000,
-                            "precioSocio": 2000,
-                            "modalidadPrecio": "POR_DIA",
                             "capacidad": 4,
                             "cantidad": 2,
                             "tarifas": [
@@ -319,9 +302,6 @@ public class ServicioControllerTest {
                 .content("""
                         {
                             "nombre": "Cabaña",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA",
                             "capacidad": 4,
                             "cantidad": 2,
                             "tarifas": [
@@ -357,12 +337,9 @@ public class ServicioControllerTest {
                 "Cabaña Premium",
                 Procedencia.CAMPING,
                 2,
-                BigDecimal.valueOf(1500),
-                BigDecimal.valueOf(2500),
                 4,
                 null,
                 EstadoServicio.HABILITADO,
-                ModalidadPrecio.POR_DIA,
                 List.of(),
                 null, null, null, null
         );
@@ -377,9 +354,6 @@ public class ServicioControllerTest {
                         {
                             "nombre": "Cabaña Premium",
                             "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA",
                             "capacidad": 4,
                             "cantidad": 2,
                             "tarifas": [
@@ -409,10 +383,7 @@ public class ServicioControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
-                            "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA"
+                            "procedencia": "CAMPING"
                         }
                         """)
         ).andExpect(status().isBadRequest());
@@ -429,10 +400,7 @@ public class ServicioControllerTest {
                 .content("""
                         {
                             "nombre": "",
-                            "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA"
+                            "procedencia": "CAMPING"
                         }
                         """)
         ).andExpect(status().isBadRequest());
@@ -448,107 +416,7 @@ public class ServicioControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
-                            "nombre": "Cabaña Premium",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA"
-                        }
-                        """)
-        ).andExpect(status().isBadRequest());
-
-        verify(servicioService, never()).registrarServicio(any(ServicioRegistroRequestDto.class));
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestCuandoFaltaPrecioParticularAlRegistrar() throws Exception {
-        mockMvc.perform(post("/api/v1/servicios")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                            "nombre": "Cabaña Premium",
-                            "procedencia": "CAMPING",
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA"
-                        }
-                        """)
-        ).andExpect(status().isBadRequest());
-
-        verify(servicioService, never()).registrarServicio(any(ServicioRegistroRequestDto.class));
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestCuandoFaltaPrecioSocioAlRegistrar() throws Exception {
-        mockMvc.perform(post("/api/v1/servicios")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                            "nombre": "Cabaña Premium",
-                            "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "modalidadPrecio": "POR_DIA"
-                        }
-                        """)
-        ).andExpect(status().isBadRequest());
-
-        verify(servicioService, never()).registrarServicio(any(ServicioRegistroRequestDto.class));
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestCuandoFaltaModalidadPrecioAlRegistrar() throws Exception {
-        mockMvc.perform(post("/api/v1/servicios")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                            "nombre": "Cabaña Premium",
-                            "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500
-                        }
-                        """)
-        ).andExpect(status().isBadRequest());
-
-        verify(servicioService, never()).registrarServicio(any(ServicioRegistroRequestDto.class));
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestCuandoPrecioParticularEsCeroAlRegistrar() throws Exception {
-        mockMvc.perform(post("/api/v1/servicios")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                            "nombre": "Cabaña Premium",
-                            "procedencia": "CAMPING",
-                            "precioParticular": 0,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA"
-                        }
-                        """)
-        ).andExpect(status().isBadRequest());
-
-        verify(servicioService, never()).registrarServicio(any(ServicioRegistroRequestDto.class));
-    }
-
-    @Test
-    @WithMockUser
-    void deberiaRetornarBadRequestCuandoPrecioParticularEsNegativoAlRegistrar() throws Exception {
-        mockMvc.perform(post("/api/v1/servicios")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                            "nombre": "Cabaña Premium",
-                            "procedencia": "CAMPING",
-                            "precioParticular": -100,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA"
+                            "nombre": "Cabaña Premium"
                         }
                         """)
         ).andExpect(status().isBadRequest());
@@ -566,9 +434,6 @@ public class ServicioControllerTest {
                         {
                             "nombre": "Cabaña Premium",
                             "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA",
                             "capacidad": 0
                         }
                         """)
@@ -587,9 +452,6 @@ public class ServicioControllerTest {
                         {
                             "nombre": "Cabaña Premium",
                             "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA",
                             "cantidad": -1
                         }
                         """)
@@ -614,9 +476,6 @@ public class ServicioControllerTest {
                         {
                             "nombre": "Cabaña Existente",
                             "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA",
                             "tarifas": [
                               {
                                 "tipoCliente": "PARTICULAR",
@@ -675,12 +534,9 @@ public class ServicioControllerTest {
                 "Cabaña Premium",
                 Procedencia.CAMPING,
                 null,
-                BigDecimal.valueOf(1500),
-                BigDecimal.valueOf(2500),
                 null,
                 null,
                 EstadoServicio.HABILITADO,
-                ModalidadPrecio.POR_DIA,
                 List.of(),
                 null, null, null, null
         );
@@ -695,9 +551,6 @@ public class ServicioControllerTest {
                         {
                             "nombre": "Cabaña Premium",
                             "procedencia": "CAMPING",
-                            "precioParticular": 2500,
-                            "precioSocio": 1500,
-                            "modalidadPrecio": "POR_DIA",
                             "tarifas": [
                               {
                                 "tipoCliente": "PARTICULAR",
