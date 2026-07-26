@@ -3,7 +3,6 @@ package com.cipolflo.server.servicios.costo;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.servicios.domain.Servicio;
 import com.cipolflo.server.servicios.domain.TarifaServicio;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +20,6 @@ class EstrategiasTest {
         s.setProcedencia(Procedencia.CAMPING);
         s.setCapacidad(capacidad);
         s.setCostoPersonaExtra(costoPersonaExtra);
-        s.setModalidadPrecio(ModalidadPrecio.POR_DIA);
         s.setHabilitado(true);
         return s;
     }

@@ -210,9 +210,6 @@ class TarifaServicioTest {
         return Servicio.registrar(
                 "Servicio de prueba",
                 Procedencia.SEDE,
-                new BigDecimal("150"),
-                new BigDecimal("100"),
-                ModalidadPrecio.POR_UNIDAD,
                 20,
                 1,
                 BigDecimal.ZERO

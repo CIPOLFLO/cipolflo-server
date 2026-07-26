@@ -130,7 +130,7 @@ Retorna el listado paginado de servicios con filtros opcionales.
 | `estado`      | `EstadoServicio` | —                                           |
 | `page`        | integer          | >= 0, default 0                             |
 | `size`        | integer          | 1–100, default 1                            |
-| `sortField`   | string           | `nombre`, `precioParticular`, `precioSocio` |
+| `sortField`   | string           | `nombre`                                    |
 | `sortOrder`   | string           | `ASC` o `DESC`, default `ASC`               |
 
 **Respuesta 200:**
@@ -142,9 +142,6 @@ Retorna el listado paginado de servicios con filtros opcionales.
       "id": 1,
       "nombre": "Cancha de tenis",
       "procedencia": "SEDE",
-      "precioParticular": 5000.0,
-      "precioSocio": 2500.0,
-      "modalidadPrecio": "POR_HORA",
       "estado": "HABILITADO"
     }
   ],
@@ -173,12 +170,9 @@ Retorna el detalle completo de un servicio.
   "nombre": "Cancha de tenis",
   "procedencia": "SEDE",
   "cantidad": null,
-  "precioSocio": 2500.0,
-  "precioParticular": 5000.0,
   "capacidad": 4,
   "costoPersonaExtra": null,
   "estado": "HABILITADO",
-  "modalidadPrecio": "POR_HORA",
   "createdAt": "2025-01-10T09:00:00Z",
   "updatedAt": "2025-03-15T14:30:00Z",
   "createdBy": "admin@cipolflo.com",
@@ -198,9 +192,6 @@ Registra un nuevo servicio.
 {
   "nombre": "Pileta olímpica",
   "procedencia": "CAMPING",
-  "precioSocio": 1000.0,
-  "precioParticular": 2000.0,
-  "modalidadPrecio": "POR_DIA",
   "capacidad": 50,
   "cantidad": null,
   "costoPersonaExtra": null
@@ -211,9 +202,6 @@ Registra un nuevo servicio.
 | ------------------- | ----------------- | ----------- | ---------------- |
 | `nombre`            | string            | Sí          | no vacío         |
 | `procedencia`       | `Procedencia`     | Sí          | —                |
-| `precioSocio`       | number (decimal)  | Sí          | > 0              |
-| `precioParticular`  | number (decimal)  | Sí          | > 0              |
-| `modalidadPrecio`   | `ModalidadPrecio` | Sí          | —                |
 | `capacidad`         | integer           | No          | > 0 si se envía  |
 | `cantidad`          | integer           | No          | > 0 si se envía  |
 | `costoPersonaExtra` | number (decimal)  | No          | >= 0 si se envía |
@@ -235,9 +223,6 @@ Reemplaza los datos de un servicio existente.
 ```json
 {
   "nombre": "Pileta olímpica",
-  "precioParticular": 2500.0,
-  "precioSocio": 1200.0,
-  "modalidadPrecio": "POR_DIA",
   "capacidad": 60,
   "cantidad": null,
   "costoPersonaExtra": null
@@ -247,9 +232,6 @@ Reemplaza los datos de un servicio existente.
 | Campo               | Tipo              | Obligatorio | Validación       |
 | ------------------- | ----------------- | ----------- | ---------------- |
 | `nombre`            | string            | Sí          | no vacío         |
-| `precioParticular`  | number (decimal)  | Sí          | > 0              |
-| `precioSocio`       | number (decimal)  | Sí          | > 0              |
-| `modalidadPrecio`   | `ModalidadPrecio` | Sí          | —                |
 | `capacidad`         | integer           | No          | >= 0 si se envía |
 | `cantidad`          | integer           | No          | >= 0 si se envía |
 | `costoPersonaExtra` | number (decimal)  | No          | >= 0 si se envía |
@@ -378,9 +360,6 @@ Retorna las reservas activas del servicio que se solapan con la ventana `[desde,
 {
   nombre: string           // obligatorio, no vacío
   procedencia: Procedencia // obligatorio
-  precioSocio: number      // obligatorio, > 0
-  precioParticular: number // obligatorio, > 0
-  modalidadPrecio: ModalidadPrecio // obligatorio
   capacidad?: number       // opcional, > 0
   cantidad?: number        // opcional, > 0
   costoPersonaExtra?: number // opcional, >= 0; recargo por persona que exceda la capacidad
@@ -392,9 +371,6 @@ Retorna las reservas activas del servicio que se solapan con la ventana `[desde,
 ```typescript
 {
   nombre: string           // obligatorio, no vacío
-  precioParticular: number // obligatorio, > 0
-  precioSocio: number      // obligatorio, > 0
-  modalidadPrecio: ModalidadPrecio // obligatorio
   capacidad?: number       // opcional, >= 0
   cantidad?: number        // opcional, >= 0
   costoPersonaExtra?: number // opcional, >= 0; recargo por persona que exceda la capacidad
@@ -431,12 +407,9 @@ Retorna las reservas activas del servicio que se solapan con la ventana `[desde,
   nombre: string;
   procedencia: Procedencia;
   cantidad: number | null;
-  precioSocio: number;
-  precioParticular: number;
   capacidad: number | null;
   costoPersonaExtra: number | null; // recargo por persona que exceda la capacidad; null si no aplica
   estado: EstadoServicio;
-  modalidadPrecio: ModalidadPrecio;
   createdAt: string; // Instant ISO-8601 UTC
   updatedAt: string; // Instant ISO-8601 UTC
   createdBy: string;
@@ -451,9 +424,6 @@ Retorna las reservas activas del servicio que se solapan con la ventana `[desde,
   id: number;
   nombre: string;
   procedencia: Procedencia;
-  precioParticular: number;
-  precioSocio: number;
-  modalidadPrecio: ModalidadPrecio;
   estado: EstadoServicio;
 }
 ```
@@ -1318,8 +1288,7 @@ Retorna el detalle completo de una reserva.
   "servicio": {
     "id": 3,
     "nombre": "Cabaña del río",
-    "procedencia": "CAMPING",
-    "modalidadPrecio": "POR_DIA"
+    "procedencia": "CAMPING"
   },
   "createdAt": "2026-07-01T10:00:00Z",
   "updatedAt": "2026-07-05T14:30:00Z",
@@ -1414,7 +1383,7 @@ Calcula el costo estimado de una reserva en tiempo real, sin efectos secundarios
 | `cantidad`        | integer       | No          | >= 0; unidades alquiladas (para modalidad `POR_UNIDAD`)                            |
 | `tipoCliente`     | `TipoCliente` | No          | Si no se envía, se asume `PARTICULAR`                                              |
 
-> El costo se calcula según la `modalidadPrecio` del servicio:
+> El costo se calcula según la `modalidadPrecio` de la `TarifaServicio` aplicable:
 >
 > - **`POR_DIA`**: `precioBase × numeroDias`, donde `numeroDias = fechaFin − fechaInicio + 1`.
 > - **`POR_HORA`**: `precioBase × numeroHoras`, donde `numeroHoras = horaFin − horaInicio`. Requiere `horaInicio` y `horaFin`.
@@ -1422,7 +1391,7 @@ Calcula el costo estimado de una reserva en tiempo real, sin efectos secundarios
 > - **`POR_PERSONA`**: `precioBase + costoPersonaExtra × excedente`, donde `excedente = max(0, cantidadTotal − cantidadMenores − capacidad)`.
 > - **`POR_DIA_POR_PERSONA`**: igual que `POR_PERSONA` pero multiplicado por `numeroDias`.
 >
-> `precioBase` es `precioSocio` si `tipoCliente = SOCIO`, o `precioParticular` en caso contrario.
+> `precioBase` es el precio de la `TarifaServicio` aplicable al cliente (según su tipo y antigüedad) resuelta para ese servicio.
 
 **Respuesta 200:**
 
@@ -1752,7 +1721,6 @@ Finaliza una reserva `EN_CURSO` o `VENCIDA_SIN_PAGO`, opcionalmente completando 
   id: number;
   nombre: string;
   procedencia: Procedencia;
-  modalidadPrecio: ModalidadPrecio;
 }
 ```
 

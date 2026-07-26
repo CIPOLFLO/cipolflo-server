@@ -8,7 +8,6 @@ import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.enums.Procedencia;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -75,8 +74,7 @@ class ReservaMapperTest {
         return new ServicioDetalleReservaDto(
                 3L,
                 "Cabaña del río",
-                Procedencia.CAMPING,
-                ModalidadPrecio.POR_DIA
+                Procedencia.CAMPING
         );
     }
 
@@ -133,7 +131,6 @@ class ReservaMapperTest {
         assertEquals(3L, dto.getServicio().id());
         assertEquals("Cabaña del río", dto.getServicio().nombre());
         assertEquals(Procedencia.CAMPING, dto.getServicio().procedencia());
-        assertEquals(ModalidadPrecio.POR_DIA, dto.getServicio().modalidadPrecio());
     }
 
     @Test

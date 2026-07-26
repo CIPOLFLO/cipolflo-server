@@ -1,9 +1,5 @@
 package com.cipolflo.server.servicios.domain;
 
-import com.cipolflo.server.clientes.domain.enums.TipoCliente;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
-import com.cipolflo.server.shared.exception.ServicioCodigoError;
-import com.cipolflo.server.servicios.exception.ServicioValidacionException;
 import com.cipolflo.server.shared.AuditableEntity;
 import com.cipolflo.server.shared.enums.Procedencia;
 import jakarta.persistence.*;
@@ -31,16 +27,6 @@ public class Servicio extends AuditableEntity {
     @Column(nullable = false)
     private Procedencia procedencia;
 
-    @Column(nullable = false)
-    private BigDecimal precioParticular;
-
-    @Column(nullable = false)
-    private BigDecimal precioSocio;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ModalidadPrecio modalidadPrecio;
-
     private Integer capacidad;
 
     private Integer cantidad;
@@ -54,23 +40,9 @@ public class Servicio extends AuditableEntity {
         this.habilitado = !this.habilitado;
     }
 
-    public BigDecimal precioBase(TipoCliente tipoCliente) {
-        return tipoCliente == TipoCliente.SOCIO ? precioSocio : precioParticular;
-    }
-
-    public void modificar(String nombre, BigDecimal precioParticular, BigDecimal precioSocio,
-                          ModalidadPrecio modalidadPrecio, Integer capacidad, Integer cantidad,
+    public void modificar(String nombre, Integer capacidad, Integer cantidad,
                           BigDecimal costoPersonaExtra) {
-        if (precioSocio.compareTo(precioParticular) >= 0) {
-            throw new ServicioValidacionException(
-                    ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
-                    "El precio socio debe ser menor al precio particular"
-            );
-        }
         this.nombre = nombre;
-        this.precioParticular = precioParticular;
-        this.precioSocio = precioSocio;
-        this.modalidadPrecio = modalidadPrecio;
         this.capacidad = capacidad;
         this.cantidad = cantidad;
         this.costoPersonaExtra = costoPersonaExtra;
@@ -79,26 +51,13 @@ public class Servicio extends AuditableEntity {
     public static Servicio registrar(
             String nombre,
             Procedencia procedencia,
-            BigDecimal precioParticular,
-            BigDecimal precioSocio,
-            ModalidadPrecio modalidadPrecio,
             Integer capacidad,
             Integer cantidad,
             BigDecimal costoPersonaExtra) {
 
-        if (precioSocio.compareTo(precioParticular) >= 0) {
-            throw new ServicioValidacionException(
-                    ServicioCodigoError.PRECIO_SOCIO_MAYOR_O_IGUAL_PARTICULAR.name(),
-                    "El precio socio debe ser menor al precio particular"
-            );
-        }
-
         Servicio servicio = new Servicio();
         servicio.nombre = nombre;
         servicio.procedencia = procedencia;
-        servicio.precioParticular = precioParticular;
-        servicio.precioSocio = precioSocio;
-        servicio.modalidadPrecio = modalidadPrecio;
         servicio.capacidad = capacidad;
         servicio.cantidad = cantidad;
         servicio.costoPersonaExtra = costoPersonaExtra;

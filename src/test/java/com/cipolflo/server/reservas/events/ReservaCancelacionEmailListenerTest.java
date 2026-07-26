@@ -6,7 +6,6 @@ import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
 import com.cipolflo.server.reservas.scheduled.ReporteSemanalReservasProperties;
 import com.cipolflo.server.reservas.service.IReservaService;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.email.IEmailService;
 import com.cipolflo.server.shared.email.SolicitudEmail;
 import com.cipolflo.server.shared.email.TipoEventoEmail;
@@ -54,8 +53,7 @@ class ReservaCancelacionEmailListenerTest {
         ServicioDetalleReservaDto servicio = new ServicioDetalleReservaDto(
                 1L,
                 nombreServicio,
-                Procedencia.CAMPING,
-                ModalidadPrecio.POR_DIA
+                Procedencia.CAMPING
         );
 
         return new ReservaDetalleResponseDto(
