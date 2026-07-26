@@ -245,22 +245,23 @@ public class ImportacionSociosService implements IImportacionSociosService {
     }
 
     private Socio construirSocio(ImportacionSocioDto dto, String cedulaNormalizada, String mailNormalizado) {
-        Socio socio = new Socio();
-        socio.setCedula(cedulaNormalizada);
-        socio.setNombreCompleto(dto.getNombreCompleto());
-        socio.setTelefono(dto.getTelefono());
-        socio.setMail(mailNormalizado);
-        socio.setFechaNacimiento(dto.getFechaNacimiento());
-        socio.setMetodoCobro(dto.getMetodoCobro());
-        socio.setPais(dto.getPais());
-        socio.setDepartamento(dto.getDepartamento());
-        socio.setCiudad(dto.getCiudad());
-        socio.setDireccion(dto.getDireccion());
-        socio.setNotas(dto.getObservaciones());
+        Socio socio = Socio.registrar(
+                cedulaNormalizada,
+                dto.getNombreCompleto(),
+                dto.getTelefono(),
+                mailNormalizado,
+                dto.getObservaciones(),
+                dto.getFechaNacimiento(),
+                dto.getPais(),
+                dto.getDepartamento(),
+                dto.getCiudad(),
+                dto.getDireccion(),
+                dto.getMetodoCobro(),
+                dto.getCategoriaSocio(),
+                dto.getFechaIngreso()
+        );
         socio.setNumeroSocio(dto.getNumeroSocio());
         socio.setEstado(dto.getEstado());
-        socio.setCategoriaSocio(dto.getCategoriaSocio());
-        socio.setFechaIngreso(dto.getFechaIngreso());
         return socio;
     }
 
