@@ -132,7 +132,7 @@ public class ClienteMapper {
                 orEmpty(cliente instanceof Empresa e ? e.getRut() : null),
                 orEmpty(cliente.getMail()),
                 orNA(socio != null ? socio.getEstado().toString() : null),
-                orNA(socio != null ? socio.getCategoriaSocio().toString() : null),
+                orNA(socio != null ? socio.getCategoriaSocio() : null),
                 orEmpty(cliente.getTelefono()),
                 orEmpty(cliente.getNotas()),
                 orNA(socio != null ? socio.getMetodoCobro().toString() : null),

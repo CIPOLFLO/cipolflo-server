@@ -349,6 +349,16 @@ class ClienteMapperTest {
     }
 
     @Test
+    void toExportFila_categoriaSocioNula_devuelveNAEnLugarDeLanzarExcepcion() {
+        Socio socio = crearSocio();
+        socio.setCategoriaSocio(null);
+
+        List<String> fila = ClienteMapper.toExportFila(socio, LocalDate.of(2026, 1, 1));
+
+        assertEquals("N/A", fila.get(6));
+    }
+
+    @Test
     void toExportFila_estadoInactivo_devuelveLabelEnLugarDeNombreEnum() {
         Socio socio = crearSocio();
         socio.setEstado(EstadoSocio.INACTIVO);

@@ -91,13 +91,13 @@ public class ClienteService implements IClienteService {
                 .and(ClienteSpecification.conNombre(filtros.nombre()))
                 .and(ClienteSpecification.conTipoCliente(filtros.tipoCliente()))
                 .and(ClienteSpecification.conIdentificador(filtros.identificador()));
+        LocalDate fechaReferencia = LocalDate.now(ZonaHoraria.URUGUAY);
         Page<ListadoClientesResponseDto> page = clienteRepository
                 .findAll(spec, pageRequest.toPageable())
                 .map(cliente -> {
                     UltimaCuotaDto ultimaCuotaPaga = cliente instanceof Socio
                             ? pagoCuotaService.calcularUltimaCuotaPaga(cliente.getId())
                             : null;
-                    LocalDate fechaReferencia = LocalDate.now(ZonaHoraria.URUGUAY);
                     return ClienteMapper.toListadoResponseDto(cliente, ultimaCuotaPaga, fechaReferencia);
                 });
         return PaginationMapper.toPageResponse(page);
@@ -348,7 +348,7 @@ public class ClienteService implements IClienteService {
                 .map(cliente -> ClienteMapper.toExportFila(cliente, fechaReferencia))
             .toList();
 
-        int[] anchos = {8000,5000,5000,5000,10000,5000,5000,5000,5000,5000,5000,5000,5000,5000};
+        int[] anchos = {8000,5000,5000,5000,10000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000};
         byte[] contenido = exportService.generarExcel(
                 "Clientes",
                 encabezados,
