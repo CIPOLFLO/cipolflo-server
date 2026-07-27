@@ -18,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -152,5 +153,15 @@ public class ReservaController {
     ) {
         finalizacionReservaService.finalizar(id, dto);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/pagos")
+    public ResponseEntity<List<PagoAsociadoReservaDto>> getHistorialPagos(
+            @PathVariable
+            @Positive(message = "El id de la reserva debe ser un número positivo")
+            Long id
+    ) {
+        return ResponseEntity.ok(reservaService.getHistorialPagos(id));
     }
 }

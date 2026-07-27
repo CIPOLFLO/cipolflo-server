@@ -4,20 +4,11 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
+import com.cipolflo.server.finanzas.service.IConsultaPagosAsociadosReserva;
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.domain.enums.TipoReserva;
-import com.cipolflo.server.reservas.dto.CalculoCostoRequestDto;
-import com.cipolflo.server.reservas.dto.CalculoCostoResponseDto;
-import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
-import com.cipolflo.server.reservas.dto.ListadoReservasRequestDto;
-import com.cipolflo.server.reservas.dto.ListadoReservasResponseDto;
-import com.cipolflo.server.reservas.dto.ReservaCreacionRequestDto;
-import com.cipolflo.server.reservas.dto.ReservaCreacionResponseDto;
-import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
-import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
-import com.cipolflo.server.reservas.dto.ReservaModificacionRequestDto;
-import com.cipolflo.server.reservas.dto.ReservaModificacionResponseDto;
+import com.cipolflo.server.reservas.dto.*;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -27,6 +18,7 @@ import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.domain.TarifaServicio;
 import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
+import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.export.ExportProperties;
@@ -88,6 +80,8 @@ class ReservaServiceTest {
     @Mock
     private IPdfGeneratorService pdfGeneratorService;
 
+    @Mock
+    private IConsultaPagosAsociadosReserva consultaPagosAsociadosReserva;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -909,5 +903,45 @@ class ReservaServiceTest {
         assertThrows(ReservaNotFoundException.class, () -> reservaService.generarComprobante(99L));
 
         verify(pdfGeneratorService, never()).generar(any());
+    }
+
+    @Test
+    void deberiaObtenerHistorialPagosDeReserva() {
+        Reserva reserva = crearReservaComun(1L, 10L);
+
+        List<PagoAsociadoReservaDto> pagos = List.of(
+                new PagoAsociadoReservaDto(
+                        1L,
+                        LocalDate.now(),
+                        BigDecimal.valueOf(500),
+                        FormaPago.EFECTIVO
+                )
+        );
+
+        when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
+        when(consultaPagosAsociadosReserva.getPagosAsociados(1L))
+                .thenReturn(pagos);
+
+        List<PagoAsociadoReservaDto> resultado =
+                reservaService.getHistorialPagos(1L);
+
+        assertEquals(1, resultado.size());
+        assertEquals(1L, resultado.getFirst().id());
+
+        verify(consultaPagosAsociadosReserva).getPagosAsociados(1L);
+    }
+
+    @Test
+    void deberiaLanzarNotFoundAlConsultarHistorialPagosDeReservaInexistente() {
+        when(reservaRepository.findById(99L))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ReservaNotFoundException.class,
+                () -> reservaService.getHistorialPagos(99L)
+        );
+
+        verify(consultaPagosAsociadosReserva, never())
+                .getPagosAsociados(anyLong());
     }
 }
