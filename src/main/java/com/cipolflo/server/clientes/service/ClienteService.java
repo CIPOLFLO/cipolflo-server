@@ -210,22 +210,23 @@ public class ClienteService implements IClienteService {
         registroSocioValidator.validar(dto, cedulaNormalizada, mailNormalizado);
         // TODO: definir estrategia de asignación de número de socio (secuencia DB, lock pesimista, etc.)
         Integer numeroSocio = clienteRepository.findMaxNumeroSocio().orElse(0) + 1;
-        Socio socio = new Socio();
-        socio.setCedula(cedulaNormalizada);
-        socio.setNombreCompleto(dto.getNombreCompleto());
-        socio.setTelefono(dto.getTelefono());
-        socio.setMail(mailNormalizado);
-        socio.setFechaNacimiento(dto.getFechaNacimiento());
-        socio.setMetodoCobro(dto.getMetodoCobro());
-        socio.setPais(dto.getPais());
-        socio.setDepartamento(dto.getDepartamento());
-        socio.setCiudad(dto.getCiudad());
-        socio.setDireccion(dto.getDireccion());
-        socio.setNotas(dto.getObservaciones());
+        Socio socio = Socio.registrar(
+                cedulaNormalizada,
+                dto.getNombreCompleto(),
+                dto.getTelefono(),
+                mailNormalizado,
+                dto.getObservaciones(),
+                dto.getFechaNacimiento(),
+                dto.getPais(),
+                dto.getDepartamento(),
+                dto.getCiudad(),
+                dto.getDireccion(),
+                dto.getMetodoCobro(),
+                dto.getCategoriaSocio(),
+                dto.getFechaIngreso()
+        );
         socio.setNumeroSocio(numeroSocio);
         socio.setEstado(EstadoSocio.ACTIVO);
-        socio.setCategoriaSocio(dto.getCategoriaSocio());
-        socio.setFechaIngreso(dto.getFechaIngreso());
         try {
             return ClienteMapper.toDetalleResponseDto(clienteRepository.saveAndFlush(socio), null, LocalDate.now(ZonaHoraria.URUGUAY));
         } catch (DataIntegrityViolationException e) {

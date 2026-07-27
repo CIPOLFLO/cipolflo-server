@@ -62,6 +62,27 @@ public class Socio extends Cliente implements ClienteConUbicacion {
         this.estado = EstadoSocio.DE_BAJA;
     }
 
+    public static Socio registrar(String cedula, String nombreCompleto, String telefono, String mail, String notas,
+                                  LocalDate fechaNacimiento, String pais, String departamento,
+                                  String ciudad, String direccion, MetodoCobro metodoCobro,
+                                  CategoriaSocio categoriaSocio, LocalDate fechaIngreso) {
+        Socio socio = new Socio();
+        socio.setCedula(cedula);
+        socio.setNombreCompleto(nombreCompleto);
+        socio.setTelefono(telefono);
+        socio.setMail(mail);
+        socio.setNotas(notas);
+        socio.fechaNacimiento = fechaNacimiento;
+        socio.pais = pais;
+        socio.departamento = departamento;
+        socio.ciudad = ciudad;
+        socio.direccion = direccion;
+        socio.metodoCobro = metodoCobro;
+        socio.categoriaSocio = categoriaSocio;
+        socio.fechaIngreso = fechaIngreso;
+        return socio;
+    }
+
     public void modificar(String cedula, String nombreCompleto, String telefono, String mail, String notas,
                           LocalDate fechaNacimiento, String pais, String departamento,
                           String ciudad, String direccion, MetodoCobro metodoCobro,  CategoriaSocio categoriaSocio,

@@ -9,6 +9,7 @@ import com.cipolflo.server.clientes.exception.ClienteNotFoundException;
 import com.cipolflo.server.clientes.exception.ClienteValidacionException;
 import com.cipolflo.server.clientes.exception.SocioNotFoundException;
 import com.cipolflo.server.clientes.service.IClienteService;
+import com.cipolflo.server.clientes.service.IImportacionSociosService;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.shared.export.ArchivoExportado;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
@@ -48,6 +49,9 @@ class ClienteControllerTest {
 
     @MockitoBean
     private IRegistroParticularService registroParticularService;
+
+    @MockitoBean
+    private IImportacionSociosService importacionSociosService;
 
     @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
@@ -1470,5 +1474,97 @@ void deberiaRetornarBadRequestCuandoFormatoDeCedulaEsInvalido() throws Exception
     void deberiaRetornarUnauthorizedAlBuscarPorRutSinAutenticacion() throws Exception {
         mockMvc.perform(get("/api/v1/clientes/rut/211003420017"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // --- importarSocios ---
+
+    @Test
+    @WithMockUser
+    void deberiaImportarSociosCorrectamente() throws Exception {
+        org.springframework.mock.web.MockMultipartFile archivo =
+                new org.springframework.mock.web.MockMultipartFile(
+                        "file", "socios.xlsx",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "contenido".getBytes()
+                );
+
+        ImportacionSociosResponseDto response =
+                new ImportacionSociosResponseDto(2, 1, 1, List.of(
+                        new FilaErrorImportacionDto(2, ClienteCodigoError.CEDULA_DUPLICADA.name(), "Ya existe un socio con esa cédula")
+                ));
+
+        when(importacionSociosService.importarSocios(any())).thenReturn(response);
+
+        mockMvc.perform(multipart("/api/v1/clientes/socios/importar")
+                        .file(archivo)
+                        .with(csrf()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.totalFilas").value(2))
+                .andExpect(jsonPath("$.filasImportadas").value(1))
+                .andExpect(jsonPath("$.filasConError").value(1))
+                .andExpect(jsonPath("$.detalleErrores[0].numeroFila").value(2));
+
+        verify(importacionSociosService).importarSocios(any());
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlImportarSociosSinAutenticacion() throws Exception {
+        org.springframework.mock.web.MockMultipartFile archivo =
+                new org.springframework.mock.web.MockMultipartFile(
+                        "file", "socios.xlsx",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "contenido".getBytes()
+                );
+
+        mockMvc.perform(multipart("/api/v1/clientes/socios/importar")
+                        .file(archivo)
+                        .with(csrf()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaDescargarLaPlantillaDeImportacionDeSocios() throws Exception {
+        com.cipolflo.server.shared.export.ArchivoExportado archivo =
+                new com.cipolflo.server.shared.export.ArchivoExportado(
+                        "plantilla_importacion_socios_2026-01-01_1200.xlsx",
+                        "excel".getBytes()
+                );
+
+        when(importacionSociosService.generarPlantilla()).thenReturn(archivo);
+
+        mockMvc.perform(get("/api/v1/clientes/socios/importar/plantilla"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"plantilla_importacion_socios_2026-01-01_1200.xlsx\""
+                ));
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlDescargarPlantillaSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/clientes/socios/importar/plantilla"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaDevolverBadRequestCuandoElArchivoImportadoEsInvalido() throws Exception {
+        org.springframework.mock.web.MockMultipartFile archivo =
+                new org.springframework.mock.web.MockMultipartFile(
+                        "file", "socios.xlsx",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "contenido".getBytes()
+                );
+
+        when(importacionSociosService.importarSocios(any())).thenThrow(new ClienteValidacionException(
+                ClienteCodigoError.ARCHIVO_IMPORTACION_INVALIDO.name(),
+                "El archivo no es un Excel válido"
+        ));
+
+        mockMvc.perform(multipart("/api/v1/clientes/socios/importar")
+                        .file(archivo)
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
     }
 }
