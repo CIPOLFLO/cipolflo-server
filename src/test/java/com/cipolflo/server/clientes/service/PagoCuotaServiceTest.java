@@ -237,8 +237,8 @@ class PagoCuotaServiceTest {
                 .registrarPagoCuota(any(FinanzaCrearRequestDto.class));
     }
     @Test
-    void deberiaRegistrarFinanzaConFormaPagoEfectivoCuandoMetodoEsCobradora() {
-        RegistroPagoCuotaRequestDto request = crearRequest(MetodoCobro.COBRADORA);
+    void deberiaRegistrarFinanzaConFormaPagoEfectivoCuandoMetodoEsEnSede() {
+        RegistroPagoCuotaRequestDto request = crearRequest(MetodoCobro.EN_SEDE);
         mockRegistroPago();
 
         pagoCuotaService.registrarPago(1L, request);

@@ -5,10 +5,10 @@ import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
-import com.cipolflo.server.reservas.scheduled.ReporteSemanalReservasProperties;
 import com.cipolflo.server.reservas.service.ReporteSemanalReservasService.ReservasSemana;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.shared.ZonaHoraria;
+import com.cipolflo.server.shared.email.IConsultaDestinatariosNotificacionEmail;
 import com.cipolflo.server.shared.email.IEmailService;
 import com.cipolflo.server.shared.email.SolicitudEmail;
 import com.cipolflo.server.shared.email.TipoEventoEmail;
@@ -56,12 +56,13 @@ class ReporteSemanalReservasServiceTest {
     private IConsultaClienteDetalle consultaClienteDetalle;
     @Mock
     private IEmailService emailService;
+    @Mock
+    private IConsultaDestinatariosNotificacionEmail consultaDestinatarios;
 
     private ReporteSemanalReservasService servicioCon(String destinatario) {
-        ReporteSemanalReservasProperties props =
-                new ReporteSemanalReservasProperties(destinatario, "0 0 8 * * MON", "America/Montevideo");
+        lenient().when(consultaDestinatarios.destinatariosActivos()).thenReturn(destinatario);
         return new ReporteSemanalReservasService(
-                reservaRepository, consultaServicioSimple, consultaClienteDetalle, emailService, props);
+                reservaRepository, consultaServicioSimple, consultaClienteDetalle, emailService, consultaDestinatarios);
     }
 
     private Reserva reserva(EstadoReserva estado, Long clienteId, LocalDate entrada, LocalDate salida) {

@@ -8,7 +8,6 @@ class MetodoCobroTest {
 
     @Test
     void deberiaRetornarLabelLegibleParaCadaMetodo() {
-        assertEquals("Cobradora",           MetodoCobro.COBRADORA.getLabel());
         assertEquals("Descuento salarial",  MetodoCobro.DESCUENTO_SALARIAL.getLabel());
         assertEquals("Transferencia",       MetodoCobro.TRANSFERENCIA.getLabel());
         assertEquals("En sede",             MetodoCobro.EN_SEDE.getLabel());

@@ -72,6 +72,21 @@ class EmailServiceTest {
     }
 
     @Test
+    void envioConVariosDestinatariosSeparadosPorComa_seEnviaATodos() throws Exception {
+        MimeMessage mensaje = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mensaje);
+        EmailService emailService = emailServiceCon(propsConNombre());
+        SolicitudEmail solicitud = SolicitudEmail.texto(
+                "uno@mail.com, dos@mail.com", "Asunto", "Cuerpo", TipoEventoEmail.REPORTE_SEMANAL_RESERVAS, null);
+
+        emailService.enviar(solicitud);
+
+        assertEquals(2, mensaje.getAllRecipients().length);
+        verify(mailSender).send(any(MimeMessage.class));
+        verify(logRegistrar).registrar(eq(solicitud), eq(EstadoEnvioEmail.ENVIADO), isNull());
+    }
+
+    @Test
     void remitenteSinNombre_seEnviaIgual() {
         when(mailSender.createMimeMessage()).thenReturn(new MimeMessage((Session) null));
         EmailService emailService = emailServiceCon(new MailProperties("from@cipolflo.com", null));

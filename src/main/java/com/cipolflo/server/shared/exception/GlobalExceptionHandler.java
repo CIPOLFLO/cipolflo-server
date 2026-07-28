@@ -20,6 +20,9 @@ import com.cipolflo.server.servicios.exception.*;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramCodigoError;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramSecretInvalidoException;
 import com.cipolflo.server.integraciones.telegram.exception.TelegramValidacionException;
+import com.cipolflo.server.shared.email.exception.DestinatarioNotificacionEmailCodigoError;
+import com.cipolflo.server.shared.email.exception.DestinatarioNotificacionEmailNoEncontradoException;
+import com.cipolflo.server.shared.email.exception.DestinatarioNotificacionEmailValidacionException;
 import com.cipolflo.server.shared.dto.ErrorResponse;
 import com.cipolflo.server.shared.export.ExportacionException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -333,6 +336,25 @@ public ResponseEntity<ErrorResponse> handlePagoCuotaNotFoundException(PagoCuotaN
 
     @ExceptionHandler(TelegramValidacionException.class)
     public ResponseEntity<ErrorResponse> handleTelegramValidacionException(TelegramValidacionException ex) {
+        log.warn("Validación de negocio fallida [{}]: {}", ex.getCodigo(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(DestinatarioNotificacionEmailNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> handleDestinatarioNotificacionEmailNoEncontradoException(
+            DestinatarioNotificacionEmailNoEncontradoException ex) {
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        DestinatarioNotificacionEmailCodigoError.DESTINATARIO_NO_ENCONTRADO.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(DestinatarioNotificacionEmailValidacionException.class)
+    public ResponseEntity<ErrorResponse> handleDestinatarioNotificacionEmailValidacionException(
+            DestinatarioNotificacionEmailValidacionException ex) {
         log.warn("Validación de negocio fallida [{}]: {}", ex.getCodigo(), ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)

@@ -11,7 +11,7 @@ public final class MetodoCobroFormaPagoHelper {
 
     public static FormaPago toFormaPago(MetodoCobro metodoCobro) {
         return switch (metodoCobro) {
-            case EFECTIVO, COBRADORA, EN_SEDE -> FormaPago.EFECTIVO;
+            case EFECTIVO, EN_SEDE -> FormaPago.EFECTIVO;
             case TRANSFERENCIA -> FormaPago.TRANSFERENCIA;
             case DEBITO -> FormaPago.DEBITO;
             case DESCUENTO_SALARIAL -> FormaPago.TRANSFERENCIA;

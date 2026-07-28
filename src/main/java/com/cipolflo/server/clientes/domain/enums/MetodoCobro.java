@@ -1,7 +1,6 @@
 package com.cipolflo.server.clientes.domain.enums;
 
 public enum MetodoCobro {
-    COBRADORA("Cobradora"),
     DESCUENTO_SALARIAL("Descuento salarial"),
     TRANSFERENCIA("Transferencia"),
     EN_SEDE("En sede"),
