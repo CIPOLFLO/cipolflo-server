@@ -4,6 +4,7 @@ import com.cipolflo.server.clientes.dto.ClienteResponseDto;
 import com.cipolflo.server.clientes.dto.RegistroParticularRequestDto;
 import com.cipolflo.server.clientes.service.IConsultaClienteDetalle;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
+import com.cipolflo.server.finanzas.service.IConsultaPagosAsociadosReserva;
 import com.cipolflo.server.reservas.mapper.ReservaMapper;
 import com.cipolflo.server.reservas.pdf.ComprobanteReservaContenidoPdf;
 import com.cipolflo.server.reservas.domain.Reserva;
@@ -64,6 +65,7 @@ public class ReservaService implements IReservaService {
     private final IExportService exportService;
     private final IPdfGeneratorService pdfGeneratorService;
     private final ApplicationEventPublisher eventPublisher;
+    private final IConsultaPagosAsociadosReserva consultaPagosAsociadosReserva;
 
     public ReservaService(
             ReservaRepository reservaRepository,
@@ -76,7 +78,8 @@ public class ReservaService implements IReservaService {
             ExportProperties exportProperties,
             IExportService exportService,
             IPdfGeneratorService pdfGeneratorService,
-            ApplicationEventPublisher eventPublisher
+            ApplicationEventPublisher eventPublisher,
+            IConsultaPagosAsociadosReserva consultaPagosAsociadosReserva
     ) {
         this.reservaRepository = reservaRepository;
         this.registroParticularService = registroParticularService;
@@ -89,6 +92,7 @@ public class ReservaService implements IReservaService {
         this.exportService = exportService;
         this.pdfGeneratorService = pdfGeneratorService;
         this.eventPublisher = eventPublisher;
+        this.consultaPagosAsociadosReserva = consultaPagosAsociadosReserva;
     }
 
     @Override
@@ -403,5 +407,13 @@ public class ReservaService implements IReservaService {
 
         String nombre = NombreArchivoPdf.generar("comprobante-reserva-" + id);
         return new ArchivoExportado(nombre, contenido);
+    }
+
+    @Override
+    public List<PagoAsociadoReservaDto> getHistorialPagos(Long reservaId) {
+        reservaRepository.findById(reservaId)
+                .orElseThrow(() -> new ReservaNotFoundException(reservaId));
+
+        return consultaPagosAsociadosReserva.getPagosAsociados(reservaId);
     }
 }

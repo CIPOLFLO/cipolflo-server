@@ -36,4 +36,7 @@ public interface IReservaService {
     ArchivoExportado exportarReservas(ListadoReservasRequestDto filtros);
 
     ArchivoExportado generarComprobante(Long id);
+
+    List<PagoAsociadoReservaDto> getHistorialPagos(Long reservaId);
+
 }
