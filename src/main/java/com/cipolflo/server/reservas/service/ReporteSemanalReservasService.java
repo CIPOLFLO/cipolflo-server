@@ -5,9 +5,9 @@ import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
-import com.cipolflo.server.reservas.scheduled.ReporteSemanalReservasProperties;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.shared.ZonaHoraria;
+import com.cipolflo.server.shared.email.IConsultaDestinatariosNotificacionEmail;
 import com.cipolflo.server.shared.email.IEmailService;
 import com.cipolflo.server.shared.email.SolicitudEmail;
 import com.cipolflo.server.shared.email.TipoEventoEmail;
@@ -64,28 +64,28 @@ public class ReporteSemanalReservasService implements IReporteSemanalReservasSer
     private final IConsultaServicioSimple consultaServicioSimple;
     private final IConsultaClienteDetalle consultaClienteDetalle;
     private final IEmailService emailService;
-    private final ReporteSemanalReservasProperties properties;
+    private final IConsultaDestinatariosNotificacionEmail consultaDestinatarios;
 
     public ReporteSemanalReservasService(
             ReservaRepository reservaRepository,
             IConsultaServicioSimple consultaServicioSimple,
             IConsultaClienteDetalle consultaClienteDetalle,
             IEmailService emailService,
-            ReporteSemanalReservasProperties properties
+            IConsultaDestinatariosNotificacionEmail consultaDestinatarios
     ) {
         this.reservaRepository = reservaRepository;
         this.consultaServicioSimple = consultaServicioSimple;
         this.consultaClienteDetalle = consultaClienteDetalle;
         this.emailService = emailService;
-        this.properties = properties;
+        this.consultaDestinatarios = consultaDestinatarios;
     }
 
     @Override
     public String enviarReporteSemanal() {
-        String destinatario = properties.destinatario();
+        String destinatario = consultaDestinatarios.destinatariosActivos();
         if (destinatario == null || destinatario.isBlank()) {
-            log.warn("Reporte semanal de reservas: no hay destinatario configurado "
-                    + "(cipolflo.reportes.reservas-semanal.destinatario); se omite el envío.");
+            log.warn("Reporte semanal de reservas: no hay destinatarios activos configurados "
+                    + "en Ajustes > Destinatarios de notificación por email; se omite el envío.");
             return "Omitido: no hay destinatario configurado.";
         }
 

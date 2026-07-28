@@ -2176,6 +2176,177 @@ Elimina definitivamente un cliente autorizado de Telegram.
 
 ---
 
+### `GET /api/v1/ajustes/destinatarios-notificacion-email`
+
+Retorna el listado paginado de destinatarios de notificaciones administrativas por email
+(reporte semanal de reservas, avisos de cancelación), con filtros opcionales.
+
+**Query params** (todos opcionales):
+
+| Param       | Tipo    | Validación                              |
+| ----------- | ------- | ------------------------------------------ |
+| `alias`     | string  | contiene, case-insensitive, máx 100 chars  |
+| `activo`    | boolean | —                                          |
+| `page`      | integer | >= 0, default 0                            |
+| `size`      | integer | 1–100, default 1                           |
+| `sortField` | string  | —                                          |
+| `sortOrder` | string  | `ASC` o `DESC`, default `ASC`              |
+
+**Respuesta 200:**
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "email": "administracion@cipolflo.com",
+      "alias": "Administración",
+      "activo": true,
+      "createdAt": "2026-01-10T09:00:00Z",
+      "updatedAt": "2026-01-10T09:00:00Z"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+---
+
+### `GET /api/v1/ajustes/destinatarios-notificacion-email/{id}`
+
+Retorna el detalle de un destinatario de notificaciones por email.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 200:** mismo shape que un ítem del listado (ver arriba).
+
+**Errores:**
+
+| HTTP Status | Código                    | Cuándo ocurre                        |
+| ----------- | -------------------------- | ---------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA`      | `id` no es un número positivo            |
+| 404         | `DESTINATARIO_NO_ENCONTRADO` | No existe un destinatario con ese `id` |
+| 401         | —                          | Token ausente, inválido o expirado       |
+
+---
+
+### `POST /api/v1/ajustes/destinatarios-notificacion-email`
+
+Da de alta un nuevo destinatario de notificaciones por email.
+
+**Body** (`application/json`):
+
+```json
+{
+  "email": "administracion@cipolflo.com",
+  "alias": "Administración"
+}
+```
+
+| Campo   | Tipo   | Obligatorio | Validación                              |
+| ------- | ------ | ----------- | ---------------------------------------- |
+| `email` | string | Sí          | formato de email válido, único, máx 255 caracteres |
+| `alias` | string | Sí          | no vacío, máx 100 caracteres             |
+
+> El destinatario se crea con `activo: true`.
+
+**Respuesta 201:** mismo shape que `GET /api/v1/ajustes/destinatarios-notificacion-email/{id}`
+
+**Errores:**
+
+| HTTP Status | Código               | Cuándo ocurre                          |
+| ----------- | --------------------- | ------------------------------------------ |
+| 400         | `SOLICITUD_INVALIDA` | Campo obligatorio faltante o inválido      |
+| 400         | `EMAIL_DUPLICADO`    | Ya existe un destinatario con ese `email`  |
+| 401         | —                     | Token ausente, inválido o expirado         |
+
+---
+
+### `PUT /api/v1/ajustes/destinatarios-notificacion-email/{id}`
+
+Modifica el `alias` de un destinatario. El `email` **no es editable**: para cambiarlo hay
+que eliminar el destinatario y crear uno nuevo.
+
+**Path param:** `id` — integer positivo
+
+**Body** (`application/json`):
+
+```json
+{
+  "alias": "Tesorería"
+}
+```
+
+| Campo   | Tipo   | Obligatorio | Validación                   |
+| ------- | ------ | ----------- | ----------------------------- |
+| `alias` | string | Sí          | no vacío, máx 100 caracteres  |
+
+**Respuesta 200:** mismo shape que `GET /api/v1/ajustes/destinatarios-notificacion-email/{id}`
+
+**Errores:**
+
+| HTTP Status | Código                    | Cuándo ocurre                        |
+| ----------- | -------------------------- | ---------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA`      | Campo obligatorio faltante o inválido, o `id` no positivo |
+| 404         | `DESTINATARIO_NO_ENCONTRADO` | No existe un destinatario con ese `id` |
+| 401         | —                          | Token ausente, inválido o expirado       |
+
+---
+
+### `PATCH /api/v1/ajustes/destinatarios-notificacion-email/{id}/habilitacion`
+
+Activa o desactiva un destinatario sin borrar el registro. Un destinatario desactivado
+deja de recibir notificaciones (no se incluye en `destinatariosActivos()`).
+
+**Path param:** `id` — integer positivo
+
+**Body** (`application/json`):
+
+```json
+{
+  "activo": false
+}
+```
+
+| Campo    | Tipo    | Obligatorio | Descripción                              |
+| -------- | ------- | ----------- | ---------------------------------------- |
+| `activo` | boolean | Sí          | `true` = habilitar, `false` = deshabilitar |
+
+**Respuesta 200:** mismo shape que `GET /api/v1/ajustes/destinatarios-notificacion-email/{id}`
+
+**Errores:**
+
+| HTTP Status | Código                    | Cuándo ocurre                        |
+| ----------- | -------------------------- | ---------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA`      | `activo` faltante, o `id` no positivo    |
+| 404         | `DESTINATARIO_NO_ENCONTRADO` | No existe un destinatario con ese `id` |
+| 401         | —                          | Token ausente, inválido o expirado       |
+
+---
+
+### `DELETE /api/v1/ajustes/destinatarios-notificacion-email/{id}`
+
+Elimina definitivamente un destinatario de notificaciones por email.
+
+**Path param:** `id` — integer positivo
+
+**Respuesta 204:** sin body.
+
+**Errores:**
+
+| HTTP Status | Código                    | Cuándo ocurre                        |
+| ----------- | -------------------------- | ---------------------------------------- |
+| 400         | `SOLICITUD_INVALIDA`      | `id` no positivo                         |
+| 404         | `DESTINATARIO_NO_ENCONTRADO` | No existe un destinatario con ese `id` |
+| 401         | —                          | Token ausente, inválido o expirado       |
+
+---
+
 ## Ajustes — DTOs
 
 ### Request DTOs
@@ -2234,6 +2405,42 @@ Elimina definitivamente un cliente autorizado de Telegram.
 }
 ```
 
+#### `RegistroDestinatarioNotificacionEmailRequestDto` — body en `POST /api/v1/ajustes/destinatarios-notificacion-email`
+
+```typescript
+{
+  email: string  // obligatorio, formato de email válido, único, máx 255 chars
+  alias: string  // obligatorio, no vacío, máx 100 chars
+}
+```
+
+#### `ModificacionDestinatarioNotificacionEmailRequestDto` — body en `PUT /api/v1/ajustes/destinatarios-notificacion-email/{id}`
+
+```typescript
+{
+  alias: string  // obligatorio, no vacío, máx 100 chars
+}
+```
+
+> `email` no forma parte de este DTO: no es modificable.
+
+#### `HabilitacionDestinatarioNotificacionEmailRequestDto` — body en `PATCH /api/v1/ajustes/destinatarios-notificacion-email/{id}/habilitacion`
+
+```typescript
+{
+  activo: boolean // obligatorio
+}
+```
+
+#### `ListadoDestinatariosNotificacionEmailRequestDto` — query params en `GET /api/v1/ajustes/destinatarios-notificacion-email`
+
+```typescript
+{
+  alias?: string  // opcional, máx 100 chars, contiene case-insensitive
+  activo?: boolean // opcional, null = todos
+}
+```
+
 ### Response DTOs
 
 #### `CostoCuotaResponseDto`
@@ -2265,6 +2472,19 @@ Elimina definitivamente un cliente autorizado de Telegram.
   alias: string;
   activo: boolean;
   recibeNotificaciones: boolean;
+  createdAt: string; // Instant ISO-8601 UTC
+  updatedAt: string; // Instant ISO-8601 UTC
+}
+```
+
+#### `DestinatarioNotificacionEmailResponseDto` / `ListadoDestinatarioNotificacionEmailResponseDto`
+
+```typescript
+{
+  id: number;
+  email: string;
+  alias: string;
+  activo: boolean;
   createdAt: string; // Instant ISO-8601 UTC
   updatedAt: string; // Instant ISO-8601 UTC
 }
