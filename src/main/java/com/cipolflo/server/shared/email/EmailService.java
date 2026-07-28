@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 @Service
 public class EmailService implements IEmailService {
@@ -49,7 +50,13 @@ public class EmailService implements IEmailService {
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, multipart, StandardCharsets.UTF_8.name());
             aplicarRemitente(helper);
-            helper.setTo(solicitud.destinatario());
+            // destinatario puede traer varias direcciones separadas por coma (ver
+            // IConsultaDestinatariosNotificacionEmail); setTo(String) exige una sola
+            // direccion y tira AddressException si detecta mas de una.
+            helper.setTo(Arrays.stream(solicitud.destinatario().split(","))
+                    .map(String::trim)
+                    .filter(direccion -> !direccion.isEmpty())
+                    .toArray(String[]::new));
             helper.setSubject(solicitud.asunto());
             helper.setText(solicitud.cuerpo(), solicitud.html());
             if (multipart) {
