@@ -852,5 +852,63 @@ class ReservaControllerTest {
                 .finalizar(eq(1L), any());
     }
 
+    @Test
+    @WithMockUser
+    void deberiaRetornarHistorialPagosDeReserva() throws Exception {
+        List<PagoAsociadoReservaDto> pagos = List.of(
+                new PagoAsociadoReservaDto(
+                        1L,
+                        LocalDate.of(2026, 7, 10),
+                        BigDecimal.valueOf(500),
+                        FormaPago.EFECTIVO
+                ),
+                new PagoAsociadoReservaDto(
+                        2L,
+                        LocalDate.of(2026, 7, 12),
+                        BigDecimal.valueOf(1000),
+                        FormaPago.TRANSFERENCIA
+                )
+        );
+
+        when(reservaService.getHistorialPagos(1L)).thenReturn(pagos);
+
+        mockMvc.perform(get("/api/v1/reservas/1/pagos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].importe").value(500))
+                .andExpect(jsonPath("$[1].id").value(2));
+
+        verify(reservaService).getHistorialPagos(1L);
+    }
+
+    @Test
+    void deberiaRetornarUnauthorizedAlConsultarHistorialPagosSinAutenticacion() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/1/pagos"))
+                .andExpect(status().isUnauthorized());
+
+        verify(reservaService, never()).getHistorialPagos(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarBadRequestAlConsultarHistorialPagosConIdInvalido() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/0/pagos"))
+                .andExpect(status().isBadRequest());
+
+        verify(reservaService, never()).getHistorialPagos(anyLong());
+    }
+
+    @Test
+    @WithMockUser
+    void deberiaRetornarNotFoundAlConsultarHistorialPagosDeReservaInexistente() throws Exception {
+        when(reservaService.getHistorialPagos(99L))
+                .thenThrow(new ReservaNotFoundException(99L));
+
+        mockMvc.perform(get("/api/v1/reservas/99/pagos"))
+                .andExpect(status().isNotFound());
+
+        verify(reservaService).getHistorialPagos(99L);
+    }
+
 
 }
