@@ -4,6 +4,7 @@ package com.cipolflo.server.reservas.service;
 
 import com.cipolflo.server.reservas.domain.Reserva;
 import com.cipolflo.server.reservas.domain.enums.EstadoReserva;
+import com.cipolflo.server.reservas.events.MotivoCancelacionReserva;
 import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.shared.ZonaHoraria;
 import org.springframework.stereotype.Service;
@@ -17,9 +18,11 @@ import java.util.List;
 public class CancelacionAutomaticaReservasService implements ICancelacionAutomaticaReservasService {
 
     private final ReservaRepository reservaRepository;
+    private final IReservaService reservaService;
 
-    public CancelacionAutomaticaReservasService(ReservaRepository reservaRepository) {
+    public CancelacionAutomaticaReservasService(ReservaRepository reservaRepository, IReservaService reservaService) {
         this.reservaRepository = reservaRepository;
+        this.reservaService = reservaService;
     }
 
     @Override
@@ -31,8 +34,7 @@ public class CancelacionAutomaticaReservasService implements ICancelacionAutomat
         );
 
         if (!vencidas.isEmpty()) {
-            vencidas.forEach(Reserva::cancelar);
-            reservaRepository.saveAll(vencidas);
+            reservaService.cancelarTodas(vencidas, MotivoCancelacionReserva.VENCIMIENTO_PLAZO_CONFIRMACION);
         }
 
         return vencidas.size() + " reservas canceladas automáticamente";

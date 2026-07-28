@@ -6,7 +6,6 @@ import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
 import com.cipolflo.server.reservas.scheduled.ReporteSemanalReservasProperties;
 import com.cipolflo.server.reservas.service.IReservaService;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.email.IEmailService;
 import com.cipolflo.server.shared.email.SolicitudEmail;
 import com.cipolflo.server.shared.email.TipoEventoEmail;
@@ -54,8 +53,7 @@ class ReservaCancelacionEmailListenerTest {
         ServicioDetalleReservaDto servicio = new ServicioDetalleReservaDto(
                 1L,
                 nombreServicio,
-                Procedencia.CAMPING,
-                ModalidadPrecio.POR_DIA
+                Procedencia.CAMPING
         );
 
         return new ReservaDetalleResponseDto(
@@ -164,6 +162,35 @@ class ReservaCancelacionEmailListenerTest {
         SolicitudEmail mailAdmin = captor.getAllValues().get(2);
         assertTrue(mailAdmin.cuerpo().contains("Se dio de baja al socio Juan"));
         assertTrue(mailAdmin.cuerpo().contains("Cabaña"));
+        assertTrue(mailAdmin.cuerpo().contains("Cancha"));
+    }
+
+    @Test
+    void porVencimientoDePlazoDeConfirmacion_socioRecibeMotivoYAdministracionUnMailConsolidado() {
+        ReservaCancelacionEmailListener listener = listenerCon("admin@cipolflo.com");
+        LocalDate fecha = LocalDate.of(2026, 6, 1);
+        ReservaDetalleResponseDto detalle1 = detalle(1L, cliente("Juan", "juan@mail.com"), "Cabaña",
+                fecha, fecha.plusDays(1), null);
+        ReservaDetalleResponseDto detalle2 = detalle(2L, cliente("Ana", "ana@mail.com"), "Cancha",
+                fecha.plusDays(5), fecha.plusDays(5), null);
+        when(reservaService.getDetalle(1L)).thenReturn(detalle1);
+        when(reservaService.getDetalle(2L)).thenReturn(detalle2);
+
+        listener.onReservaCancelada(new ReservaCanceladaEvent(
+                List.of(1L, 2L), MotivoCancelacionReserva.VENCIMIENTO_PLAZO_CONFIRMACION));
+
+        ArgumentCaptor<SolicitudEmail> captor = ArgumentCaptor.forClass(SolicitudEmail.class);
+        verify(emailService, times(3)).enviar(captor.capture());
+
+        SolicitudEmail mailSocio1 = captor.getAllValues().get(0);
+        assertTrue(mailSocio1.cuerpo().contains("no fue confirmada dentro del plazo establecido"));
+
+        SolicitudEmail mailAdmin = captor.getAllValues().get(2);
+        assertEquals("admin@cipolflo.com", mailAdmin.destinatario());
+        assertTrue(mailAdmin.cuerpo().contains("no haber sido confirmadas"));
+        assertTrue(mailAdmin.cuerpo().contains("Juan"));
+        assertTrue(mailAdmin.cuerpo().contains("Cabaña"));
+        assertTrue(mailAdmin.cuerpo().contains("Ana"));
         assertTrue(mailAdmin.cuerpo().contains("Cancha"));
     }
 

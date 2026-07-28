@@ -16,7 +16,6 @@ import com.cipolflo.server.reservas.repository.ReservaRepository;
 import com.cipolflo.server.reservas.validators.ReservaCreacionValidator;
 import com.cipolflo.server.reservas.validators.ReservaModificacionValidator;
 import com.cipolflo.server.servicios.domain.TarifaServicio;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.service.IConsultaServicioSimple;
 import com.cipolflo.server.shared.enums.FormaPago;
 import com.cipolflo.server.shared.enums.Procedencia;
@@ -336,7 +335,7 @@ class ReservaServiceTest {
                 clienteId, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
-                10L, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
+                10L, "Servicio", Procedencia.CAMPING
         );
 
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
@@ -357,7 +356,7 @@ class ReservaServiceTest {
                 5L, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
-                servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
+                servicioId, "Servicio", Procedencia.CAMPING
         );
 
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
@@ -377,7 +376,7 @@ class ReservaServiceTest {
                 5L, "Juan", "12345678", null, "099", "j@mail.com", TipoCliente.SOCIO
         );
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
-                10L, "Cabaña", Procedencia.CAMPING, ModalidadPrecio.POR_DIA
+                10L, "Cabaña", Procedencia.CAMPING
         );
 
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
@@ -881,7 +880,7 @@ class ReservaServiceTest {
         ClienteDetalleReservaDto clienteDto = new ClienteDetalleReservaDto(
                 clienteId, "Juan", "12345678", null, "099", null, TipoCliente.SOCIO);
         ServicioDetalleReservaDto servicioDto = new ServicioDetalleReservaDto(
-                servicioId, "Servicio", Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
+                servicioId, "Servicio", Procedencia.CAMPING);
 
         when(reservaRepository.findById(1L)).thenReturn(Optional.of(reserva));
         when(consultaClienteDetalle.getDetallClienteSimple(clienteId)).thenReturn(clienteDto);

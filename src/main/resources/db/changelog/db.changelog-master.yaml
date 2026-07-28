@@ -41,3 +41,7 @@ databaseChangeLog:
       file: db/changelog/migrations/DEV-166/db.changelog-DEV-166.yaml
   - include:
       file: db/changelog/migrations/DEV-177/db.changelog-DEV-177.yaml
+  - include:
+      file: db/changelog/migrations/DEV-179/db.changelog-DEV-179-eliminar-precios-servicio.yaml
+  - include:
+      file: db/changelog/migrations/DEV-179/db.changelog-DEV-179-eliminar-modalidad-precio-servicio.yaml

@@ -1,7 +1,6 @@
 package com.cipolflo.server.servicios.controller;
 
 import com.cipolflo.server.servicios.domain.enums.EstadoServicio;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.servicios.dto.ListadoServiciosRequestDto;
 import com.cipolflo.server.servicios.dto.ListadoServiciosResponseDto;
 import com.cipolflo.server.servicios.service.IServicioService;
@@ -17,7 +16,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -48,8 +46,7 @@ public class ListadoServiciosControllerTest {
     private PageResponse<ListadoServiciosResponseDto> paginaConResultados() {
         ListadoServiciosResponseDto dto = new ListadoServiciosResponseDto(
                 1L, "Cabaña", Procedencia.CAMPING,
-                BigDecimal.valueOf(2500), BigDecimal.valueOf(1500),
-                ModalidadPrecio.POR_DIA, EstadoServicio.HABILITADO, 4, 5
+                EstadoServicio.HABILITADO, 4, 5
         );
         return new PageResponse<>(List.of(dto), 0, 10, 1, 1, true, true);
     }

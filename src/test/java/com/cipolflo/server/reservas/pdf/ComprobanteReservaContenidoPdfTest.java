@@ -6,7 +6,6 @@ import com.cipolflo.server.reservas.domain.enums.TipoReserva;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
-import com.cipolflo.server.servicios.domain.enums.ModalidadPrecio;
 import com.cipolflo.server.shared.enums.Procedencia;
 import com.cipolflo.server.shared.pdf.PdfGeneratorService;
 import org.apache.pdfbox.Loader;
@@ -86,7 +85,7 @@ class ComprobanteReservaContenidoPdfTest {
    private ReservaDetalleResponseDto detalle(LocalTime horaInicio, LocalTime horaFin,
                                               ClienteDetalleReservaDto cliente) {
         ServicioDetalleReservaDto servicio = new ServicioDetalleReservaDto(
-                3L, "Cabaña del río", Procedencia.CAMPING, ModalidadPrecio.POR_DIA);
+                3L, "Cabaña del río", Procedencia.CAMPING);
 
         return new ReservaDetalleResponseDto(
                 42L,

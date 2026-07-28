@@ -1,5 +1,6 @@
 package com.cipolflo.server.clientes.dto;
 
+import com.cipolflo.server.clientes.domain.enums.CategoriaSocio;
 import com.cipolflo.server.clientes.domain.enums.EstadoSocio;
 import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.shared.dto.ResponseDto;
@@ -16,9 +17,22 @@ public class ListadoClientesResponseDto implements ResponseDto {
     private final TipoCliente tipoCliente;
     private final Integer numeroSocio;
     private final EstadoSocio estado;
+    private final CategoriaSocio categoriaSocio;
+    private final Integer antiguedad;
+
     private final UltimaCuotaDto ultimaCuotaDto;
 
-    public ListadoClientesResponseDto(Long id, String nombreCompleto, String cedula, String rut, String email, TipoCliente tipoCliente, Integer numeroSocio, EstadoSocio estado, UltimaCuotaDto ultimaCuotaDto) {
+    public ListadoClientesResponseDto(Long id,
+                                      String nombreCompleto,
+                                      String cedula,
+                                      String rut,
+                                      String email,
+                                      TipoCliente tipoCliente,
+                                      Integer numeroSocio,
+                                      EstadoSocio estado,
+                                      CategoriaSocio categoriaSocio,
+                                      Integer antiguedad,
+                                      UltimaCuotaDto ultimaCuotaDto) {
         this.id = id;
         this.nombreCompleto = nombreCompleto;
         this.cedula = cedula;
@@ -27,6 +41,8 @@ public class ListadoClientesResponseDto implements ResponseDto {
         this.tipoCliente = tipoCliente;
         this.numeroSocio = numeroSocio;
         this.estado = estado;
+        this.categoriaSocio = categoriaSocio;
+        this.antiguedad = antiguedad;
         this.ultimaCuotaDto = ultimaCuotaDto;
     }
 }

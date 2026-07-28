@@ -109,6 +109,7 @@ private RutFormatoValidator rutFormatoValidator;
         socio.setMail("socio@mail.com");
         socio.setNumeroSocio(nroSocio);
         socio.setEstado(estado);
+        socio.setCategoriaSocio(CategoriaSocio.SOCIO_COMUN);
         socio.setFechaNacimiento(LocalDate.of(1990, Month.JANUARY, 1));
         socio.setPais("Uruguay");
         socio.setDepartamento("Montevideo");
@@ -238,6 +239,25 @@ private RutFormatoValidator rutFormatoValidator;
         assertEquals(TipoCliente.SOCIO, dto.getTipoCliente());
         assertEquals(3, dto.getNumeroSocio());
         assertEquals(EstadoSocio.ACTIVO, dto.getEstado());
+    }
+
+    @Test
+    void deberiaUsarLaMismaFechaDeReferenciaParaTodosLosSociosDeLaPagina() {
+        Socio socio1 = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+        socio1.setFechaIngreso(LocalDate.of(2020, Month.JANUARY, 1));
+        Socio socio2 = crearSocio(2L, "María García", "23456789", 2, EstadoSocio.ACTIVO);
+        socio2.setFechaIngreso(LocalDate.of(2018, Month.JANUARY, 1));
+        Page<Cliente> page = new PageImpl<>(List.of(socio1, socio2));
+        when(clienteRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        PageResponse<ListadoClientesResponseDto> resultado = clienteService.getListadoClientes(sinFiltros(), pageRequest());
+
+        LocalDate hoy = LocalDate.now(com.cipolflo.server.shared.ZonaHoraria.URUGUAY);
+        int antiguedadEsperadaSocio1 = java.time.Period.between(socio1.getFechaIngreso(), hoy).getYears();
+        int antiguedadEsperadaSocio2 = java.time.Period.between(socio2.getFechaIngreso(), hoy).getYears();
+
+        assertEquals(antiguedadEsperadaSocio1, resultado.content().get(0).getAntiguedad());
+        assertEquals(antiguedadEsperadaSocio2, resultado.content().get(1).getAntiguedad());
     }
 
     @Test
@@ -958,7 +978,7 @@ void deberiaExportarFilasConLabelsLegiblesDeEstadoYMetodoCobro() {
 
     List<String> fila = filasCaptor.getValue().get(0);
     assertEquals("Activo",   fila.get(5));   // estado usa label, no "ACTIVO"
-    assertEquals("Efectivo", fila.get(8));   // metodoCobro usa label, no "EFECTIVO"
+    assertEquals("Efectivo", fila.get(9));   // metodoCobro usa label, no "EFECTIVO"
 }
 
 @Test
@@ -1020,6 +1040,25 @@ void deberiaIncluirColumnaRutEnLaExportacion() {
 
     assertTrue(encabezadosCaptor.getValue().contains("RUT"));
     assertEquals("210001230018", filasCaptor.getValue().get(0).get(3));
+}
+
+@Test
+@SuppressWarnings("unchecked")
+void deberiaGenerarUnAnchoDeColumnaPorCadaEncabezado() {
+    Socio socio = crearSocio(1L, "Juan Pérez", "12345678", 1, EstadoSocio.ACTIVO);
+
+    when(clienteRepository.findAll(any(Specification.class))).thenReturn(List.of(socio));
+    when(exportProperties.maxFilas()).thenReturn(1000);
+    when(exportService.generarExcel(anyString(), anyList(), anyList(), any(int[].class)))
+            .thenReturn(new byte[0]);
+
+    clienteService.exportarClientes(sinFiltros());
+
+    ArgumentCaptor<List<String>> encabezadosCaptor = ArgumentCaptor.forClass((Class) List.class);
+    ArgumentCaptor<int[]> anchosCaptor = ArgumentCaptor.forClass(int[].class);
+    verify(exportService).generarExcel(anyString(), encabezadosCaptor.capture(), anyList(), anchosCaptor.capture());
+
+    assertEquals(encabezadosCaptor.getValue().size(), anchosCaptor.getValue().length);
 }
 
     // --- buscarPorRut ---

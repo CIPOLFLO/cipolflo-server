@@ -30,8 +30,9 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
     private final EstadoSocio estado;
     private final CategoriaSocio categoriaSocio;
     private final LocalDate fechaIngreso;
-    private final String observaciones;
+    private final Integer antiguedad;
     private final UltimaCuotaDto ultimaCuotaDto;
+    private final String observaciones;
 
     public ClienteResponseDto(
             Long id,
@@ -51,8 +52,9 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
             EstadoSocio estado,
             CategoriaSocio categoriaSocio,
             LocalDate fechaIngreso,
-            String observaciones,
+            Integer antiguedad,
             UltimaCuotaDto ultimaCuotaDto,
+            String observaciones,
             Instant createdAt,
             Instant updatedAt,
             String createdBy,
@@ -78,5 +80,6 @@ public class ClienteResponseDto extends AuditInfoDto implements ResponseDto {
         this.fechaIngreso = fechaIngreso;
         this.observaciones = observaciones;
         this.ultimaCuotaDto = ultimaCuotaDto;
+        this.antiguedad = antiguedad;
     }
 }

@@ -3,6 +3,7 @@ package com.cipolflo.server.clientes.controller;
 import com.cipolflo.server.clientes.dto.*;
 import com.cipolflo.server.clientes.service.IClienteService;
 import com.cipolflo.server.shared.export.ArchivoExportado;
+import com.cipolflo.server.clientes.service.IImportacionSociosService;
 import com.cipolflo.server.clientes.service.IRegistroParticularService;
 import com.cipolflo.server.shared.pagination.PageRequestDto;
 import com.cipolflo.server.shared.pagination.PageResponse;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.Set;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,12 +32,15 @@ public class ClienteController {
 
     private final IClienteService clienteService;
     private final IRegistroParticularService registroParticularService;
+    private final IImportacionSociosService importacionSociosService;
 
     public ClienteController(
             IClienteService clienteService,
-            IRegistroParticularService registroParticularService) {
+            IRegistroParticularService registroParticularService,
+            IImportacionSociosService importacionSociosService) {
         this.clienteService = clienteService;
         this.registroParticularService = registroParticularService;
+        this.importacionSociosService = importacionSociosService;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -148,6 +153,28 @@ public class ClienteController {
             .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
             .body(archivo.getContenido());
         }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping(value = "/socios/importar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ImportacionSociosResponseDto> importarSocios(
+            @RequestParam("file") MultipartFile file) {
+
+        ImportacionSociosResponseDto response = importacionSociosService.importarSocios(file);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/socios/importar/plantilla")
+    public ResponseEntity<byte[]> descargarPlantillaImportacionSocios() {
+        ArchivoExportado archivo = importacionSociosService.generarPlantilla();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + archivo.getNombre() + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(archivo.getContenido());
+    }
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/rut/{rut}")
