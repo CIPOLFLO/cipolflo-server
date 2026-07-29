@@ -3,9 +3,9 @@ package com.cipolflo.server.reservas.events;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
-import com.cipolflo.server.reservas.scheduled.ReporteSemanalReservasProperties;
 import com.cipolflo.server.reservas.service.IReservaService;
 import com.cipolflo.server.shared.email.EmailException;
+import com.cipolflo.server.shared.email.IConsultaDestinatariosNotificacionEmail;
 import com.cipolflo.server.shared.email.IEmailService;
 import com.cipolflo.server.shared.email.SolicitudEmail;
 import com.cipolflo.server.shared.email.TipoEventoEmail;
@@ -37,16 +37,16 @@ public class ReservaCancelacionEmailListener {
 
     private final IReservaService reservaService;
     private final IEmailService emailService;
-    private final ReporteSemanalReservasProperties reporteProperties;
+    private final IConsultaDestinatariosNotificacionEmail consultaDestinatarios;
 
     public ReservaCancelacionEmailListener(
             IReservaService reservaService,
             IEmailService emailService,
-            ReporteSemanalReservasProperties reporteProperties
+            IConsultaDestinatariosNotificacionEmail consultaDestinatarios
     ) {
         this.reservaService = reservaService;
         this.emailService = emailService;
-        this.reporteProperties = reporteProperties;
+        this.consultaDestinatarios = consultaDestinatarios;
     }
 
     @Async("mailExecutor")
@@ -113,7 +113,7 @@ public class ReservaCancelacionEmailListener {
     private void enviarMailAdministracion(
             List<Long> reservaIds, List<ReservaDetalleResponseDto> detalles, MotivoCancelacionReserva motivo
     ) {
-        String destinatarios = reporteProperties.destinatario();
+        String destinatarios = consultaDestinatarios.destinatariosActivos();
         if (destinatarios == null || destinatarios.isBlank()) {
             log.debug("No hay destinatarios de administración configurados; se omite el aviso de cancelación");
             return;

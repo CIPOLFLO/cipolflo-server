@@ -4,8 +4,8 @@ import com.cipolflo.server.clientes.domain.enums.TipoCliente;
 import com.cipolflo.server.reservas.dto.ClienteDetalleReservaDto;
 import com.cipolflo.server.reservas.dto.ReservaDetalleResponseDto;
 import com.cipolflo.server.reservas.dto.ServicioDetalleReservaDto;
-import com.cipolflo.server.reservas.scheduled.ReporteSemanalReservasProperties;
 import com.cipolflo.server.reservas.service.IReservaService;
+import com.cipolflo.server.shared.email.IConsultaDestinatariosNotificacionEmail;
 import com.cipolflo.server.shared.email.IEmailService;
 import com.cipolflo.server.shared.email.SolicitudEmail;
 import com.cipolflo.server.shared.email.TipoEventoEmail;
@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,9 +38,12 @@ class ReservaCancelacionEmailListenerTest {
     @Mock
     private IEmailService emailService;
 
+    @Mock
+    private IConsultaDestinatariosNotificacionEmail consultaDestinatarios;
+
     private ReservaCancelacionEmailListener listenerCon(String destinatarioAdmin) {
-        ReporteSemanalReservasProperties props = new ReporteSemanalReservasProperties(destinatarioAdmin, null, null);
-        return new ReservaCancelacionEmailListener(reservaService, emailService, props);
+        lenient().when(consultaDestinatarios.destinatariosActivos()).thenReturn(destinatarioAdmin);
+        return new ReservaCancelacionEmailListener(reservaService, emailService, consultaDestinatarios);
     }
 
     private ReservaDetalleResponseDto detalle(
