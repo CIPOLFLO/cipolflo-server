@@ -98,6 +98,10 @@ También se agregó, fuera de `integraciones/`, soporte de datos en los módulos
 - `clientes/repository/ClienteRepository.findByEstadoInAndMesesSinPagarGreaterThanEqual(...)`
   y `clientes/service/IConsultaSociosAtrasados` (soporte para un futuro aviso de cuotas
   atrasadas — ver ["Qué NO está implementado"](#qué-no-está-implementado))
+- `ajustes/controller/ClienteTelegramController.java` (+ `service`, `dto`, `mapper`): CRUD
+  de alta/modificación/habilitación/baja de `telegram_chat_autorizado`, protegido con
+  `@PreAuthorize`. Compone el repositorio de `integraciones/telegram/` en lugar de
+  duplicar la tabla — ver [`api-contrato.md`](api-contrato.md#get-apiv1ajustesclientes-telegram).
 
 ---
 
@@ -181,9 +185,12 @@ ante 5xx/errores de red (no ante 4xx). Registra cada intento en `envio_mensajes_
 Migración `DEV-149` (`db/changelog/migrations/DEV-149/`):
 
 - **`telegram_chat_autorizado`**: `chat_id` (único), `alias`, `activo`,
-  `recibe_notificaciones`. El alta es manual (script/INSERT directo) — no hay endpoint de
-  administración. El `chatId` se obtiene escribiéndole al bot y leyendo el log o
-  `getUpdates` (ver [setup](telegram-groq-setup.md)).
+  `recibe_notificaciones`. El alta, modificación, habilitación y baja se administran con
+  el CRUD de `ClienteTelegramController` (módulo `ajustes`,
+  `/api/v1/ajustes/clientes-telegram`, protegido con `@PreAuthorize("isAuthenticated()")`)
+  — ver [`api-contrato.md`](api-contrato.md#get-apiv1ajustesclientes-telegram). El
+  `chatId` en sí se obtiene escribiéndole al bot: mientras no esté autorizado, el mensaje
+  de rechazo se lo devuelve directo (ver [despliegue](telegram-bot-despliegue.md#dar-de-alta-a-las-personas-autorizadas)).
 - **`envio_mensajes_log`**: espejo de `envio_emails_logs`. Una fila por cada intento de
   envío (`ENVIADO`/`FALLIDO`), con `tipo_evento` para distinguir el origen.
 

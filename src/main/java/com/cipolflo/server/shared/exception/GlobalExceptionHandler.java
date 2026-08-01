@@ -8,6 +8,9 @@ import com.cipolflo.server.finanzas.exception.EliminacionEgresoReservaNoPermitid
 import com.cipolflo.server.finanzas.exception.EliminacionPagoCuotaNoPermitidaException;
 import com.cipolflo.server.finanzas.exception.FinanzaCodigoError;
 import com.cipolflo.server.finanzas.exception.FinanzaNotFoundException;
+import com.cipolflo.server.manuales.exception.ManualCodigoError;
+import com.cipolflo.server.manuales.exception.ManualNoDisponibleException;
+import com.cipolflo.server.manuales.exception.ManualNoEncontradoException;
 import com.cipolflo.server.reservas.exception.ReservaCodigoError;
 import com.cipolflo.server.reservas.exception.ReservaNotFoundException;
 import com.cipolflo.server.reservas.exception.ReservaValidacionException;
@@ -171,6 +174,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
         log.warn("Tipo de argumento inválido para '{}': {}", ex.getName(), ex.getMessage());
+
+        Class<?> tipoEsperado = ex.getRequiredType();
+
+        if (tipoEsperado != null && tipoEsperado.isEnum()) {
+            String valoresAceptados = Arrays.stream(tipoEsperado.getEnumConstants())
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
+
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(
+                            ServicioCodigoError.SOLICITUD_INVALIDA.name(),
+                            ex.getName() + " inválido. Valores aceptados: " + valoresAceptados));
+        }
+
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ServicioCodigoError.ID_INVALIDO.name(), "El id debe ser un número positivo"));
@@ -359,6 +377,22 @@ public ResponseEntity<ErrorResponse> handlePagoCuotaNotFoundException(PagoCuotaN
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(ex.getCodigo(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ManualNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> handleManualNoEncontradoException(ManualNoEncontradoException ex) {
+        log.warn(RECURSO_NO_ENCONTRADO, ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ManualCodigoError.MANUAL_NO_ENCONTRADO.name(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ManualNoDisponibleException.class)
+    public ResponseEntity<ErrorResponse> handleManualNoDisponibleException(ManualNoDisponibleException ex) {
+        log.warn("Manual sin PDF publicado: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(ManualCodigoError.MANUAL_NO_DISPONIBLE.name(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
