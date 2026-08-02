@@ -57,10 +57,16 @@ class ManualControllerTest {
                 LocalDate.of(2026, 7, 31));
     }
 
+    /**
+     * Manual sin PDF publicado. Hoy el catálogo está completo, así que ningún manual real
+     * está en este estado: el escenario se simula sobre el service mockeado para cubrir el
+     * contrato del controller (listado con {@code disponible: false} y 404 en la descarga),
+     * que sigue vigente si un PDF no llega al build.
+     */
     private ManualResponseDto pendiente() {
         return new ManualResponseDto(
-                Manual.AJUSTES.getClave(),
-                Manual.AJUSTES.getTitulo(),
+                Manual.FINANZAS.getClave(),
+                Manual.FINANZAS.getTitulo(),
                 CategoriaManual.USUARIO,
                 false,
                 null,
@@ -157,10 +163,10 @@ class ManualControllerTest {
     @Test
     @WithMockUser
     void descargarManual_sinPdfPublicado_retornaNotFoundConCodigoPropio() throws Exception {
-        when(manualService.descargarManual("ajustes"))
-                .thenThrow(new ManualNoDisponibleException(Manual.AJUSTES.getTitulo()));
+        when(manualService.descargarManual("finanzas"))
+                .thenThrow(new ManualNoDisponibleException(Manual.FINANZAS.getTitulo()));
 
-        mockMvc.perform(get("/api/v1/manuales/ajustes"))
+        mockMvc.perform(get("/api/v1/manuales/finanzas"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.codigo").value("MANUAL_NO_DISPONIBLE"));
     }

@@ -29,19 +29,25 @@ public enum Manual {
             CategoriaManual.TECNICO,
             "auth0-configuracion",
             "Manual Técnico - Configuración de Auth0",
-            "manual-tecnico-auth0-configuracion.pdf"),
+            "manual-tecnico-auth0-configuracion.pdf",
+            "1.0",
+            LocalDate.of(2026, 8, 1)),
 
     AUTH0_NUEVO_USUARIO(
             CategoriaManual.TECNICO,
             "auth0-nuevo-usuario",
             "Manual Técnico - Alta de Nuevo Usuario en Auth0",
-            "manual-tecnico-auth0-nuevo-usuario.pdf"),
+            "manual-tecnico-auth0-nuevo-usuario.pdf",
+            "1.0",
+            LocalDate.of(2026, 8, 1)),
 
     AZURE_DOC_INTELLIGENCE(
             CategoriaManual.TECNICO,
             "azure-doc-intelligence",
             "Manual Técnico - Azure Document Intelligence",
-            "manual-tecnico-azure-doc-intelligence.pdf"),
+            "manual-tecnico-azure-doc-intelligence.pdf",
+            "1.0",
+            LocalDate.of(2026, 8, 1)),
 
     BOT_TELEGRAM(
             CategoriaManual.TECNICO,
@@ -55,7 +61,9 @@ public enum Manual {
             CategoriaManual.USUARIO,
             "inicio-sesion",
             "Manual de Inicio de Sesión",
-            "manual-usuario-inicio-sesion.pdf"),
+            "manual-usuario-inicio-sesion.pdf",
+            "1.0",
+            LocalDate.of(2026, 8, 1)),
 
     RESERVAS(
             CategoriaManual.USUARIO,
@@ -69,7 +77,9 @@ public enum Manual {
             CategoriaManual.USUARIO,
             "clientes",
             "Manual de Módulo Clientes",
-            "manual-usuario-clientes.pdf"),
+            "manual-usuario-clientes.pdf",
+            "1.0",
+            LocalDate.of(2026, 8, 1)),
 
     SERVICIOS(
             CategoriaManual.USUARIO,
@@ -83,13 +93,17 @@ public enum Manual {
             CategoriaManual.USUARIO,
             "finanzas",
             "Manual de Módulo Finanzas",
-            "manual-usuario-finanzas.pdf"),
+            "manual-usuario-finanzas.pdf",
+            "1.0",
+            LocalDate.of(2026, 8, 1)),
 
     AJUSTES(
             CategoriaManual.USUARIO,
             "ajustes",
             "Manual de Módulo Ajustes",
-            "manual-usuario-ajustes.pdf");
+            "manual-usuario-ajustes.pdf",
+            "1.0",
+            LocalDate.of(2026, 8, 1));
 
     private static final String CARPETA_RAIZ = "manuales";
 
