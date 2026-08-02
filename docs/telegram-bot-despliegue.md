@@ -28,8 +28,8 @@ Nada en el código. Lo que cambia son tres cosas operativas:
    a ser las de **producción**, no las de tu bot de pruebas.
 2. El webhook se registra contra el **dominio real** (el que ya tenés comprado + el ALB
    de Terraform), no contra un túnel.
-3. Los chats autorizados se insertan en la **base de datos de producción**, no en tu
-   Postgres local.
+3. Los chats autorizados se dan de alta contra el **CRUD de producción**
+   (`/api/v1/ajustes/clientes-telegram`), no contra tu Postgres local.
 
 ---
 
@@ -115,10 +115,15 @@ resto de la API, esto ya está resuelto, no hace falta nada extra.
 
 ## Dar de alta a las personas autorizadas
 
-No hay endpoint de administración (fuera de alcance del ticket) — es un `INSERT` manual
-contra la base de producción, para cada una de las 2-3 personas de la asociación que van
-a usar el bot. No requiere acceso a los logs del servidor: el bot le devuelve el `chatId`
-directo a la persona en el mensaje de rechazo.
+Ya no es un `INSERT` manual: hay un CRUD (`ClienteTelegramController`, módulo `ajustes`)
+protegido con `@PreAuthorize("isAuthenticated()")` en
+`/api/v1/ajustes/clientes-telegram` — ver el detalle de cada endpoint en
+[`api-contrato.md`](api-contrato.md#get-apiv1ajustesclientes-telegram). Se usa desde la
+pantalla de Ajustes del frontend con el mismo JWT de Auth0 que el resto de la app; no
+requiere acceso directo a la base de producción.
+
+No requiere acceso a los logs del servidor: el bot le devuelve el `chatId` directo a la
+persona en el mensaje de rechazo.
 
 1. Compartile a la persona el link directo al bot de producción:
    `https://t.me/<username_del_bot>`.
@@ -128,23 +133,26 @@ directo a la persona en el mensaje de rechazo.
    No tenés acceso a este bot. Tu ID es 123456789 — pasaselo a un administrador
    para que te dé de alta.
    ```
-3. La persona te pasa ese número (o lo hace directo si en algún momento se construye el
-   endpoint de administración — ver la nota sobre self-service más abajo).
-4. Insertar en la base de producción:
-   ```sql
-   INSERT INTO telegram_chat_autorizado (chat_id, alias, activo, recibe_notificaciones, created_at, updated_at, created_by, updated_by)
-   VALUES (<chatId>, '<Nombre de la persona>', true, true, now(), now(), 'system', 'system');
+3. La persona te pasa ese número.
+4. Un administrador lo da de alta desde Ajustes (o directo con `POST`, si todavía no está
+   la pantalla):
+   ```
+   POST /api/v1/ajustes/clientes-telegram
+   { "chatId": <chatId>, "alias": "<Nombre de la persona>", "recibeNotificaciones": true }
    ```
 5. La persona vuelve a escribirle al bot — ahora debería responder normalmente.
 
-> **Por qué no puede ser más self-service todavía**: Telegram no expone ninguna forma de
-> conocer el `chatId` de alguien antes de que le escriba al bot — no hay "buscar por
-> username". Por eso el primer contacto siempre requiere que alguien con acceso a la base
-> haga el alta manualmente. Si el número de usuarios crece, dos mejoras posibles (no
-> construidas, fuera de alcance del ticket): un endpoint de administración
-> (`alta/baja/listado` protegido con `@PreAuthorize`), o un flujo de auto-alta por código
-> de invitación (`/start CODIGO`, el bot se auto-registra si el código coincide con uno
-> pre-compartido).
+Para deshabilitar o dar de baja a alguien (sin recibir notificaciones o sin acceso al
+bot), usar `PATCH .../{id}/habilitacion` o `DELETE .../{id}` respectivamente — tampoco
+hace falta tocar la base directamente.
+
+> **Por qué el primer contacto sigue sin ser 100% self-service**: Telegram no expone
+> ninguna forma de conocer el `chatId` de alguien antes de que le escriba al bot — no hay
+> "buscar por username". Por eso el primer contacto siempre requiere que alguien con
+> acceso a Ajustes haga el alta una vez que la persona le escribió al bot y obtuvo su
+> `chatId`. Una mejora posible (no construida, fuera de alcance): un flujo de auto-alta
+> por código de invitación (`/start CODIGO`, el bot se auto-registra si el código
+> coincide con uno pre-compartido).
 
 ---
 
