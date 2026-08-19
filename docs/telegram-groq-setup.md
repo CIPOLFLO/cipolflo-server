@@ -79,7 +79,7 @@ spring.ai.model.embedding=none
 
 spring.ai.openai.base-url=https://api.groq.com/openai
 spring.ai.openai.api-key=${AI_API_KEY:}
-spring.ai.openai.chat.options.model=llama-3.3-70b-versatile
+spring.ai.openai.chat.options.model=openai/gpt-oss-120b
 spring.ai.openai.chat.options.temperature=0.2
 
 # Memoria conversacional del asistente (por chat)
@@ -90,6 +90,44 @@ cipolflo.mensajeria.memoria.ttl-inactividad=30m
 Las properties de los **crons nuevos** (aviso de cuotas atrasadas, aviso de reservas por
 vencer) se dejaron **fuera a propósito** — se agregan recién cuando se construyan esos
 schedulers, no en esta etapa de configuración.
+
+### Cambio de modelo por baja del proveedor (19/08/2026)
+
+El modelo original era **`llama-3.3-70b-versatile`**. Groq lo **dio de baja el
+16/08/2026** y a partir de esa fecha dejó de servir requests. El síntoma fue que **el bot
+dejó de responder**: toda consulta fallaba contra
+el proveedor, salía por el `catch` de `AsistenteConsultas.responder()` como
+`AsistenteException` y el usuario no recibía respuesta.
+
+Se migró a **`openai/gpt-oss-120b`**, uno de los dos reemplazos que recomendó Groq. El
+otro candidato era `qwen/qwen3.6-27b`; se descartó porque ante "¿hay lugar el viernes?"
+se quedaba pidiendo la fecha en vez de resolverla contra el `{fecha}` del system prompt,
+mientras que `gpt-oss-120b` disparaba la tool directamente. Antes de fijarlo se verificó
+contra la API real, con el system prompt y los schemas de tools del proyecto, que:
+resuelve fechas relativas ("el finde que viene" → el rango correcto), omite `procedencia`
+cuando el usuario no la aclaró, y **transcribe todas las coincidencias** cuando una tool
+devuelve más de una (la regla más frágil del prompt ante un cambio de modelo).
+
+Para verificar qué modelos sigue habilitando una API key:
+
+```
+curl -s https://api.groq.com/openai/v1/models -H "Authorization: Bearer <AI_API_KEY>"
+```
+
+Si el modelo configurado no aparece en esa lista, ya fue dado de baja. La lista depende de
+la **cuenta** de Groq, no de la key: dos keys de la misma cuenta ven lo mismo.
+
+**Dos consecuencias operativas a tener presentes:**
+
+- El modelo está **hardcodeado en `application.properties`**, que viaja dentro del jar
+  (`Dockerfile` → `bootJar`). No se puede cambiar por variable de entorno: la próxima
+  baja exige **rebuild de la imagen y redeploy**, no alcanza con reiniciar. Si
+  esto se vuelve molesto, parametrizarlo como `${AI_MODEL:openai/gpt-oss-120b}`.
+- `gpt-oss-120b` devuelve un bloque de *reasoning* además de la respuesta. No contamina lo
+  que se le manda al usuario (Spring AI lee `content`, y el `reasoning` viene en un campo
+  aparte), pero **esos tokens cuentan para el rate limit** — el tier gratuito da 8000
+  tokens por minuto, de sobra para 2-3 usuarios internos, aunque cada consulta consume más
+  que con el modelo anterior.
 
 ### Por qué se deshabilitan audio/imagen/moderación/embeddings
 
