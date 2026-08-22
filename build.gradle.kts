@@ -51,8 +51,16 @@ dependencies {
 	testRuntimeOnly ("org.junit.platform:junit-platform-launcher")
 	testRuntimeOnly ("com.h2database:h2")
 	testAnnotationProcessor ("org.projectlombok:lombok")
-	implementation("com.azure:azure-ai-documentintelligence:1.0.0-beta.4")
-	implementation("com.azure:azure-core:1.53.0")
+	// El SDK no fija la versión de API por config: usa la que trae el jar, así que la
+	// versión de la dependencia ES la versión de API. La 1.0.0-beta.4 mandaba
+	// 2024-07-31-preview, que Azure retiró el 22/08/2026: toda factura fallaba con
+	// 410 Gone ("The requested API version has been retired"), sin importar archivo ni
+	// credenciales. No volver a una versión -beta: las preview se dan de baja sin aviso.
+	// La 1.0.1 (GA) usa 2024-11-30, estable, y soporta igual prebuilt-invoice.
+	// azure-core va pineado porque la GA exige >= 1.55.3; si se sube el SDK, revisar en
+	// su POM qué azure-core pide y mover este pin en el mismo commit.
+	implementation("com.azure:azure-ai-documentintelligence:1.0.1")
+	implementation("com.azure:azure-core:1.55.3")
 	implementation("org.springframework.ai:spring-ai-starter-model-openai")
 }
 
