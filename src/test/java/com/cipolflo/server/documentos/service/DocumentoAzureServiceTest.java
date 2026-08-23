@@ -1,9 +1,9 @@
 package com.cipolflo.server.documentos.service;
 
 import com.azure.ai.documentintelligence.DocumentIntelligenceClient;
-import com.azure.ai.documentintelligence.models.AnalyzeDocumentRequest;
+import com.azure.ai.documentintelligence.models.AnalyzeDocumentOptions;
+import com.azure.ai.documentintelligence.models.AnalyzeOperationDetails;
 import com.azure.ai.documentintelligence.models.AnalyzeResult;
-import com.azure.ai.documentintelligence.models.AnalyzeResultOperation;
 import com.azure.core.util.polling.SyncPoller;
 import com.cipolflo.server.documentos.domain.DocumentoAnalizado;
 import com.cipolflo.server.documentos.repository.DocumentoAnalizadoRepository;
@@ -112,20 +112,13 @@ class DocumentoAzureServiceTest {
         AnalyzeResult result = mock(AnalyzeResult.class);
 
         @SuppressWarnings("unchecked")
-        SyncPoller<AnalyzeResultOperation, AnalyzeResult> poller = mock(SyncPoller.class);
+        SyncPoller<AnalyzeOperationDetails, AnalyzeResult> poller = mock(SyncPoller.class);
 
         when(poller.getFinalResult()).thenReturn(result);
 
         when(client.beginAnalyzeDocument(
                 eq("prebuilt-invoice"),
-                isNull(),
-                isNull(),
-                isNull(),
-                isNull(),
-                isNull(),
-                isNull(),
-                isNull(),
-                any(AnalyzeDocumentRequest.class)
+                any(AnalyzeDocumentOptions.class)
         )).thenReturn(poller);
 
         when(objectMapper.writeValueAsString(result)).thenReturn("{\"content\":\"factura\"}");
@@ -144,6 +137,13 @@ class DocumentoAzureServiceTest {
         verify(repository).save(captor.capture());
 
         assertThat(captor.getValue().getNombreArchivo()).isEqualTo("factura.pdf");
+
+        // El contenido del archivo viaja dentro de AnalyzeDocumentOptions
+        ArgumentCaptor<AnalyzeDocumentOptions> optionsCaptor =
+                ArgumentCaptor.forClass(AnalyzeDocumentOptions.class);
+        verify(client).beginAnalyzeDocument(eq("prebuilt-invoice"), optionsCaptor.capture());
+
+        assertThat(optionsCaptor.getValue().getBytesSource()).isEqualTo(file.getBytes());
     }
 
     @Test
@@ -157,14 +157,7 @@ class DocumentoAzureServiceTest {
 
         when(client.beginAnalyzeDocument(
                 eq("prebuilt-invoice"),
-                isNull(),
-                isNull(),
-                isNull(),
-                isNull(),
-                isNull(),
-                isNull(),
-                isNull(),
-                any(AnalyzeDocumentRequest.class)
+                any(AnalyzeDocumentOptions.class)
         )).thenThrow(new RuntimeException("Error Azure"));
 
         assertThatThrownBy(() -> service.analizarFactura(file))

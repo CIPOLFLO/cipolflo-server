@@ -1,9 +1,9 @@
 package com.cipolflo.server.documentos.service;
 
 import com.azure.ai.documentintelligence.DocumentIntelligenceClient;
-import com.azure.ai.documentintelligence.models.AnalyzeDocumentRequest;
+import com.azure.ai.documentintelligence.models.AnalyzeDocumentOptions;
+import com.azure.ai.documentintelligence.models.AnalyzeOperationDetails;
 import com.azure.ai.documentintelligence.models.AnalyzeResult;
-import com.azure.ai.documentintelligence.models.AnalyzeResultOperation;
 import com.azure.core.util.polling.SyncPoller;
 import com.cipolflo.server.documentos.domain.DocumentoAnalizado;
 import com.cipolflo.server.documentos.dto.DocumentoAnalizadoResponseDto;
@@ -53,27 +53,15 @@ public class DocumentoAzureService {
             validator.validarArchivo(file);
             log.info("Iniciando análisis de factura.");
 
-            // Leemos los bytes del archivo y creamos el request de Azure
-            byte[] fileBytes = file.getBytes();
-            AnalyzeDocumentRequest request = new AnalyzeDocumentRequest();
-            request.setBase64Source(fileBytes);
+            // Leemos los bytes del archivo y armamos las opciones de análisis.
+            // Sin setters extra: pages = todas, locale = auto-detect.
+            AnalyzeDocumentOptions options = new AnalyzeDocumentOptions(file.getBytes());
 
             // Enviamos el documento a Azure y esperamos el resultado
             // beginAnalyzeDocument devuelve un SyncPoller (operación long-running)
 
-            SyncPoller<AnalyzeResultOperation, AnalyzeResult> poller =
-                    client.beginAnalyzeDocument(
-                            MODELO_FACTURA,  // modelo precompilado
-                            null,            // pages (null = todas)
-                            null,            // locale (null = auto-detect)
-                            null,            // stringIndexType
-                            null,            // features adicionales
-                            null,            // queryFields
-                            null,            // outputContentFormat
-                            null,            // output adicional
-                            request
-
-                    );
+            SyncPoller<AnalyzeOperationDetails, AnalyzeResult> poller =
+                    client.beginAnalyzeDocument(MODELO_FACTURA, options);
 
             // getFinalResult() bloquea hasta que Azure termina el análisis
             AnalyzeResult result = poller.getFinalResult();

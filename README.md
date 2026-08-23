@@ -294,6 +294,39 @@ docker compose up -d     # recrea el contenedor
 ./gradlew test --tests "com.cipolflo.server.clientes.service.ClienteServiceTest"
 ```
 
+> Para medir cobertura, correr la suite **completa** (`./gradlew test`, sin `--tests`): una
+> corrida filtrada genera un reporte JaCoCo parcial y da un porcentaje falso.
+
+### Problema conocido: Avast bloquea el borrado de `build/` (Windows)
+
+En la máquina de desarrollo, `./gradlew test` puede fallar antes de correr un solo test:
+
+```
+Unable to delete directory '...\build\test-results\test\binary'
+Failed to delete some children. This might happen because a process has files open...
+- ...\build\test-results\test\binary\output.bin
+```
+
+Es **Avast**, no Gradle: el File Shield escanea el `.bin` que la corrida anterior acaba de
+escribir y retiene el handle unos segundos. Se confirma con Restart Manager, que no reporta
+ningún proceso de usuario con el archivo abierto — lo tiene un filtro de kernel. Es la misma
+interferencia que rompe [el envío de mails por SMTP en local](docs/envio-emails.md) y
+[`curl` contra Telegram](docs/telegram-groq-setup.md#problema-conocido-curl--avast-windows).
+
+Se destraba solo. Reintentar alcanza casi siempre; si no:
+
+```bash
+./gradlew --stop                                    # los daemons también pueden retener handles
+rm -rf build/test-results/test/binary               # ahora sí borra
+./gradlew test
+```
+
+Si molesta seguido, excluir la carpeta `build/` del proyecto en el File Shield de Avast.
+
+> Ojo con tener **dos daemons de Gradle** vivos (uno del IDE y otro de la terminal, cada uno
+> con su JDK): se pisan sobre `build/`. `./gradlew --stop` los baja a todos; no toca la app
+> corriendo desde el IDE.
+
 ---
 
 ## Arquitectura general
